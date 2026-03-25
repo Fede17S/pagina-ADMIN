@@ -3,73 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión de Pedidos</title>
+    <title>Sistema de Gestión Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #64748b;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --bg: #f8fafc;
-        }
-
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --dark: #1e293b; --light: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; color: var(--dark); }
         
-        /* Navegación por pestañas */
-        .navbar { display: flex; background: white; shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; border-bottom: 2px solid #e2e8f0; }
-        .nav-btn { flex: 1; padding: 18px; border: none; background: none; font-size: 16px; font-weight: bold; cursor: pointer; color: var(--secondary); transition: 0.3s; }
-        .nav-btn.active { color: var(--primary); border-bottom: 4px solid var(--primary); background: #eff6ff; }
+        .navbar { display: flex; background: white; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
+        .nav-btn { flex: 1; padding: 20px; border: none; background: none; font-weight: 700; cursor: pointer; color: #64748b; transition: 0.3s; }
+        .nav-btn.active { color: var(--primary); border-bottom: 4px solid var(--primary); background: #f1f5f9; }
 
-        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: none; }
+        .container { max-width: 850px; margin: 25px auto; padding: 0 15px; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: none; }
         .card.active { display: block; }
 
-        h2 { margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
-        
-        /* Formularios */
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 500; color: #475569; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        button.main-btn { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--primary); ring: 2px var(--primary); }
+
+        /* BUSCADOR */
+        .search-box { background: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
+
+        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; margin-top: 10px; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        .btn-red { background: var(--danger); color: white; }
+        .btn-red { background: var(--danger); color: white; margin-bottom: 15px; }
+        .btn:active { transform: scale(0.98); }
 
-        /* Tablas */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background: #f1f5f9; text-align: left; padding: 12px; font-size: 14px; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        th { text-align: left; padding: 12px; font-size: 14px; color: #64748b; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
         
-        .delete-icon { color: var(--danger); cursor: pointer; font-weight: bold; border: 1px solid #fee2e2; padding: 5px 10px; border-radius: 5px; }
+        .delete-btn { color: var(--danger); cursor: pointer; font-weight: bold; padding: 5px; }
 
-        #ticket-preview { border: 2px dashed #cbd5e1; padding: 15px; margin-top: 20px; background: #fff; border-radius: 8px; }
+        #ticket-area { border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; margin-top: 20px; }
+        .total-box { text-align: right; margin-top: 15px; padding-top: 10px; border-top: 2px solid #f1f5f9; }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
-        <button class="nav-btn active" onclick="switchTab('tab-pedido')">📝 ARMAR PEDIDO</button>
+        <button class="nav-btn active" onclick="switchTab('tab-pedido')">📑 NUEVO PEDIDO</button>
         <button class="nav-btn" onclick="switchTab('tab-catalogo')">📦 CATÁLOGO</button>
     </nav>
 
     <div class="container">
 
         <div id="tab-pedido" class="card active">
-            <h2>Nuevo Pedido</h2>
+            <h2>Crear Pedido</h2>
             <div class="form-group">
-                <label>Datos del Cliente</label>
-                <input type="text" id="idCli" placeholder="ID Cliente (Ej: 101)" style="margin-bottom: 8px;">
-                <input type="text" id="nomCli" placeholder="Nombre completo">
+                <input type="text" id="idCli" placeholder="ID Cliente (Ej: 001)">
+                <input type="text" id="nomCli" placeholder="Nombre del Cliente" style="margin-top: 8px;">
             </div>
 
-            <div class="form-group">
-                <label>Seleccionar Producto</label>
-                <select id="selProd"><option>Cargando catálogo...</option></select>
+            <div class="search-box">
+                <label style="font-size: 12px; font-weight: bold; color: #64748b;">🔍 BUSCADOR DE PRODUCTOS</label>
+                <input type="text" id="buscador" placeholder="Escribí nombre del producto..." onkeyup="filtrarProductos()">
+                <select id="selProd" size="4" style="margin-top: 10px;"></select>
             </div>
 
             <div class="form-group">
@@ -77,150 +69,165 @@
                 <input type="number" id="cant" value="1" min="1">
             </div>
 
-            <button class="main-btn btn-blue" onclick="agregarAlPedido()">+ AGREGAR AL PEDIDO</button>
+            <button class="btn btn-blue" onclick="agregarAlPedido()">+ AGREGAR AL LISTADO</button>
 
-            <div id="ticket-preview">
-                <h3 style="text-align: center; margin: 0;">ORDEN DE PEDIDO</h3>
-                <hr>
-                <p><strong>Cliente:</strong> <span id="resCli">-</span></p>
-                <p><strong>ID:</strong> <span id="resID">-</span> | <strong>Fecha:</strong> <span id="fechaActual"></span></p>
+            <div id="ticket-area">
+                <h3 style="text-align: center; margin: 0;">ORDEN DE COMPRA</h3>
+                <p style="font-size: 14px; text-align: center; color: #64748b;" id="fechaPdf"></p>
+                <div style="margin: 15px 0; font-size: 15px;">
+                    <strong>Cliente:</strong> <span id="resCli">-</span><br>
+                    <strong>ID:</strong> <span id="resID">-</span>
+                </div>
                 <table>
-                    <thead><tr><th>Cant</th><th>Detalle</th><th>Total</th><th></th></tr></thead>
+                    <thead><tr><th>Cant</th><th>Detalle</th><th>Subtotal</th><th class="no-pdf"></th></tr></thead>
                     <tbody id="cuerpoPedido"></tbody>
                 </table>
-                <h3 style="text-align: right; color: var(--primary);">TOTAL: $<span id="totalFinal">0.00</span></h3>
+                <div class="total-box">
+                    <h2 style="margin: 0; color: var(--primary);">TOTAL: $<span id="totalFinal">0.00</span></h2>
+                </div>
             </div>
             
-            <button class="main-btn btn-green" style="margin-top: 20px;" onclick="descargarPDF()">💾 FINALIZAR Y GUARDAR PDF</button>
+            <button class="btn btn-green" onclick="descargarPDF()">💾 GUARDAR PDF Y FINALIZAR</button>
         </div>
 
         <div id="tab-catalogo" class="card">
-            <h2>Gestionar Catálogo</h2>
+            <h2>Gestionar Productos</h2>
+            <div style="background: #ecfdf5; padding: 15px; border-radius: 12px; border: 1px solid #a7f3d0; margin-bottom: 20px;">
+                <strong>📂 Carga Masiva (Excel)</strong>
+                <input type="file" id="excelInput" style="margin-top: 10px;">
+            </div>
+
+            <div class="form-group">
+                <input type="text" id="pNombre" placeholder="Nombre del producto">
+                <input type="number" id="pPrecio" placeholder="Precio $" style="margin-top: 8px;">
+                <button class="btn btn-blue" onclick="agregarManual()">AÑADIR MANUALMENTE</button>
+            </div>
+
+            <button class="btn btn-red" onclick="vaciarCatalogo()">VACIAR TODO EL CATÁLOGO</button>
             
-            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; margin-bottom: 20px;">
-                <label><strong>Subir desde Excel</strong></label>
-                <input type="file" id="excelInput" accept=".xlsx, .xls">
-                <small style="display:block; margin-top:5px; color:#166534">Columna A: Nombre | Columna B: Precio</small>
-            </div>
-
-            <div class="form-group" style="border-top: 1px solid #eee; pt: 10px;">
-                <label>Agregar Producto Manual</label>
-                <input type="text" id="pNombre" placeholder="Ej: Monitor LED" style="margin-bottom: 8px;">
-                <input type="number" id="pPrecio" placeholder="Ej: 5000">
-                <button class="main-btn btn-blue" style="margin-top: 10px;" onclick="agregarManual()">AÑADIR AL STOCK</button>
-            </div>
-
-            <hr>
-            <h3>Productos en Stock</h3>
-            <button class="btn-red" style="padding: 5px 10px; font-size: 12px; margin-bottom: 10px;" onclick="vaciarCatalogo()">VACIAR TODO EL CATÁLOGO</button>
             <table>
                 <thead><tr><th>Producto</th><th>Precio</th><th></th></tr></thead>
                 <tbody id="listaCat"></tbody>
             </table>
         </div>
-
     </div>
 
     <script>
         let stock = JSON.parse(localStorage.getItem('db_stock')) || [];
         let pedidoActual = [];
-        document.getElementById('fechaActual').innerText = new Date().toLocaleDateString();
+        const f = new Date();
+        const fechaStr = f.toLocaleDateString() + ' ' + f.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        document.getElementById('fechaPdf').innerText = fechaStr;
 
-        // CAMBIAR PESTAÑAS
-        function switchTab(tabId) {
+        function switchTab(id) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
+            document.getElementById(id).classList.add('active');
             event.currentTarget.classList.add('active');
         }
 
-        // LÓGICA DE CATÁLOGO
+        function filtrarProductos() {
+            const term = document.getElementById('buscador').value.toLowerCase();
+            const sel = document.getElementById('selProd');
+            sel.innerHTML = "";
+            stock.forEach((p, i) => {
+                if(p.n.toLowerCase().includes(term)) {
+                    sel.innerHTML += `<option value="${i}">${p.n} ($${p.p})</option>`;
+                }
+            });
+        }
+
         function agregarManual() {
             const n = document.getElementById('pNombre').value;
             const p = document.getElementById('pPrecio').value;
             if(n && p) {
                 stock.push({n, p: parseFloat(p)});
-                document.getElementById('pNombre').value = "";
-                document.getElementById('pPrecio').value = "";
                 actualizarTodo();
+                document.getElementById('pNombre').value = ""; document.getElementById('pPrecio').value = "";
             }
         }
 
         document.getElementById('excelInput').addEventListener('change', function(e) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (e) => {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const filas = XLSX.utils.sheet_to_json(sheet, {header: 1});
-                filas.forEach((f, i) => {
-                    if(i > 0 && f[0] && f[1]) stock.push({n: f[0], p: parseFloat(f[1])});
-                });
+                const wb = XLSX.read(data, {type: 'array'});
+                const filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                filas.forEach((f, i) => { if(i>0 && f[0] && f[1]) stock.push({n: f[0], p: parseFloat(f[1])}); });
                 actualizarTodo();
-                alert("Catálogo actualizado desde Excel");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        function borrarProd(i) { stock.splice(i, 1); actualizarTodo(); }
-        function vaciarCatalogo() { if(confirm("¿Borrar todo?")) { stock = []; actualizarTodo(); } }
-
         function actualizarTodo() {
             localStorage.setItem('db_stock', JSON.stringify(stock));
             renderCatalogo();
+            filtrarProductos();
         }
 
         function renderCatalogo() {
             const lista = document.getElementById('listaCat');
-            const sel = document.getElementById('selProd');
             lista.innerHTML = "";
-            sel.innerHTML = "<option value=''>-- Seleccionar --</option>";
             stock.forEach((p, i) => {
-                lista.innerHTML += `<tr><td>${p.n}</td><td>$${p.p}</td><td><span class="delete-icon" onclick="borrarProd(${i})">BORRAR</span></td></tr>`;
-                sel.innerHTML += `<option value="${i}">${p.n} ($${p.p})</option>`;
+                lista.innerHTML += `<tr><td>${p.n}</td><td>$${p.p}</td><td class="delete-btn" onclick="stock.splice(${i},1); actualizarTodo();">✕</td></tr>`;
             });
         }
 
-        // LÓGICA DE PEDIDO
+        function vaciarCatalogo() { if(confirm("¿Borrar todo el stock?")) { stock = []; actualizarTodo(); } }
+
         function agregarAlPedido() {
             const i = document.getElementById('selProd').value;
             const c = document.getElementById('cant').value;
             if(i !== "" && c > 0) {
                 const p = stock[i];
                 pedidoActual.push({n: p.n, c, sub: p.p * c});
-                document.getElementById('resCli').innerText = document.getElementById('nomCli').value || "Cliente General";
-                document.getElementById('resID').innerText = document.getElementById('idCli').value || "S/ID";
+                document.getElementById('resCli').innerText = document.getElementById('nomCli').value || "Consumidor Final";
+                document.getElementById('resID').innerText = document.getElementById('idCli').value || "S/N";
                 renderPedido();
             }
         }
 
         function renderPedido() {
             const cuerpo = document.getElementById('cuerpoPedido');
-            cuerpo.innerHTML = "";
-            let t = 0;
+            cuerpo.innerHTML = ""; let t = 0;
             pedidoActual.forEach((item, index) => {
                 t += item.sub;
-                cuerpo.innerHTML += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td><span onclick="pedidoActual.splice(${index},1); renderPedido();" style="cursor:pointer">❌</span></td></tr>`;
+                cuerpo.innerHTML += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td class="delete-btn no-pdf" onclick="pedidoActual.splice(${index},1); renderPedido();">✕</td></tr>`;
             });
             document.getElementById('totalFinal').innerText = t.toFixed(2);
         }
 
         function descargarPDF() {
-            const elemento = document.getElementById('ticket-preview');
-            const id = document.getElementById('idCli').value || "000";
-            const nom = document.getElementById('nomCli').value || "Cliente";
-            
-            // Ocultar la columna de eliminar para el PDF
-            const iconos = document.querySelectorAll('#cuerpoPedido span');
-            iconos.forEach(s => s.style.display = 'none');
+            const elemento = document.getElementById('ticket-area');
+            const idCli = document.getElementById('idCli').value || "ID";
+            const nomCli = document.getElementById('nomCli').value || "Cliente";
 
-            const opt = { margin: 1, filename: `${id}_${nom}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            if(pedidoActual.length === 0) return alert("El pedido está vacío.");
+
+            // Ocultar elementos que no queremos en el PDF
+            document.querySelectorAll('.no-pdf').forEach(el => el.style.visibility = 'hidden');
+
+            const opt = {
+                margin: 0.5,
+                filename: `${idCli}_${nomCli}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 3, useCORS: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
             html2pdf().set(opt).from(elemento).save().then(() => {
-                iconos.forEach(s => s.style.display = 'inline');
-            });
+                // Volver a mostrar y limpiar
+                document.querySelectorAll('.no-pdf').forEach(el => el.style.visibility = 'visible');
+                alert("PDF guardado con éxito.");
+                pedidoActual = [];
+                document.getElementById('idCli').value = "";
+                document.getElementById('nomCli').value = "";
+                renderPedido();
+            }).catch(err => alert("Error al generar PDF: " + err));
         }
 
         renderCatalogo();
+        filtrarProductos();
     </script>
 </body>
 </html>
