@@ -3,49 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar Pro - Enviar a WhatsApp</title>
+    <title>DistriMar - Sistema Integral</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { --blue: #0056b3; --green: #25d366; --red: #dc3545; --gray: #f4f7f6; --orange: #fd7e14; }
-        body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding: 0; }
+        :root { --blue: #0056b3; --green: #25d366; --red: #dc3545; --gray: #f4f7f6; --orange: #fd7e14; --dark: #333; }
+        body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding: 0; color: var(--dark); }
         
-        .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; }
-        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 13px; }
+        .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 15px 10px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 12px; white-space: nowrap; }
         .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: #f8faff; }
 
-        .container { max-width: 800px; margin: 15px auto; padding: 10px; }
+        .container { max-width: 800px; margin: 10px auto; padding: 10px; }
         .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; }
         .card.active { display: block; }
 
-        .badge-lista { display: inline-block; padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+        .badge-lista { display: inline-block; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 10px; }
         .badge-patagonia { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .badge-clientes { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
 
-        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
-        
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-blue { background: var(--blue); }
-        .btn-green { background: var(--green); } /* Color WhatsApp */
-        .btn-red { background: var(--red); font-size: 12px; width: auto; padding: 8px 12px; }
+        .btn-green { background: var(--green); }
+        .btn-orange { background: var(--orange); }
+        .btn-red { background: var(--red); font-size: 11px; width: auto; padding: 8px 12px; }
 
-        .search-area { background: #e9ecef; padding: 15px; border-radius: 12px; margin: 15px 0; border: 1px solid #dee2e6; }
-        .lista-resultados { max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 8px; margin-top: 5px; }
-        .item-prod { padding: 12px; border-bottom: 1px solid #eee; font-size: 15px; cursor: pointer; display: flex; justify-content: space-between; }
+        .search-area { background: #f1f3f5; padding: 15px; border-radius: 12px; margin: 15px 0; border: 1px solid #dee2e6; }
+        .lista-resultados { max-height: 180px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 8px; margin-top: 5px; }
+        .item-prod { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; }
         .item-prod.seleccionado { background: var(--blue); color: white; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid #eee; }
-        .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 18px; }
+        .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <nav class="tabs">
         <button class="tab-btn active" onclick="verTab('pedido')">📝 PEDIDO</button>
+        <button class="tab-btn" onclick="verTab('remito')">🚚 REMITO</button>
         <button class="tab-btn" onclick="verTab('catalogo')">📦 STOCK</button>
         <button class="tab-btn" onclick="verTab('clientes')">👥 CLIENTES</button>
     </nav>
@@ -53,195 +54,228 @@
     <div class="container">
 
         <div id="pedido" class="card active">
-            <div id="indicadorLista" class="badge-lista badge-clientes">Lista Activa: Clientes (Normal)</div>
-            
-            <input type="text" id="idCli" placeholder="Escribí ID del Cliente..." onkeyup="buscarCliente()">
-            <input type="text" id="nomCli" placeholder="Nombre del Cliente (Automático o Manual)">
+            <div id="ind-ped" class="badge-lista badge-clientes">Lista: Clientes</div>
+            <input type="text" id="idCli-ped" placeholder="ID Cliente..." onkeyup="buscarCli('ped')">
+            <input type="text" id="nomCli-ped" placeholder="Nombre Cliente">
 
             <div class="search-area">
-                <label style="font-weight: bold; font-size: 13px;">🔍 PRODUCTOS (<span id="txtListaBusqueda">Clientes</span>):</label>
-                <input type="text" id="motorBusqueda" placeholder="Buscar producto..." onkeyup="filtrar()">
-                <div id="listaResultados" class="lista-resultados"></div>
-
-                <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                    <label>Cant:</label>
-                    <input type="number" id="cant" value="1" min="1" style="margin:0; width: 80px;">
-                    <button class="btn btn-blue" onclick="agregarItem()" style="margin:0; flex:1">AGREGAR</button>
+                <input type="text" id="bus-ped" placeholder="Buscar producto..." onkeyup="filtrar('ped')">
+                <div id="res-ped" class="lista-resultados"></div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="number" id="cant-ped" value="1" style="width:70px; margin:0">
+                    <button class="btn btn-blue" onclick="agregar('ped')" style="margin:0; flex:1">AGREGAR</button>
                 </div>
             </div>
+            <table id="tabla-ped">
+                <thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead>
+                <tbody id="body-ped"></tbody>
+            </table>
+            <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
+            <button class="btn btn-blue" onclick="generarPDF('pedido')">💾 GUARDAR PEDIDO</button>
+        </div>
 
-            <div id="resumen">
-                <table>
-                    <thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead>
-                    <tbody id="tablaItems"></tbody>
-                </table>
-                <h2 style="text-align: right; color: var(--blue); margin-bottom: 0;">TOTAL: $<span id="totalVenta">0.00</span></h2>
+        <div id="remito" class="card">
+            <div style="text-align: center; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 15px; background: #fafafa;">
+                <strong style="font-size: 18px;">DISTRIMAR</strong><br>
+                <small>Puerto Madryn, Chubut</small><br>
+                <small>REMITO - NO VÁLIDO COMO FACTURA</small>
             </div>
-            
-            <button class="btn btn-green" onclick="descargarYCompartirPDF()">
-                <span>🟢 GUARDAR Y MANDAR POR WHATSAPP</span>
-            </button>
+
+            <div id="ind-rem" class="badge-lista badge-clientes">Lista: Clientes</div>
+            <input type="text" id="idCli-rem" placeholder="ID Cliente para Remito..." onkeyup="buscarCli('rem')">
+            <input type="text" id="nomCli-rem" placeholder="Nombre Cliente">
+
+            <div class="search-area">
+                <input type="text" id="bus-rem" placeholder="Buscar producto para remito..." onkeyup="filtrar('rem')">
+                <div id="res-rem" class="lista-resultados"></div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="number" id="cant-rem" value="1" style="width:70px; margin:0">
+                    <button class="btn btn-orange" onclick="agregar('rem')" style="margin:0; flex:1">AGREGAR AL REMITO</button>
+                </div>
+            </div>
+            <table id="tabla-rem">
+                <thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead>
+                <tbody id="body-rem"></tbody>
+            </table>
+            <h3 style="text-align:right">TOTAL: $<span id="total-rem">0.00</span></h3>
+            <button class="btn btn-green" onclick="generarPDF('remito')">🟢 GENERAR REMITO Y MANDAR</button>
         </div>
 
         <div id="catalogo" class="card">
-            <h3>Cargar Stock</h3>
+            <h3>Cargar Stock (3 Columnas: Nombre, P.Cli, P.Pat)</h3>
             <input type="file" id="xlStock" accept=".xlsx, .xls">
-            <button class="btn-red" onclick="borrarStock()">Borrar Todo el Stock</button>
-            <table id="verStock">
-                <thead><tr><th>Nombre</th><th>P. Cli</th><th>P. Pat</th></tr></thead>
-                <tbody id="cuerpoStock"></tbody>
-            </table>
+            <button class="btn-red" onclick="borrarStock()">Borrar Stock</button>
+            <table id="v-stock"><thead><tr><th>Nombre</th><th>Cli</th><th>Pat</th></tr></thead><tbody id="cb-stock"></tbody></table>
         </div>
 
         <div id="clientes" class="card">
-            <h3>Cargar Clientes</h3>
+            <h3>Cargar Clientes (3 Columnas: ID, Nombre, Lista)</h3>
             <input type="file" id="xlCli" accept=".xlsx, .xls">
-            <button class="btn-red" onclick="borrarCli()">Borrar Todos los Clientes</button>
-            <table>
-                <thead><tr><th>ID</th><th>Nombre</th><th>Lista</th></tr></thead>
-                <tbody id="cuerpoCli"></tbody>
-            </table>
+            <button class="btn-red" onclick="borrarCli()">Borrar Clientes</button>
+            <table id="v-cli"><thead><tr><th>ID</th><th>Nombre</th><th>Lista</th></tr></thead><tbody id="cb-cli"></tbody></table>
         </div>
+
     </div>
 
     <script>
-        // --- BASE DE DATOS Y LÓGICA GENERAL ---
-        let dbStock = JSON.parse(localStorage.getItem('dm_stock_v5')) || [];
-        let dbClientes = JSON.parse(localStorage.getItem('dm_cli_v5')) || [];
-        let orden = [];
-        let indexSeleccionado = null;
-        let listaActual = "Clientes";
+        let dbStock = JSON.parse(localStorage.getItem('dm_stock_v6')) || [];
+        let dbCli = JSON.parse(localStorage.getItem('dm_cli_v6')) || [];
+        let ordenes = { ped: [], rem: [] };
+        let listas = { ped: "Clientes", rem: "Clientes" };
+        let selIdx = { ped: null, rem: null };
 
         function verTab(id) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
-        function buscarCliente() {
-            let id = document.getElementById('idCli').value.trim().toLowerCase();
-            let cli = dbClientes.find(c => c.id.toString().toLowerCase() === id);
-            if(cli) {
-                document.getElementById('nomCli').value = cli.nombre;
-                listaActual = (cli.lista.toLowerCase().includes("patagonia")) ? "Patagonia" : "Clientes";
-            } else { listaActual = "Clientes"; }
-            actualizarInterfazLista();
+        // --- LÓGICA DE BÚSQUEDA ---
+        function buscarCli(tipo) {
+            let id = document.getElementById(`idCli-${tipo}`).value.trim().toLowerCase();
+            let c = dbCli.find(cli => cli.id.toString().toLowerCase() === id);
+            if(c) {
+                document.getElementById(`nomCli-${tipo}`).value = c.nombre;
+                listas[tipo] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
+            } else { listas[tipo] = "Clientes"; }
+            
+            let ind = document.getElementById(`ind-${tipo}`);
+            ind.innerText = `Lista: ${listas[tipo]}`;
+            ind.className = `badge-lista badge-${listas[tipo].toLowerCase()}`;
+            filtrar(tipo);
         }
 
-        function actualizarInterfazLista() {
-            let ind = document.getElementById('indicadorLista');
-            document.getElementById('txtListaBusqueda').innerText = listaActual;
-            ind.innerText = `Lista Activa: ${listaActual}`;
-            ind.className = `badge-lista badge-${listaActual.toLowerCase()}`;
-            filtrar();
-        }
-
-        function filtrar() {
-            let bus = document.getElementById('motorBusqueda').value.toLowerCase();
-            let lista = document.getElementById('listaResultados');
-            lista.innerHTML = "";
-            indexSeleccionado = null;
+        function filtrar(tipo) {
+            let bus = document.getElementById(`bus-${tipo}`).value.toLowerCase();
+            let box = document.getElementById(`res-${tipo}`);
+            box.innerHTML = ""; selIdx[tipo] = null;
             dbStock.forEach((p, i) => {
                 if(p.n.toLowerCase().includes(bus)) {
-                    let precio = (listaActual === "Patagonia") ? p.pPat : p.pCli;
+                    let pre = (listas[tipo] === "Patagonia") ? p.pPat : p.pCli;
                     let div = document.createElement('div');
                     div.className = 'item-prod';
-                    div.innerHTML = `<span>${p.n}</span> <strong>$${precio.toFixed(2)}</strong>`;
+                    div.innerHTML = `<span>${p.n}</span> <strong>$${pre.toFixed(2)}</strong>`;
                     div.onclick = () => {
-                        indexSeleccionado = i;
-                        document.querySelectorAll('.item-prod').forEach(el => el.classList.remove('seleccionado'));
+                        selIdx[tipo] = i;
+                        div.parentNode.querySelectorAll('.item-prod').forEach(e => e.classList.remove('seleccionado'));
                         div.classList.add('seleccionado');
                     };
-                    lista.appendChild(div);
+                    box.appendChild(div);
                 }
             });
         }
 
-        function agregarItem() {
-            let cant = parseInt(document.getElementById('cant').value);
-            if(indexSeleccionado !== null && cant > 0) {
-                let p = dbStock[indexSeleccionado];
-                let precioU = (listaActual === "Patagonia") ? p.pPat : p.pCli;
-                orden.push({n: p.n, p: precioU, c: cant, sub: precioU * cant});
-                renderOrden();
-                document.getElementById('motorBusqueda').value = "";
-                filtrar();
+        function agregar(tipo) {
+            let cant = parseInt(document.getElementById(`cant-${tipo}`).value);
+            if(selIdx[tipo] !== null && cant > 0) {
+                let p = dbStock[selIdx[tipo]];
+                let pre = (listas[tipo] === "Patagonia") ? p.pPat : p.pCli;
+                ordenes[tipo].push({n: p.n, p: pre, c: cant, sub: pre * cant});
+                renderTablas(tipo);
+                document.getElementById(`bus-${tipo}`).value = "";
+                filtrar(tipo);
             }
         }
 
-        function renderOrden() {
+        function renderTablas(tipo) {
             let h = ""; let t = 0;
-            orden.forEach((it, i) => {
+            ordenes[tipo].forEach((it, i) => {
                 t += it.sub;
-                h += `<tr><td>${it.c}</td><td>${it.n}</td><td>$${it.sub.toFixed(2)}</td><td class="remove" onclick="orden.splice(${i},1);renderOrden()">✕</td></tr>`;
+                h += `<tr><td>${it.c}</td><td>${it.n}</td><td>$${it.sub.toFixed(2)}</td><td class="remove" onclick="ordenes['${tipo}'].splice(${i},1);renderTablas('${tipo}')">✕</td></tr>`;
             });
-            document.getElementById('totalVenta').innerText = t.toFixed(2);
-            document.getElementById('tablaItems').innerHTML = h;
+            document.getElementById(`total-${tipo}`).innerText = t.toFixed(2);
+            document.getElementById(`body-${tipo}`).innerHTML = h;
         }
 
-        // --- LA MAGIA DEL PDF + WHATSAPP ---
-        async function descargarYCompartirPDF() {
-            if(orden.length === 0) return alert("Cargá algo al pedido.");
+        // --- GENERACIÓN DE PDF (REMITO VS PEDIDO) ---
+        async function generarPDF(modo) {
+            const tipo = (modo === 'pedido') ? 'ped' : 'rem';
+            if(ordenes[tipo].length === 0) return alert("Nada para generar.");
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            let id = document.getElementById('idCli').value || "S-ID";
-            let nom = document.getElementById('nomCli').value || "Cliente";
-            let nombreArchivo = `Pedido_${id}_${nom.replace(/ /g, "_")}.pdf`;
+            let id = document.getElementById(`idCli-${tipo}`).value || "00";
+            let nom = document.getElementById(`nomCli-${tipo}`).value || "Cliente";
 
-            // Diseño del PDF
-            doc.setFontSize(18); doc.text("DISTRI MAR - PEDIDO", 105, 15, {align:"center"});
-            doc.setFontSize(10);
-            doc.text(`Cliente: ${nom} (${id})`, 14, 25);
-            doc.text(`Lista: ${listaActual.toUpperCase()} | Fecha: ${new Date().toLocaleString()}`, 14, 30);
+            if(modo === 'remito') {
+                // DISEÑO DE ENCABEZADO REMITO (Según tu imagen)
+                doc.setFontSize(22); doc.setFont("helvetica", "bold");
+                doc.text("DISTRIMAR", 105, 20, {align:"center"});
+                
+                doc.setFontSize(10); doc.setFont("helvetica", "normal");
+                doc.text("Puerto Madryn, Chubut", 105, 26, {align:"center"});
+                doc.text("Tel: 2804691951; Whatsapp: 2804691951", 105, 31, {align:"center"});
+                
+                doc.setLineWidth(0.5); doc.line(10, 35, 200, 35); // Línea divisoria
 
-            let data = orden.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
-            doc.autoTable({
-                startY: 35,
-                head: [['Cant', 'Producto', 'P. Unit', 'Subtotal']],
-                body: data,
-                headStyles: { fillColor: (listaActual === "Patagonia") ? [253, 126, 20] : [0, 86, 179] }
-            });
-            doc.text(`TOTAL: $${document.getElementById('totalVenta').innerText}`, 196, doc.lastAutoTable.finalY + 10, {align:"right"});
+                doc.setFontSize(24); doc.setFont("helvetica", "bold");
+                doc.text("REMITO", 105, 48, {align:"center"});
+                
+                doc.setFontSize(9); doc.setFont("helvetica", "normal");
+                doc.text("DOCUMENTO NO VALIDO COMO FACTURA", 105, 55, {align:"center"});
+                
+                // El recuadro de la X
+                doc.rect(100, 58, 10, 10);
+                doc.setFontSize(14); doc.text("X", 105, 65, {align:"center"});
 
-            // 1. Convertimos el PDF a un archivo que el celular entienda
-            const pdfBlob = doc.output('blob');
-            const file = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
+                doc.setFontSize(11);
+                doc.text(`Cliente: ${nom}`, 14, 80);
+                doc.text(`ID: ${id}`, 14, 86);
+                doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 160, 80);
+                
+                let data = ordenes.rem.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
+                doc.autoTable({
+                    startY: 95,
+                    head: [['Cant', 'Detalle de Producto', 'Precio U.', 'Subtotal']],
+                    body: data,
+                    theme: 'grid',
+                    headStyles: { fillColor: [40, 40, 40] }
+                });
 
-            // 2. Intentamos usar la función "Compartir" (Solo funciona en HTTPS o localhost)
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Pedido DistriMar',
-                        text: `Pedido de ${nom}`
-                    });
-                } catch (err) {
-                    // Si el usuario cancela, al menos se descarga
-                    doc.save(nombreArchivo);
-                }
+                let finalY = doc.lastAutoTable.finalY;
+                doc.setFontSize(14);
+                doc.text(`TOTAL A PAGAR: $${document.getElementById('total-rem').innerText}`, 196, finalY + 12, {align:"right"});
+                
+                // Espacio para firmas
+                doc.line(20, finalY + 40, 80, finalY + 40);
+                doc.text("Firma de Recibido", 25, finalY + 45);
+                doc.line(130, finalY + 40, 190, finalY + 40);
+                doc.text("Firma DistriMar", 140, finalY + 45);
+
             } else {
-                // Si el navegador es viejo o no soporta compartir archivos, lo descarga normal
-                doc.save(nombreArchivo);
-                alert("Tu navegador no soporta envío directo. El PDF se descargó, ahora subilo manualmente a WhatsApp.");
+                // DISEÑO PEDIDO (Más simple)
+                doc.setFontSize(18); doc.text("DISTRI MAR - PEDIDO", 105, 15, {align:"center"});
+                doc.setFontSize(11);
+                doc.text(`Cliente: ${nom} (${id})`, 14, 25);
+                doc.text(`Lista: ${listas.ped.toUpperCase()}`, 14, 31);
+                let data = ordenes.ped.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
+                doc.autoTable({ startY: 35, head: [['Cant', 'Producto', 'P.U', 'Subtotal']], body: data });
             }
 
-            // Limpiar todo después de mandar
-            orden = []; document.getElementById('idCli').value=""; document.getElementById('nomCli').value=""; renderOrden();
+            // COMPARTIR / GUARDAR
+            const pdfBlob = doc.output('blob');
+            const file = new File([pdfBlob], `${modo}_${nom}.pdf`, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: `Envío ${modo}` });
+            } else {
+                doc.save(`${modo}_${nom}.pdf`);
+            }
+            
+            // Limpiar
+            ordenes[tipo] = []; renderTablas(tipo);
         }
 
-        // --- CARGA DE EXCEL (Igual que antes) ---
+        // --- CARGA EXCEL ---
         document.getElementById('xlStock').addEventListener('change', function(e) {
             let reader = new FileReader();
             reader.onload = (e) => {
                 let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                dbStock = [];
-                filas.forEach((f, i) => { if(i>0 && f[0]) dbStock.push({n: f[0], pCli: parseFloat(f[1]) || 0, pPat: parseFloat(f[2]) || 0}); });
-                localStorage.setItem('dm_stock_v5', JSON.stringify(dbStock));
+                dbStock = []; filas.forEach((f, i) => { if(i>0 && f[0]) dbStock.push({n: f[0], pCli: parseFloat(f[1]) || 0, pPat: parseFloat(f[2]) || 0}); });
+                localStorage.setItem('dm_stock_v6', JSON.stringify(dbStock));
                 renderStock();
-                alert("Stock cargado.");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
@@ -251,25 +285,23 @@
             reader.onload = (e) => {
                 let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                dbClientes = [];
-                filas.forEach((f, i) => { if(i>0 && f[0]) dbClientes.push({id: f[0].toString(), nombre: f[1], lista: f[2] || "Clientes"}); });
-                localStorage.setItem('dm_cli_v5', JSON.stringify(dbClientes));
+                dbCli = []; filas.forEach((f, i) => { if(i>0 && f[0]) dbCli.push({id: f[0].toString(), nombre: f[1], lista: f[2] || "Clientes"}); });
+                localStorage.setItem('dm_cli_v6', JSON.stringify(dbCli));
                 renderCli();
-                alert("Clientes cargados.");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
         function renderStock() {
             let h = ""; dbStock.forEach(p => h += `<tr><td>${p.n}</td><td>$${p.pCli}</td><td>$${p.pPat}</td></tr>`);
-            document.getElementById('cuerpoStock').innerHTML = h;
+            document.getElementById('cb-stock').innerHTML = h;
         }
         function renderCli() {
-            let h = ""; dbClientes.forEach(c => h += `<tr><td>${c.id}</td><td>${c.nombre}</td><td>${c.lista}</td></tr>`);
-            document.getElementById('cuerpoCli').innerHTML = h;
+            let h = ""; dbCli.forEach(c => h += `<tr><td>${c.id}</td><td>${c.nombre}</td><td>${c.lista}</td></tr>`);
+            document.getElementById('cb-cli').innerHTML = h;
         }
-        function borrarStock() { if(confirm("¿Borrar stock?")) {dbStock=[]; localStorage.setItem('dm_stock_v5', "[]"); renderStock();} }
-        function borrarCli() { if(confirm("¿Borrar clientes?")) {dbClientes=[]; localStorage.setItem('dm_cli_v5', "[]"); renderCli();} }
+        function borrarStock() { dbStock=[]; localStorage.setItem('dm_stock_v6', "[]"); renderStock(); }
+        function borrarCli() { dbCli=[]; localStorage.setItem('dm_cli_v6', "[]"); renderCli(); }
 
         renderStock(); renderCli();
     </script>
