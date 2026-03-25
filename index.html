@@ -3,40 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema de Pedidos Mobile</title>
+    <title>Sistema de Pedidos DistriMar</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { --blue: #0056b3; --green: #28a745; --red: #dc3545; --gray: #f4f7f6; }
+        :root { --blue: #0056b3; --green: #28a745; --red: #dc3545; --gray: #f4f7f6; --purple: #6f42c1; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--gray); margin: 0; padding: 0; }
         
         .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; }
-        .tab-btn { flex: 1; padding: 18px 10px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 15px; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 13px; }
         .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: #f8faff; }
 
         .container { max-width: 800px; margin: 15px auto; padding: 10px; }
         .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; }
         .card.active { display: block; }
 
-        /* Inputs a 16px evitan que el iPhone haga zoom automático al escribir */
         input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
         input:focus { border-color: var(--blue); }
         
         .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; transition: 0.2s; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
+        .btn-purple { background: var(--purple); }
         .btn-red { background: var(--red); font-size: 13px; width: auto; padding: 10px 15px; }
         .btn:active { transform: scale(0.98); }
 
         .search-area { background: #e9ecef; padding: 15px; border-radius: 12px; margin: 15px 0; }
-
-        /* --- NUEVO DISEÑO DE LISTA PARA CELULARES --- */
         .lista-resultados { max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 8px; margin-top: 5px; }
         .item-prod { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; }
-        .item-prod:last-child { border-bottom: none; }
         .item-prod.seleccionado { background: var(--blue); color: white; font-weight: bold; }
 
         .flex-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
@@ -52,25 +49,25 @@
     <nav class="tabs">
         <button class="tab-btn active" onclick="verTab('pedido')">📝 PEDIDO</button>
         <button class="tab-btn" onclick="verTab('catalogo')">📦 STOCK</button>
+        <button class="tab-btn" onclick="verTab('clientes')">👥 CLIENTES</button>
     </nav>
 
     <div class="container">
 
         <div id="pedido" class="card active">
-            <input type="text" id="idCli" placeholder="ID Cliente (Opcional)">
-            <input type="text" id="nomCli" placeholder="Nombre del Cliente">
+            <label style="font-size: 13px; color: #666; font-weight: bold;">DATOS DEL CLIENTE</label>
+            <input type="text" id="idCli" placeholder="ID Cliente (Ej: 100)" onkeyup="buscarClientePorID()">
+            <input type="text" id="nomCli" placeholder="Nombre del Cliente (Se llena solo o manual)">
 
             <div class="search-area">
-                <label style="font-weight: bold; color: #444; font-size: 14px;">🔍 BUSCAR Y SELECCIONAR:</label>
+                <label style="font-weight: bold; color: #444; font-size: 14px;">🔍 BUSCAR PRODUCTO:</label>
                 <input type="text" id="motorBusqueda" placeholder="Toca acá para buscar..." onkeyup="filtrarMobile()">
-                
                 <div id="listaResultados" class="lista-resultados"></div>
 
                 <div class="flex-row">
                     <label style="font-weight: bold; white-space: nowrap;">Cant:</label>
                     <input type="number" id="cant" value="1" min="1" style="margin: 0;">
                 </div>
-                
                 <button class="btn btn-blue" onclick="agregarItem()">+ AGREGAR AL CARRITO</button>
             </div>
 
@@ -87,37 +84,59 @@
         </div>
 
         <div id="catalogo" class="card">
-            <h2>Gestión de Catálogo</h2>
-            <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <strong>📂 Cargar Excel:</strong><br>
-                <small>Columna A: Nombre | Columna B: Precio</small>
-                <input type="file" id="subirExcel" accept=".xlsx, .xls" style="margin-top: 10px;">
+            <h2>Catálogo de Productos</h2>
+            <div style="background: #e2e3e5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>📂 Excel de PRODUCTOS:</strong><br>
+                <small>Col A: Nombre | Col B: Precio</small>
+                <input type="file" id="subirExcelStock" accept=".xlsx, .xls" style="margin-top: 10px;">
             </div>
 
-            <h4 style="margin-bottom: 5px;">Carga Manual:</h4>
             <input type="text" id="nuevoNombre" placeholder="Nombre del Producto">
             <input type="number" id="nuevoPrecio" placeholder="Precio $">
             <button class="btn btn-blue" onclick="guardarManual()">GUARDAR PRODUCTO</button>
 
-            <hr style="margin: 25px 0; border: 0; border-top: 1px solid #ddd;">
-            
+            <hr style="margin: 25px 0;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin: 0;">Mi Stock</h3>
-                <button class="btn-red" onclick="borrarTodo()">Vaciar Todo</button>
+                <button class="btn-red" onclick="borrarTodoStock()">Vaciar Stock</button>
             </div>
-            
             <table>
                 <thead><tr><th>Nombre</th><th>Precio</th><th></th></tr></thead>
                 <tbody id="cuerpoStock"></tbody>
             </table>
         </div>
 
+        <div id="clientes" class="card">
+            <h2>Base de Clientes</h2>
+            <div style="background: #e2d9f3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>👥 Excel de CLIENTES:</strong><br>
+                <small>Col A: ID | Col B: Nombre</small>
+                <input type="file" id="subirExcelClientes" accept=".xlsx, .xls" style="margin-top: 10px;">
+            </div>
+
+            <input type="text" id="nuevoIdCli" placeholder="ID del Cliente">
+            <input type="text" id="nuevoNomCli" placeholder="Nombre del Cliente">
+            <button class="btn btn-purple" onclick="guardarClienteManual()">GUARDAR CLIENTE</button>
+
+            <hr style="margin: 25px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Mis Clientes</h3>
+                <button class="btn-red" onclick="borrarTodosClientes()">Vaciar Clientes</button>
+            </div>
+            <table>
+                <thead><tr><th>ID</th><th>Nombre</th><th></th></tr></thead>
+                <tbody id="cuerpoClientes"></tbody>
+            </table>
+        </div>
+
     </div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('distrimar_db')) || [];
+        // Bases de datos locales
+        let dbStock = JSON.parse(localStorage.getItem('distrimar_stock')) || [];
+        let dbClientes = JSON.parse(localStorage.getItem('distrimar_clientes')) || [];
         let orden = [];
-        let prodSeleccionadoIndex = null; // Variable para saber qué tocó en el celular
+        let prodSeleccionadoIndex = null;
 
         function verTab(id) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
@@ -126,68 +145,122 @@
             event.currentTarget.classList.add('active');
         }
 
-        // --- LÓGICA DE CATÁLOGO ---
-        function guardarManual() {
-            let n = document.getElementById('nuevoNombre').value;
-            let p = document.getElementById('nuevoPrecio').value;
-            if(n && p) {
-                db.push({n, p: parseFloat(p)});
-                actualizar();
-                document.getElementById('nuevoNombre').value = ""; document.getElementById('nuevoPrecio').value = "";
+        // --- LÓGICA DE CLIENTES (NUEVO) ---
+        function buscarClientePorID() {
+            let idBuscado = document.getElementById('idCli').value.trim().toLowerCase();
+            let inputNombre = document.getElementById('nomCli');
+            
+            // Buscar en la base de datos de clientes
+            let clienteEncontrado = dbClientes.find(c => c.id.toString().toLowerCase() === idBuscado);
+            
+            if (clienteEncontrado) {
+                inputNombre.value = clienteEncontrado.nombre; // Autocompleta
+            } else {
+                // Si no querés que se borre lo que escribís a mano al no encontrar el ID, no hacemos nada.
+                // inputNombre.value = ""; 
             }
         }
 
-        document.getElementById('subirExcel').addEventListener('change', function(e) {
+        function guardarClienteManual() {
+            let id = document.getElementById('nuevoIdCli').value.trim();
+            let nombre = document.getElementById('nuevoNomCli').value.trim();
+            if(id && nombre) {
+                dbClientes.push({id, nombre});
+                actualizarClientes();
+                document.getElementById('nuevoIdCli').value = ""; document.getElementById('nuevoNomCli').value = "";
+            }
+        }
+
+        document.getElementById('subirExcelClientes').addEventListener('change', function(e) {
             let reader = new FileReader();
             reader.onload = (e) => {
                 let data = new Uint8Array(e.target.result);
                 let wb = XLSX.read(data, {type: 'array'});
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                filas.forEach((f, i) => { if(i>0 && f[0] && f[1]) db.push({n: f[0], p: parseFloat(f[1])}); });
-                actualizar();
+                filas.forEach((f, i) => { 
+                    if(i>0 && f[0] != null && f[1]) {
+                        dbClientes.push({id: f[0].toString(), nombre: f[1].toString()});
+                    }
+                });
+                actualizarClientes();
+                alert("Clientes importados con éxito");
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        function actualizarClientes() {
+            localStorage.setItem('distrimar_clientes', JSON.stringify(dbClientes));
+            renderClientes();
+        }
+
+        function renderClientes() {
+            let html = "";
+            dbClientes.forEach((c, i) => {
+                html += `<tr><td>${c.id}</td><td>${c.nombre}</td><td style="text-align:center;"><span class="remove" onclick="dbClientes.splice(${i},1); actualizarClientes();">✕</span></td></tr>`;
+            });
+            document.getElementById('cuerpoClientes').innerHTML = html;
+        }
+
+        function borrarTodosClientes() { if(confirm("¿Borrar todos los clientes?")) { dbClientes = []; actualizarClientes(); } }
+
+
+        // --- LÓGICA DE STOCK ---
+        function guardarManual() {
+            let n = document.getElementById('nuevoNombre').value;
+            let p = document.getElementById('nuevoPrecio').value;
+            if(n && p) {
+                dbStock.push({n, p: parseFloat(p)});
+                actualizarStock();
+                document.getElementById('nuevoNombre').value = ""; document.getElementById('nuevoPrecio').value = "";
+            }
+        }
+
+        document.getElementById('subirExcelStock').addEventListener('change', function(e) {
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let data = new Uint8Array(e.target.result);
+                let wb = XLSX.read(data, {type: 'array'});
+                let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                filas.forEach((f, i) => { if(i>0 && f[0] && f[1]) dbStock.push({n: f[0], p: parseFloat(f[1])}); });
+                actualizarStock();
                 alert("Catálogo importado con éxito");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        function actualizar() {
-            localStorage.setItem('distrimar_db', JSON.stringify(db));
+        function actualizarStock() {
+            localStorage.setItem('distrimar_stock', JSON.stringify(dbStock));
             renderStock();
             filtrarMobile();
         }
 
         function renderStock() {
             let html = "";
-            db.forEach((p, i) => {
-                html += `<tr><td>${p.n}</td><td>$${p.p}</td><td style="text-align:center;"><span class="remove" onclick="db.splice(${i},1); actualizar();">✕</span></td></tr>`;
+            dbStock.forEach((p, i) => {
+                html += `<tr><td>${p.n}</td><td>$${p.p}</td><td style="text-align:center;"><span class="remove" onclick="dbStock.splice(${i},1); actualizarStock();">✕</span></td></tr>`;
             });
             document.getElementById('cuerpoStock').innerHTML = html;
         }
 
-        function borrarTodo() { if(confirm("¿Seguro que querés borrar todo el catálogo?")) { db = []; actualizar(); } }
+        function borrarTodoStock() { if(confirm("¿Borrar todo el catálogo?")) { dbStock = []; actualizarStock(); } }
 
         // --- LÓGICA DEL BUSCADOR MOBILE ---
         function filtrarMobile() {
             let bus = document.getElementById('motorBusqueda').value.toLowerCase();
             let lista = document.getElementById('listaResultados');
             lista.innerHTML = "";
-            prodSeleccionadoIndex = null; // Resetea la selección si vuelve a escribir
-
-            // Solo mostrar los primeros 30 resultados para no colgar el celular
+            prodSeleccionadoIndex = null; 
             let contador = 0;
             
-            db.forEach((p, i) => {
+            dbStock.forEach((p, i) => {
                 if(p.n.toLowerCase().includes(bus) && contador < 30) {
                     let div = document.createElement('div');
                     div.className = 'item-prod';
                     div.innerHTML = `<span>${p.n}</span> <strong>$${p.p}</strong>`;
                     
-                    // Al tocar el producto, se marca como seleccionado
                     div.onclick = function() {
                         prodSeleccionadoIndex = i;
-                        // Sacar el azul a todos
                         document.querySelectorAll('.item-prod').forEach(el => el.classList.remove('seleccionado'));
-                        // Poner azul al tocado
                         div.classList.add('seleccionado');
                     };
                     
@@ -195,26 +268,20 @@
                     contador++;
                 }
             });
-
-            if(db.length === 0) { lista.innerHTML = "<div style='padding:15px;color:#666;'>No hay productos. Cargá el Excel primero.</div>"; }
+            if(dbStock.length === 0) { lista.innerHTML = "<div style='padding:15px;color:#666;'>No hay productos. Cargá el Excel primero.</div>"; }
         }
 
-        // --- LÓGICA DEL PEDIDO ---
         function agregarItem() {
             let c = parseInt(document.getElementById('cant').value);
-            
             if(prodSeleccionadoIndex !== null && c > 0) {
-                let p = db[prodSeleccionadoIndex];
+                let p = dbStock[prodSeleccionadoIndex];
                 orden.push({n: p.n, p: p.p, c: c, sub: p.p * c});
                 renderOrden();
-                
-                // Limpiar buscador para el próximo producto
                 document.getElementById('motorBusqueda').value = "";
                 document.getElementById('cant').value = "1";
                 filtrarMobile();
-                
             } else { 
-                alert("Toca un producto de la lista blanca de arriba para seleccionarlo."); 
+                alert("Toca un producto de la lista para seleccionarlo."); 
             }
         }
 
@@ -231,13 +298,12 @@
         // --- LÓGICA PDF ---
         function descargarPDF_Final() {
             if(orden.length === 0) return alert("El pedido está vacío.");
-            
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                let id = document.getElementById('idCli').value || "Consumidor";
-                let nom = document.getElementById('nomCli').value || "Final";
+                let id = document.getElementById('idCli').value || "S/ID";
+                let nom = document.getElementById('nomCli').value || "Consumidor Final";
                 let fecha = new Date().toLocaleString();
 
                 doc.setFontSize(18);
@@ -275,7 +341,9 @@
             }
         }
 
+        // Inicializar
         renderStock();
+        renderClientes();
         filtrarMobile();
     </script>
 </body>
