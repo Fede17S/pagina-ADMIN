@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - Gestión de Entregas</title>
+    <title>DistriMar - Gestión con Logo</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -40,6 +40,8 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid #eee; }
         .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 16px; }
+        
+        #previewLogo { max-width: 100px; display: block; margin: 10px 0; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -47,8 +49,7 @@
     <nav class="tabs">
         <button class="tab-btn active" onclick="verTab('pedido')">📝 PEDIDO</button>
         <button class="tab-btn" onclick="verTab('remito')">🚚 REMITO</button>
-        <button class="tab-btn" onclick="verTab('catalogo')">📦 STOCK</button>
-        <button class="tab-btn" onclick="verTab('clientes')">👥 CLIENTES</button>
+        <button class="tab-btn" onclick="verTab('catalogo')">⚙️ AJUSTES</button>
     </nav>
 
     <div class="container">
@@ -75,18 +76,12 @@
         </div>
 
         <div id="remito" class="card">
-            <div style="text-align: center; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 15px; background: #fafafa;">
-                <strong style="font-size: 18px;">DISTRIMAR</strong><br>
-                <small>Puerto Madryn, Chubut</small><br>
-                <small>REMITO - NO VÁLIDO COMO FACTURA</small>
-            </div>
-
             <div id="ind-rem" class="badge-lista badge-clientes">Lista: Clientes</div>
-            <input type="text" id="idCli-rem" placeholder="ID Cliente para Remito..." onkeyup="buscarCli('rem')">
+            <input type="text" id="idCli-rem" placeholder="ID Cliente..." onkeyup="buscarCli('rem')">
             <input type="text" id="nomCli-rem" placeholder="Nombre Cliente">
 
             <div class="search-area">
-                <input type="text" id="bus-rem" placeholder="Buscar producto para remito..." onkeyup="filtrar('rem')">
+                <input type="text" id="bus-rem" placeholder="Buscar producto..." onkeyup="filtrar('rem')">
                 <div id="res-rem" class="lista-resultados"></div>
                 <div style="display:flex; gap:10px; margin-top:10px;">
                     <input type="number" id="cant-rem" value="1" style="width:70px; margin:0">
@@ -98,31 +93,40 @@
                 <tbody id="body-rem"></tbody>
             </table>
             <h3 style="text-align:right">TOTAL: $<span id="total-rem">0.00</span></h3>
-            <button class="btn btn-gray" onclick="procesarDocumento('remito')">💾 GUARDAR EN DISPOSITIVO</button>
+            <button class="btn btn-gray" onclick="procesarDocumento('remito')">💾 GUARDAR REMITO (PDF)</button>
         </div>
 
         <div id="catalogo" class="card">
-            <h3>Cargar Stock</h3>
+            <h3>Cargar Logo de Empresa</h3>
+            <input type="file" id="subirLogo" accept="image/*">
+            <img id="previewLogo" src="" alt="Vista previa del logo" style="display:none;">
+            
+            <hr>
+            <h3>Cargar Stock (Excel)</h3>
             <input type="file" id="xlStock" accept=".xlsx, .xls">
-            <button class="btn-red" onclick="borrarStock()">Borrar Stock</button>
-            <table id="v-stock"><thead><tr><th>Nombre</th><th>Cli</th><th>Pat</th></tr></thead><tbody id="cb-stock"></tbody></table>
-        </div>
-
-        <div id="clientes" class="card">
-            <h3>Cargar Clientes</h3>
+            
+            <hr>
+            <h3>Cargar Clientes (Excel)</h3>
             <input type="file" id="xlCli" accept=".xlsx, .xls">
-            <button class="btn-red" onclick="borrarCli()">Borrar Clientes</button>
-            <table><thead><tr><th>ID</th><th>Nombre</th><th>Lista</th></tr></thead><tbody id="cb-cli"></tbody></table>
+            
+            <br><br>
+            <button class="btn-red" onclick="borrarTodo()">⚠️ BORRAR TODA LA BASE DE DATOS</button>
         </div>
 
     </div>
 
     <script>
-        let dbStock = JSON.parse(localStorage.getItem('dm_stock_v7')) || [];
-        let dbCli = JSON.parse(localStorage.getItem('dm_cli_v7')) || [];
+        let dbStock = JSON.parse(localStorage.getItem('dm_stock_v8')) || [];
+        let dbCli = JSON.parse(localStorage.getItem('dm_cli_v8')) || [];
+        let logoBase64 = localStorage.getItem('dm_logo_v8') || "";
         let ordenes = { ped: [], rem: [] };
         let listas = { ped: "Clientes", rem: "Clientes" };
         let selIdx = { ped: null, rem: null };
+
+        if(logoBase64) { 
+            document.getElementById('previewLogo').src = logoBase64; 
+            document.getElementById('previewLogo').style.display = 'block';
+        }
 
         function verTab(id) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
@@ -130,6 +134,21 @@
             document.getElementById(id).classList.add('active');
         }
 
+        // --- MANEJO DEL LOGO ---
+        document.getElementById('subirLogo').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = function() {
+                logoBase64 = reader.result;
+                localStorage.setItem('dm_logo_v8', logoBase64);
+                document.getElementById('previewLogo').src = logoBase64;
+                document.getElementById('previewLogo').style.display = 'block';
+                alert("Logo guardado correctamente.");
+            }
+            reader.readAsDataURL(file);
+        });
+
+        // --- LÓGICA DE DATOS (Simplificada) ---
         function buscarCli(tipo) {
             let id = document.getElementById(`idCli-${tipo}`).value.trim().toLowerCase();
             let c = dbCli.find(cli => cli.id.toString().toLowerCase() === id);
@@ -188,38 +207,40 @@
             document.getElementById(`body-${tipo}`).innerHTML = h;
         }
 
-        // --- FUNCIÓN CENTRAL DE GENERACIÓN DE PDF ---
+        // --- GENERACIÓN DE PDF ---
         async function procesarDocumento(modo) {
             const tipo = (modo === 'pedido') ? 'ped' : 'rem';
-            if(ordenes[tipo].length === 0) return alert("Agregá productos primero.");
+            if(ordenes[tipo].length === 0) return alert("Pedido vacío");
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             let id = document.getElementById(`idCli-${tipo}`).value || "00";
             let nom = document.getElementById(`nomCli-${tipo}`).value || "Cliente";
-            let fecha = new Date().toLocaleDateString();
+
+            // SI HAY LOGO, LO PONEMOS
+            if(logoBase64) {
+                try { doc.addImage(logoBase64, 'PNG', 14, 10, 40, 40); } catch(e) { console.error("Error logo", e); }
+            }
 
             if(modo === 'remito') {
-                // DISEÑO REMITO (Imagen que mandaste)
                 doc.setFontSize(22); doc.setFont("helvetica", "bold");
                 doc.text("DISTRIMAR", 105, 20, {align:"center"});
                 doc.setFontSize(10); doc.setFont("helvetica", "normal");
                 doc.text("Puerto Madryn, Chubut", 105, 26, {align:"center"});
-                doc.text("Tel: 2804691951; Whatsapp: 2804691951", 105, 31, {align:"center"});
-                doc.line(10, 35, 200, 35);
-                doc.setFontSize(24); doc.text("REMITO", 105, 48, {align:"center"});
-                doc.setFontSize(9); doc.text("DOCUMENTO NO VALIDO COMO FACTURA", 105, 55, {align:"center"});
-                doc.rect(100, 58, 10, 10); doc.text("X", 105, 65, {align:"center"});
+                doc.text("Tel/Whatsapp: 2804691951", 105, 31, {align:"center"});
+                doc.line(10, 55, 200, 55);
+                doc.setFontSize(24); doc.text("REMITO", 105, 68, {align:"center"});
+                doc.setFontSize(9); doc.text("DOCUMENTO NO VALIDO COMO FACTURA", 105, 75, {align:"center"});
+                doc.rect(100, 78, 10, 10); doc.text("X", 105, 85, {align:"center"});
                 
                 doc.setFontSize(11);
-                doc.text(`Cliente: ${nom}`, 14, 80);
-                doc.text(`ID: ${id}`, 14, 86);
-                doc.text(`Fecha: ${fecha}`, 160, 80);
+                doc.text(`Cliente: ${nom} (${id})`, 14, 105);
+                doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 160, 105);
                 
                 let data = ordenes.rem.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
                 doc.autoTable({
-                    startY: 95,
-                    head: [['Cant', 'Detalle de Producto', 'Precio U.', 'Subtotal']],
+                    startY: 115,
+                    head: [['Cant', 'Producto', 'Precio U.', 'Subtotal']],
                     body: data,
                     theme: 'grid',
                     headStyles: { fillColor: [40, 40, 40] }
@@ -227,47 +248,32 @@
                 doc.text(`TOTAL: $${document.getElementById('total-rem').innerText}`, 196, doc.lastAutoTable.finalY + 12, {align:"right"});
                 doc.line(20, doc.lastAutoTable.finalY + 40, 80, doc.lastAutoTable.finalY + 40);
                 doc.text("Firma de Recibido", 25, doc.lastAutoTable.finalY + 45);
-                
-                // --- SÓLO GUARDAR ---
-                doc.save(`Remito_${id}_${nom}.pdf`);
-                alert("Remito guardado en el dispositivo.");
-
+                doc.save(`Remito_${nom}.pdf`);
             } else {
-                // DISEÑO PEDIDO
-                doc.setFontSize(18); doc.text("DISTRI MAR - PEDIDO", 105, 15, {align:"center"});
+                doc.setFontSize(18); doc.text("PEDIDO DISTRIMAR", 105, 25, {align:"center"});
                 doc.setFontSize(11);
-                doc.text(`Cliente: ${nom} (${id})`, 14, 25);
-                doc.text(`Lista Aplicada: ${listas.ped.toUpperCase()}`, 14, 31);
-                doc.text(`Fecha: ${fecha}`, 14, 37);
-                
+                doc.text(`Cliente: ${nom} (${id})`, 60, 35);
+                doc.text(`Lista: ${listas.ped}`, 60, 41);
                 let data = ordenes.ped.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
-                doc.autoTable({ startY: 45, head: [['Cant', 'Producto', 'P.U', 'Subtotal']], body: data });
-                doc.text(`TOTAL: $${document.getElementById('total-ped').innerText}`, 196, doc.lastAutoTable.finalY + 12, {align:"right"});
-
-                // --- ENVIAR POR WHATSAPP (SI SOPORTA) ---
+                doc.autoTable({ startY: 55, head: [['Cant', 'Producto', 'P.U', 'Subtotal']], body: data });
+                
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Pedido_${nom}.pdf`, { type: 'application/pdf' });
-
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({ files: [file], title: `Pedido DistriMar` });
-                } else {
-                    doc.save(`Pedido_${nom}.pdf`);
-                    alert("Tu navegador no soporta envío directo. El PDF se descargó.");
-                }
+                } else { doc.save(`Pedido_${nom}.pdf`); }
             }
-            
-            // Limpiar al terminar
             ordenes[tipo] = []; renderTablas(tipo);
         }
 
-        // --- EXCEL ---
+        // --- CARGA EXCEL ---
         document.getElementById('xlStock').addEventListener('change', function(e) {
             let reader = new FileReader();
             reader.onload = (e) => {
                 let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
                 dbStock = []; filas.forEach((f, i) => { if(i>0 && f[0]) dbStock.push({n: f[0], pCli: parseFloat(f[1]) || 0, pPat: parseFloat(f[2]) || 0}); });
-                localStorage.setItem('dm_stock_v7', JSON.stringify(dbStock)); renderStock();
+                localStorage.setItem('dm_stock_v8', JSON.stringify(dbStock)); alert("Stock cargado");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
@@ -278,23 +284,12 @@
                 let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
                 dbCli = []; filas.forEach((f, i) => { if(i>0 && f[0]) dbCli.push({id: f[0].toString(), nombre: f[1], lista: f[2] || "Clientes"}); });
-                localStorage.setItem('dm_cli_v7', JSON.stringify(dbCli)); renderCli();
+                localStorage.setItem('dm_cli_v8', JSON.stringify(dbCli)); alert("Clientes cargados");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        function renderStock() {
-            let h = ""; dbStock.forEach(p => h += `<tr><td>${p.n}</td><td>$${p.pCli}</td><td>$${p.pPat}</td></tr>`);
-            document.getElementById('cb-stock').innerHTML = h;
-        }
-        function renderCli() {
-            let h = ""; dbCli.forEach(c => h += `<tr><td>${c.id}</td><td>${c.nombre}</td><td>${c.lista}</td></tr>`);
-            document.getElementById('cb-cli').innerHTML = h;
-        }
-        function borrarStock() { dbStock=[]; localStorage.setItem('dm_stock_v7', "[]"); renderStock(); }
-        function borrarCli() { dbCli=[]; localStorage.setItem('dm_cli_v7', "[]"); renderCli(); }
-
-        renderStock(); renderCli();
+        function borrarTodo() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
