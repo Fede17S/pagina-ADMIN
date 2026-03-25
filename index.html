@@ -3,68 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión Pro V3</title>
+    <title>Sistema de Pedidos DistriMar</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --dark: #1e293b; --light: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 0; color: var(--dark); }
+        :root { --blue: #0056b3; --green: #28a745; --red: #dc3545; --gray: #f4f7f6; }
+        body { font-family: Arial, sans-serif; background: var(--gray); margin: 0; padding: 0; }
         
-        .navbar { display: flex; background: white; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
-        .nav-btn { flex: 1; padding: 20px; border: none; background: none; font-weight: 700; cursor: pointer; color: #64748b; transition: 0.3s; }
-        .nav-btn.active { color: var(--primary); border-bottom: 4px solid var(--primary); background: #f1f5f9; }
+        /* Navegación */
+        .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: bold; cursor: pointer; color: #555; }
+        .tab-btn.active { color: var(--blue); border-bottom: 3px solid var(--blue); background: #f0f4ff; }
 
-        .container { max-width: 800px; margin: 25px auto; padding: 0 15px; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: none; }
+        .container { max-width: 800px; margin: 20px auto; padding: 10px; }
+        .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: none; }
         .card.active { display: block; }
 
-        .form-group { margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        .btn-blue { background: var(--blue); }
+        .btn-green { background: var(--green); }
+        .btn-red { background: var(--red); font-size: 12px; width: auto; padding: 8px 15px; }
 
-        .search-box { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
-
-        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; margin-top: 10px; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-green { background: var(--success); color: white; }
-        .btn-red { background: var(--danger); color: white; }
+        .search-area { background: #e9ecef; padding: 15px; border-radius: 8px; margin: 15px 0; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 12px; background: #f1f5f9; border-radius: 5px; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; }
         
-        .delete-btn { color: var(--danger); cursor: pointer; font-weight: bold; text-align: center; }
-
-        #preview-pedido { border: 1px solid #e2e8f0; padding: 15px; border-radius: 10px; margin-top: 20px; }
+        .remove { color: var(--red); cursor: pointer; font-weight: bold; text-decoration: none; }
     </style>
 </head>
 <body>
 
-    <nav class="navbar">
-        <button class="nav-btn active" onclick="switchTab('tab-pedido')">📝 NUEVO PEDIDO</button>
-        <button class="nav-btn" onclick="switchTab('tab-catalogo')">📦 CATÁLOGO</button>
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="verTab('pedido')">📝 ARMAR PEDIDO</button>
+        <button class="tab-btn" onclick="verTab('catalogo')">📦 CATÁLOGO</button>
     </nav>
 
     <div class="container">
 
-        <div id="tab-pedido" class="card active">
-            <h2>Armar Pedido</h2>
-            <div class="form-group">
-                <input type="text" id="idCli" placeholder="ID Cliente (Ej: 2026-A)">
-                <input type="text" id="nomCli" placeholder="Nombre del Cliente" style="margin-top: 10px;">
+        <div id="pedido" class="card active">
+            <h2>Nuevo Pedido</h2>
+            <input type="text" id="idCli" placeholder="ID Cliente (Ej: 3825)">
+            <input type="text" id="nomCli" placeholder="Nombre del Cliente">
+
+            <div class="search-area">
+                <label>🔍 Buscar Producto:</label>
+                <input type="text" id="motorBusqueda" placeholder="Escribe el nombre..." onkeyup="filtrar()">
+                <select id="selectProd" size="5"></select>
+                <input type="number" id="cant" value="1" min="1" style="margin-top: 10px;">
+                <button class="btn btn-blue" onclick="agregarItem()">+ AGREGAR A LA LISTA</button>
             </div>
 
-            <div class="search-box">
-                <label style="font-size: 12px; font-weight: bold; color: #64748b;">🔍 BUSCAR PRODUCTO</label>
-                <input type="text" id="buscador" placeholder="Escribí para filtrar..." onkeyup="filtrar()">
-                <select id="selProd" size="5" style="margin-top: 10px; cursor: pointer;"></select>
+            <div id="resumen">
+                <h3>Resumen:</h3>
+                <table>
+                    <thead><tr><th>Cant</th><th>Detalle</th><th>Subtotal</th><th></th></tr></thead>
+                    <tbody id="tablaItems"></tbody>
+                </table>
+                <h2 style="text-align: right; color: var(--blue);">TOTAL: $<span id="totalVenta">0.00</span></h2>
+            </div>
+            
+            <button class="btn btn-green" onclick="descargarPDF_Final()">📥 GUARDAR PDF (FINALIZAR)</button>
+        </div>
+
+        <div id="catalogo" class="card">
+            <h2>Mi Stock</h2>
+            <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>Cargar Excel:</strong>
+                <input type="file" id="subirExcel" accept=".xlsx, .xls">
             </div>
 
-            <div class="form-group">
-                <label>Cantidad</label>
-                <input type="number" id="cant" value="1" min="1">
-            </div>
+            <input type="text" id="nuevoNombre" placeholder="Producto Manual">
+            <input type="number" id="nuevoPrecio" placeholder="Precio $">
+            <button class="btn btn-blue" onclick="guardarManual()">GUARDAR EN CATÁLOGO</button>
+
+            <hr style="margin: 30px 0;">
+            <button class="btn-red" onclick="borrarTodo()">BORRAR TODO EL CATÁLOGO</button>
+            <table id="listaStock">
+                <thead><tr><th>Nombre</th><th>Precio</th><th>Acción</th></tr></thead>
+                <tbody id="cuerpoStock"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('distrimar_db')) || [];
+        let orden = [];
+
+        function verTab(id) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- CATALOGO ---
+        function guardarManual() {
+            let n = document.getElementById('nuevoNombre').value;
+            let p = document.getElementById('nuevoPrecio').value;
+            if(n && p) {
+                db.push({n, p: parseFloat(p)});
+                actualizar();
+                document.getElementById('nuevoNombre').value = "";
+                document.getElementById('nuevoPrecio').value = "";
+            }
+        }
+
+        document.getElementById('subirExcel').addEventListener('change', function(e) {
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let data = new Uint8Array(e.target.result);
+                let wb = XLSX.read(data, {type: 'array'});
+                let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                filas.forEach((f, i) => { if(i>0 && f[0] && f[1]) db.push({n: f[0], p: parseFloat(f[1])}); });
+                actualizar();
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        function actualizar() {
+            localStorage.setItem('distrimar_db', JSON.stringify(db));
+            renderStock();
+            filtrar();
+        }
+
+        function renderStock() {
+            let html = "";
+            db.forEach((p, i) => {
+                html += `<tr><td>${p.n}</td><td>$${p.p}</td><td><span class="remove" onclick="db.splice(${i},1); actualizar();">Eliminar</span></td></tr>`;
+            });
+            document.getElementById('cuerpoStock').innerHTML = html;
+        }
+
+        function filtrar() {
+            let bus = document.getElementById('motorBusqueda').value.toLowerCase();
+            let select = document.getElementById('selectProd');
+            select.innerHTML = "";
+            db.forEach((p, i) => {
+                if(p.n.toLowerCase().includes(bus)) {
+                    let opt = document.createElement('option');
+                    opt.value = i;
+                    opt.text = `${p.n} ($${p.p})`;
+                    select.add(opt);
+                }
+            });
+        }
+
+        function borrarTodo() { if(confirm("¿Seguro quieres borrar todo?")) { db = []; actualizar(); } }
+
+        // --- PEDIDO ---
+        function agregarItem() {
+            let i = document.getElementById('selectProd').value;
+            let c = parseInt(document.getElementById('cant').value);
+            if(i !== "" && c > 0) {
+                let p = db[i];
+                orden.push({n: p.n, p: p.p, c: c, sub: p.p * c});
+                renderOrden();
+            } else { alert("Selecciona un producto."); }
+        }
+
+        function renderOrden() {
+            let html = ""; let t = 0;
+            orden.forEach((item, index) => {
+                t += item.sub;
+                html += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td><span class="remove" onclick="orden.splice(${index},1); renderOrden();">✕</span></td></tr>`;
+            });
+            document.getElementById('totalVenta').innerText = t.toFixed(2);
+            document.getElementById('tablaItems').innerHTML = html;
+        }
+
+        function descargarPDF_Final() {
+            if(orden.length === 0) return alert("Pedido vacío.");
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                let id = document.getElementById('idCli').value || "000";
+                let nom = document.getElementById('nomCli').value || "Cliente";
+                let fecha = new Date().toLocaleString();
+
+                doc.setFontSize(18);
+                doc.text("DISTRI MAR - PEDIDO", 105, 15, { align: "center" });
+                
+                doc.setFontSize(11);
+                doc.text(`Cliente: ${nom}`, 14, 25);
+                doc.text(`ID Cliente: ${id}`, 14, 32);
+                doc.text(`Fecha: ${fecha}`, 14, 39);
+
+                let data = orden.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
+
+                doc.autoTable({
+                    startY: 45,
+                    head: [['Cant', 'Producto', 'P. Unit', 'Subtotal']],
+                    body: data,
+                    theme: 'grid',
+                    headStyles: { fillColor: [0, 86, 179] }
+                });
+
+                let total = document.getElementById('totalVenta').innerText;
+                doc.setFontSize(14);
+                doc.text(`TOTAL: $${total}`, 196, doc.lastAutoTable.finalY + 10, { align: "right" });
+
+                // Esto fuerza la descarga en lugar de abrir ventana nueva
+                doc.save(`${id}_${nom.replace(/ /g, "_")}.pdf`);
+                
+                alert("PDF Descargado. Se limpiará el pedido.");
+                orden = [];
+                document.getElementById('idCli').value = "";
+                document.getElementById('nomCli').value = "";
+                renderOrden();
+
+            } catch (error) {
+                alert("Error al crear el PDF. Intenta de nuevo.");
+                console.error(error);
+            }
+        }
+
+        renderStock();
+        filtrar();
+    </script>
+</body>
+</html>            </div>
 
             <button class="btn btn-blue" onclick="agregarAlPedido()">+ AGREGAR A LA LISTA</button>
 
