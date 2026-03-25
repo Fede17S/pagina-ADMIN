@@ -2,180 +2,225 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema de Pedidos + Importar Excel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Pedidos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; }
-        section { border: 1px solid #eee; padding: 20px; border-radius: 10px; margin-bottom: 20px; background: #fff; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; }
-        button { cursor: pointer; padding: 10px 15px; border-radius: 5px; border: none; font-weight: bold; transition: 0.3s; }
-        .btn-blue { background: #3498db; color: white; }
-        .btn-green { background: #27ae60; color: white; }
-        .btn-excel { background: #1f7244; color: white; }
-        .btn-del { background: #e74c3c; color: white; padding: 5px 10px; }
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        /* Navegación por pestañas */
+        .navbar { display: flex; background: white; shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; border-bottom: 2px solid #e2e8f0; }
+        .nav-btn { flex: 1; padding: 18px; border: none; background: none; font-size: 16px; font-weight: bold; cursor: pointer; color: var(--secondary); transition: 0.3s; }
+        .nav-btn.active { color: var(--primary); border-bottom: 4px solid var(--primary); background: #eff6ff; }
+
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: none; }
+        .card.active { display: block; }
+
+        h2 { margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+        
+        /* Formularios */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; color: #475569; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        button.main-btn { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-red { background: var(--danger); color: white; }
+
+        /* Tablas */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
-        #ticket { border: 2px solid #333; padding: 20px; margin-top: 20px; }
+        th { background: #f1f5f9; text-align: left; padding: 12px; font-size: 14px; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        
+        .delete-icon { color: var(--danger); cursor: pointer; font-weight: bold; border: 1px solid #fee2e2; padding: 5px 10px; border-radius: 5px; }
+
+        #ticket-preview { border: 2px dashed #cbd5e1; padding: 15px; margin-top: 20px; background: #fff; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🚀 Sistema de Ventas Inteligente</h1>
+    <nav class="navbar">
+        <button class="nav-btn active" onclick="switchTab('tab-pedido')">📝 ARMAR PEDIDO</button>
+        <button class="nav-btn" onclick="switchTab('tab-catalogo')">📦 CATÁLOGO</button>
+    </nav>
 
-    <section>
-        <h2>1. Catálogo de Productos</h2>
-        
-        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c8e6c9;">
-            <strong>📁 Carga masiva desde Excel:</strong><br>
-            <small>Asegurate que la columna A sea el Nombre y la B el Precio.</small><br><br>
-            <input type="file" id="excelInput" accept=".xlsx, .xls" class="btn-excel">
+    <div class="container">
+
+        <div id="tab-pedido" class="card active">
+            <h2>Nuevo Pedido</h2>
+            <div class="form-group">
+                <label>Datos del Cliente</label>
+                <input type="text" id="idCli" placeholder="ID Cliente (Ej: 101)" style="margin-bottom: 8px;">
+                <input type="text" id="nomCli" placeholder="Nombre completo">
+            </div>
+
+            <div class="form-group">
+                <label>Seleccionar Producto</label>
+                <select id="selProd"><option>Cargando catálogo...</option></select>
+            </div>
+
+            <div class="form-group">
+                <label>Cantidad</label>
+                <input type="number" id="cant" value="1" min="1">
+            </div>
+
+            <button class="main-btn btn-blue" onclick="agregarAlPedido()">+ AGREGAR AL PEDIDO</button>
+
+            <div id="ticket-preview">
+                <h3 style="text-align: center; margin: 0;">ORDEN DE PEDIDO</h3>
+                <hr>
+                <p><strong>Cliente:</strong> <span id="resCli">-</span></p>
+                <p><strong>ID:</strong> <span id="resID">-</span> | <strong>Fecha:</strong> <span id="fechaActual"></span></p>
+                <table>
+                    <thead><tr><th>Cant</th><th>Detalle</th><th>Total</th><th></th></tr></thead>
+                    <tbody id="cuerpoPedido"></tbody>
+                </table>
+                <h3 style="text-align: right; color: var(--primary);">TOTAL: $<span id="totalFinal">0.00</span></h3>
+            </div>
+            
+            <button class="main-btn btn-green" style="margin-top: 20px;" onclick="descargarPDF()">💾 FINALIZAR Y GUARDAR PDF</button>
         </div>
 
-        <div class="input-group">
-            <input type="text" id="pNombre" placeholder="Producto manual">
-            <input type="number" id="pPrecio" placeholder="Precio $">
-            <button class="btn-blue" onclick="agregarManual()">+ Añadir</button>
-            <button class="btn-del" onclick="vaciarCatalogo()">Vaciar Todo</button>
-        </div>
+        <div id="tab-catalogo" class="card">
+            <h2>Gestionar Catálogo</h2>
+            
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; margin-bottom: 20px;">
+                <label><strong>Subir desde Excel</strong></label>
+                <input type="file" id="excelInput" accept=".xlsx, .xls">
+                <small style="display:block; margin-top:5px; color:#166534">Columna A: Nombre | Columna B: Precio</small>
+            </div>
 
-        <table id="tablaStock">
-            <thead><tr><th>Producto</th><th>Precio</th><th>Acción</th></tr></thead>
-            <tbody id="listaCat"></tbody>
-        </table>
-    </section>
+            <div class="form-group" style="border-top: 1px solid #eee; pt: 10px;">
+                <label>Agregar Producto Manual</label>
+                <input type="text" id="pNombre" placeholder="Ej: Monitor LED" style="margin-bottom: 8px;">
+                <input type="number" id="pPrecio" placeholder="Ej: 5000">
+                <button class="main-btn btn-blue" style="margin-top: 10px;" onclick="agregarManual()">AÑADIR AL STOCK</button>
+            </div>
 
-    <section>
-        <h2>2. Armar Pedido</h2>
-        <div class="input-group">
-            <input type="text" id="idCli" placeholder="ID Cliente">
-            <input type="text" id="nomCli" placeholder="Nombre Cliente">
-        </div>
-        <div class="input-group">
-            <select id="selProd"><option>Cargá productos primero...</option></select>
-            <input type="number" id="cant" value="1" style="max-width: 70px;">
-            <button class="btn-blue" onclick="alPedido()">Agregar al Ticket</button>
-        </div>
-
-        <div id="ticket">
-            <h3 style="text-align: center; margin-top: 0;">PEDIDO DE VENTA</h3>
-            <p><strong>Fecha:</strong> <span id="fecha"></span></p>
-            <p><strong>Cliente:</strong> <span id="resCli">-</span> (ID: <span id="resID">-</span>)</p>
+            <hr>
+            <h3>Productos en Stock</h3>
+            <button class="btn-red" style="padding: 5px 10px; font-size: 12px; margin-bottom: 10px;" onclick="vaciarCatalogo()">VACIAR TODO EL CATÁLOGO</button>
             <table>
-                <thead><tr><th>Cant</th><th>Detalle</th><th>Subtotal</th><th></th></tr></thead>
-                <tbody id="cuerpoPed"></tbody>
+                <thead><tr><th>Producto</th><th>Precio</th><th></th></tr></thead>
+                <tbody id="listaCat"></tbody>
             </table>
-            <h2 style="text-align: right;">TOTAL: $<span id="totalTxt">0.00</span></h2>
         </div>
-        <button class="btn-green" style="width: 100%; font-size: 1.2rem; margin-top: 15px;" onclick="generarPDF()">💾 FINALIZAR Y GUARDAR PDF</button>
-    </section>
-</div>
 
-<script>
-    let stock = JSON.parse(localStorage.getItem('miStock')) || [];
-    let pedido = [];
-    document.getElementById('fecha').innerText = new Date().toLocaleDateString();
+    </div>
 
-    // --- LÓGICA DE EXCEL ---
-    document.getElementById('excelInput').addEventListener('change', function(e) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const filas = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+    <script>
+        let stock = JSON.parse(localStorage.getItem('db_stock')) || [];
+        let pedidoActual = [];
+        document.getElementById('fechaActual').innerText = new Date().toLocaleDateString();
 
-            // Procesar filas (saltamos la primera si es encabezado)
-            filas.forEach((fila, index) => {
-                if(index === 0 && isNaN(fila[1])) return; // Salta encabezados si el segundo valor no es número
-                if(fila[0] && fila[1]) {
-                    stock.push({ n: fila[0], p: parseFloat(fila[1]) });
-                }
+        // CAMBIAR PESTAÑAS
+        function switchTab(tabId) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // LÓGICA DE CATÁLOGO
+        function agregarManual() {
+            const n = document.getElementById('pNombre').value;
+            const p = document.getElementById('pPrecio').value;
+            if(n && p) {
+                stock.push({n, p: parseFloat(p)});
+                document.getElementById('pNombre').value = "";
+                document.getElementById('pPrecio').value = "";
+                actualizarTodo();
+            }
+        }
+
+        document.getElementById('excelInput').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const filas = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                filas.forEach((f, i) => {
+                    if(i > 0 && f[0] && f[1]) stock.push({n: f[0], p: parseFloat(f[1])});
+                });
+                actualizarTodo();
+                alert("Catálogo actualizado desde Excel");
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        function borrarProd(i) { stock.splice(i, 1); actualizarTodo(); }
+        function vaciarCatalogo() { if(confirm("¿Borrar todo?")) { stock = []; actualizarTodo(); } }
+
+        function actualizarTodo() {
+            localStorage.setItem('db_stock', JSON.stringify(stock));
+            renderCatalogo();
+        }
+
+        function renderCatalogo() {
+            const lista = document.getElementById('listaCat');
+            const sel = document.getElementById('selProd');
+            lista.innerHTML = "";
+            sel.innerHTML = "<option value=''>-- Seleccionar --</option>";
+            stock.forEach((p, i) => {
+                lista.innerHTML += `<tr><td>${p.n}</td><td>$${p.p}</td><td><span class="delete-icon" onclick="borrarProd(${i})">BORRAR</span></td></tr>`;
+                sel.innerHTML += `<option value="${i}">${p.n} ($${p.p})</option>`;
             });
-            guardarYRefrescar();
-            alert("¡Excel cargado con éxito!");
-        };
-        reader.readAsArrayBuffer(e.target.files[0]);
-    });
-
-    function agregarManual() {
-        const n = document.getElementById('pNombre').value;
-        const p = document.getElementById('pPrecio').value;
-        if(n && p) {
-            stock.push({n, p: parseFloat(p)});
-            document.getElementById('pNombre').value = "";
-            document.getElementById('pPrecio').value = "";
-            guardarYRefrescar();
         }
-    }
 
-    function guardarYRefrescar() {
-        localStorage.setItem('miStock', JSON.stringify(stock));
+        // LÓGICA DE PEDIDO
+        function agregarAlPedido() {
+            const i = document.getElementById('selProd').value;
+            const c = document.getElementById('cant').value;
+            if(i !== "" && c > 0) {
+                const p = stock[i];
+                pedidoActual.push({n: p.n, c, sub: p.p * c});
+                document.getElementById('resCli').innerText = document.getElementById('nomCli').value || "Cliente General";
+                document.getElementById('resID').innerText = document.getElementById('idCli').value || "S/ID";
+                renderPedido();
+            }
+        }
+
+        function renderPedido() {
+            const cuerpo = document.getElementById('cuerpoPedido');
+            cuerpo.innerHTML = "";
+            let t = 0;
+            pedidoActual.forEach((item, index) => {
+                t += item.sub;
+                cuerpo.innerHTML += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td><span onclick="pedidoActual.splice(${index},1); renderPedido();" style="cursor:pointer">❌</span></td></tr>`;
+            });
+            document.getElementById('totalFinal').innerText = t.toFixed(2);
+        }
+
+        function descargarPDF() {
+            const elemento = document.getElementById('ticket-preview');
+            const id = document.getElementById('idCli').value || "000";
+            const nom = document.getElementById('nomCli').value || "Cliente";
+            
+            // Ocultar la columna de eliminar para el PDF
+            const iconos = document.querySelectorAll('#cuerpoPedido span');
+            iconos.forEach(s => s.style.display = 'none');
+
+            const opt = { margin: 1, filename: `${id}_${nom}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            html2pdf().set(opt).from(elemento).save().then(() => {
+                iconos.forEach(s => s.style.display = 'inline');
+            });
+        }
+
         renderCatalogo();
-    }
-
-    function vaciarCatalogo() {
-        if(confirm("¿Borrar todo el catálogo?")) { stock = []; guardarYRefrescar(); }
-    }
-
-    function renderCatalogo() {
-        const lista = document.getElementById('listaCat');
-        const sel = document.getElementById('selProd');
-        lista.innerHTML = "";
-        sel.innerHTML = "<option>Seleccionar producto...</option>";
-        
-        stock.forEach((p, i) => {
-            lista.innerHTML += `<tr><td>${p.n}</td><td>$${p.p}</td><td><button class="btn-del" onclick="borrarProd(${i})">✕</button></td></tr>`;
-            sel.innerHTML += `<option value="${i}">${p.n} ($${p.p})</option>`;
-        });
-    }
-
-    function borrarProd(i) { stock.splice(i, 1); guardarYRefrescar(); }
-
-    // --- LÓGICA PEDIDO ---
-    function alPedido() {
-        const i = document.getElementById('selProd').value;
-        const c = document.getElementById('cant').value;
-        if(i !== "Seleccionar producto..." && c > 0) {
-            const p = stock[i];
-            pedido.push({n: p.n, c, sub: p.p * c});
-            document.getElementById('resCli').innerText = document.getElementById('nomCli').value;
-            document.getElementById('resID').innerText = document.getElementById('idCli').value;
-            renderPedido();
-        }
-    }
-
-    function renderPedido() {
-        const cuerpo = document.getElementById('cuerpoPed');
-        cuerpo.innerHTML = "";
-        let total = 0;
-        pedido.forEach((item, index) => {
-            total += item.sub;
-            cuerpo.innerHTML += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td><button class="btn-del" onclick="pedido.splice(${index},1); renderPedido();">✕</button></td></tr>`;
-        });
-        document.getElementById('totalTxt').innerText = total.toFixed(2);
-    }
-
-    function generarPDF() {
-        const elemento = document.getElementById('ticket');
-        const id = document.getElementById('idCli').value || "Pedido";
-        const nom = document.getElementById('nomCli').value || "Cliente";
-        
-        // Ocultar botones X para el PDF
-        const botones = document.querySelectorAll('#ticket .btn-del');
-        botones.forEach(b => b.style.display = 'none');
-
-        html2pdf().from(elemento).save(`${id}_${nom}.pdf`).then(() => {
-            botones.forEach(b => b.style.display = 'inline-block');
-        });
-    }
-
-    renderCatalogo();
-</script>
+    </script>
 </body>
 </html>
