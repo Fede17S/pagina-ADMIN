@@ -3,65 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión Pro</title>
+    <title>Sistema de Gestión Pro V3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --dark: #1e293b; --light: #f8fafc; }
-        body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; color: var(--dark); }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 0; color: var(--dark); }
         
         .navbar { display: flex; background: white; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
         .nav-btn { flex: 1; padding: 20px; border: none; background: none; font-weight: 700; cursor: pointer; color: #64748b; transition: 0.3s; }
         .nav-btn.active { color: var(--primary); border-bottom: 4px solid var(--primary); background: #f1f5f9; }
 
-        .container { max-width: 850px; margin: 25px auto; padding: 0 15px; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: none; }
+        .container { max-width: 800px; margin: 25px auto; padding: 0 15px; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: none; }
         .card.active { display: block; }
 
         .form-group { margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--primary); ring: 2px var(--primary); }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
 
-        /* BUSCADOR */
-        .search-box { background: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
+        .search-box { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
 
         .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; margin-top: 10px; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        .btn-red { background: var(--danger); color: white; margin-bottom: 15px; }
-        .btn:active { transform: scale(0.98); }
+        .btn-red { background: var(--danger); color: white; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 12px; font-size: 14px; color: #64748b; border-bottom: 2px solid #f1f5f9; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
+        th { text-align: left; padding: 12px; background: #f1f5f9; border-radius: 5px; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
         
-        .delete-btn { color: var(--danger); cursor: pointer; font-weight: bold; padding: 5px; }
+        .delete-btn { color: var(--danger); cursor: pointer; font-weight: bold; text-align: center; }
 
-        #ticket-area { border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; margin-top: 20px; }
-        .total-box { text-align: right; margin-top: 15px; padding-top: 10px; border-top: 2px solid #f1f5f9; }
+        #preview-pedido { border: 1px solid #e2e8f0; padding: 15px; border-radius: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
-        <button class="nav-btn active" onclick="switchTab('tab-pedido')">📑 NUEVO PEDIDO</button>
+        <button class="nav-btn active" onclick="switchTab('tab-pedido')">📝 NUEVO PEDIDO</button>
         <button class="nav-btn" onclick="switchTab('tab-catalogo')">📦 CATÁLOGO</button>
     </nav>
 
     <div class="container">
 
         <div id="tab-pedido" class="card active">
-            <h2>Crear Pedido</h2>
+            <h2>Armar Pedido</h2>
             <div class="form-group">
-                <input type="text" id="idCli" placeholder="ID Cliente (Ej: 001)">
-                <input type="text" id="nomCli" placeholder="Nombre del Cliente" style="margin-top: 8px;">
+                <input type="text" id="idCli" placeholder="ID Cliente (Ej: 2026-A)">
+                <input type="text" id="nomCli" placeholder="Nombre del Cliente" style="margin-top: 10px;">
             </div>
 
             <div class="search-box">
-                <label style="font-size: 12px; font-weight: bold; color: #64748b;">🔍 BUSCADOR DE PRODUCTOS</label>
-                <input type="text" id="buscador" placeholder="Escribí nombre del producto..." onkeyup="filtrarProductos()">
-                <select id="selProd" size="4" style="margin-top: 10px;"></select>
+                <label style="font-size: 12px; font-weight: bold; color: #64748b;">🔍 BUSCAR PRODUCTO</label>
+                <input type="text" id="buscador" placeholder="Escribí para filtrar..." onkeyup="filtrar()">
+                <select id="selProd" size="5" style="margin-top: 10px; cursor: pointer;"></select>
             </div>
 
             <div class="form-group">
@@ -69,43 +66,36 @@
                 <input type="number" id="cant" value="1" min="1">
             </div>
 
-            <button class="btn btn-blue" onclick="agregarAlPedido()">+ AGREGAR AL LISTADO</button>
+            <button class="btn btn-blue" onclick="agregarAlPedido()">+ AGREGAR A LA LISTA</button>
 
-            <div id="ticket-area">
-                <h3 style="text-align: center; margin: 0;">ORDEN DE COMPRA</h3>
-                <p style="font-size: 14px; text-align: center; color: #64748b;" id="fechaPdf"></p>
-                <div style="margin: 15px 0; font-size: 15px;">
-                    <strong>Cliente:</strong> <span id="resCli">-</span><br>
-                    <strong>ID:</strong> <span id="resID">-</span>
-                </div>
+            <div id="preview-pedido">
+                <h4 style="margin: 0 0 10px 0;">Resumen Temporal:</h4>
                 <table>
-                    <thead><tr><th>Cant</th><th>Detalle</th><th>Subtotal</th><th class="no-pdf"></th></tr></thead>
+                    <thead><tr><th>Cant</th><th>Producto</th><th>Subtotal</th><th></th></tr></thead>
                     <tbody id="cuerpoPedido"></tbody>
                 </table>
-                <div class="total-box">
-                    <h2 style="margin: 0; color: var(--primary);">TOTAL: $<span id="totalFinal">0.00</span></h2>
-                </div>
+                <h3 style="text-align: right; color: var(--primary);">TOTAL: $<span id="totalTxt">0.00</span></h3>
             </div>
             
-            <button class="btn btn-green" onclick="descargarPDF()">💾 GUARDAR PDF Y FINALIZAR</button>
+            <button class="btn btn-green" onclick="generarPDF_Pro()">📥 FINALIZAR Y GUARDAR PDF</button>
         </div>
 
         <div id="tab-catalogo" class="card">
-            <h2>Gestionar Productos</h2>
+            <h2>Mi Catálogo</h2>
             <div style="background: #ecfdf5; padding: 15px; border-radius: 12px; border: 1px solid #a7f3d0; margin-bottom: 20px;">
-                <strong>📂 Carga Masiva (Excel)</strong>
-                <input type="file" id="excelInput" style="margin-top: 10px;">
+                <strong>📂 Importar desde Excel</strong>
+                <input type="file" id="excelInput" style="margin-top: 10px;" accept=".xlsx, .xls">
             </div>
 
             <div class="form-group">
                 <input type="text" id="pNombre" placeholder="Nombre del producto">
-                <input type="number" id="pPrecio" placeholder="Precio $" style="margin-top: 8px;">
-                <button class="btn btn-blue" onclick="agregarManual()">AÑADIR MANUALMENTE</button>
+                <input type="number" id="pPrecio" placeholder="Precio $" style="margin-top: 10px;">
+                <button class="btn btn-blue" onclick="agregarManual()">GUARDAR PRODUCTO</button>
             </div>
 
-            <button class="btn btn-red" onclick="vaciarCatalogo()">VACIAR TODO EL CATÁLOGO</button>
+            <button class="btn btn-red" style="padding: 8px; font-size: 12px;" onclick="vaciarCatalogo()">BORRAR TODO EL CATÁLOGO</button>
             
-            <table>
+            <table id="tablaStock">
                 <thead><tr><th>Producto</th><th>Precio</th><th></th></tr></thead>
                 <tbody id="listaCat"></tbody>
             </table>
@@ -113,11 +103,8 @@
     </div>
 
     <script>
-        let stock = JSON.parse(localStorage.getItem('db_stock')) || [];
+        let stock = JSON.parse(localStorage.getItem('db_stock_v3')) || [];
         let pedidoActual = [];
-        const f = new Date();
-        const fechaStr = f.toLocaleDateString() + ' ' + f.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        document.getElementById('fechaPdf').innerText = fechaStr;
 
         function switchTab(id) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
@@ -126,17 +113,7 @@
             event.currentTarget.classList.add('active');
         }
 
-        function filtrarProductos() {
-            const term = document.getElementById('buscador').value.toLowerCase();
-            const sel = document.getElementById('selProd');
-            sel.innerHTML = "";
-            stock.forEach((p, i) => {
-                if(p.n.toLowerCase().includes(term)) {
-                    sel.innerHTML += `<option value="${i}">${p.n} ($${p.p})</option>`;
-                }
-            });
-        }
-
+        // --- CATALOGO ---
         function agregarManual() {
             const n = document.getElementById('pNombre').value;
             const p = document.getElementById('pPrecio').value;
@@ -153,16 +130,16 @@
                 const data = new Uint8Array(e.target.result);
                 const wb = XLSX.read(data, {type: 'array'});
                 const filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                filas.forEach((f, i) => { if(i>0 && f[0] && f[1]) stock.push({n: f[0], p: parseFloat(f[1])}); });
+                filas.forEach((f, i) => { if(i > 0 && f[0] && f[1]) stock.push({n: f[0], p: parseFloat(f[1])}); });
                 actualizarTodo();
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
         function actualizarTodo() {
-            localStorage.setItem('db_stock', JSON.stringify(stock));
+            localStorage.setItem('db_stock_v3', JSON.stringify(stock));
             renderCatalogo();
-            filtrarProductos();
+            filtrar();
         }
 
         function renderCatalogo() {
@@ -173,18 +150,29 @@
             });
         }
 
-        function vaciarCatalogo() { if(confirm("¿Borrar todo el stock?")) { stock = []; actualizarTodo(); } }
+        function filtrar() {
+            const term = document.getElementById('buscador').value.toLowerCase();
+            const sel = document.getElementById('selProd');
+            sel.innerHTML = "";
+            stock.forEach((p, i) => {
+                if(p.n.toLowerCase().includes(term)) {
+                    sel.innerHTML += `<option value="${i}">${p.n} ($${p.p})</option>`;
+                }
+            });
+        }
 
+        function vaciarCatalogo() { if(confirm("¿Borrar todo?")) { stock = []; actualizarTodo(); } }
+
+        // --- PEDIDO ---
         function agregarAlPedido() {
-            const i = document.getElementById('selProd').value;
-            const c = document.getElementById('cant').value;
+            const sel = document.getElementById('selProd');
+            const i = sel.value;
+            const c = parseInt(document.getElementById('cant').value);
             if(i !== "" && c > 0) {
                 const p = stock[i];
-                pedidoActual.push({n: p.n, c, sub: p.p * c});
-                document.getElementById('resCli').innerText = document.getElementById('nomCli').value || "Consumidor Final";
-                document.getElementById('resID').innerText = document.getElementById('idCli').value || "S/N";
+                pedidoActual.push({n: p.n, p: p.p, c: c, sub: p.p * c});
                 renderPedido();
-            }
+            } else { alert("Seleccioná un producto de la lista."); }
         }
 
         function renderPedido() {
@@ -192,42 +180,65 @@
             cuerpo.innerHTML = ""; let t = 0;
             pedidoActual.forEach((item, index) => {
                 t += item.sub;
-                cuerpo.innerHTML += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td class="delete-btn no-pdf" onclick="pedidoActual.splice(${index},1); renderPedido();">✕</td></tr>`;
+                cuerpo.innerHTML += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td class="delete-btn" onclick="pedidoActual.splice(${index},1); renderPedido();">✕</td></tr>`;
             });
-            document.getElementById('totalFinal').innerText = t.toFixed(2);
+            document.getElementById('totalTxt').innerText = t.toFixed(2);
         }
 
-        function descargarPDF() {
-            const elemento = document.getElementById('ticket-area');
-            const idCli = document.getElementById('idCli').value || "ID";
-            const nomCli = document.getElementById('nomCli').value || "Cliente";
+        // --- GENERACIÓN DE PDF PROFESIONAL ---
+        function generarPDF_Pro() {
+            if(pedidoActual.length === 0) return alert("Cargá artículos primero.");
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const idCli = document.getElementById('idCli').value || "S-ID";
+            const nomCli = document.getElementById('nomCli').value || "Consumidor Final";
+            const fecha = new Date().toLocaleString();
 
-            if(pedidoActual.length === 0) return alert("El pedido está vacío.");
+            // Encabezado
+            doc.setFontSize(18);
+            doc.text("ORDEN DE PEDIDO", 105, 15, { align: "center" });
+            
+            doc.setFontSize(11);
+            doc.text(`Cliente: ${nomCli}`, 14, 25);
+            doc.text(`ID Cliente: ${idCli}`, 14, 32);
+            doc.text(`Fecha: ${fecha}`, 14, 39);
 
-            // Ocultar elementos que no queremos en el PDF
-            document.querySelectorAll('.no-pdf').forEach(el => el.style.visibility = 'hidden');
+            // Tabla de productos
+            const tableData = pedidoActual.map(item => [
+                item.c,
+                item.n,
+                `$${item.p.toFixed(2)}`,
+                `$${item.sub.toFixed(2)}`
+            ]);
 
-            const opt = {
-                margin: 0.5,
-                filename: `${idCli}_${nomCli}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 3, useCORS: true },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
+            doc.autoTable({
+                startY: 45,
+                head: [['Cant', 'Producto', 'Precio Unit.', 'Subtotal']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [37, 99, 235] } // El azul primary
+            });
 
-            html2pdf().set(opt).from(elemento).save().then(() => {
-                // Volver a mostrar y limpiar
-                document.querySelectorAll('.no-pdf').forEach(el => el.style.visibility = 'visible');
-                alert("PDF guardado con éxito.");
-                pedidoActual = [];
-                document.getElementById('idCli').value = "";
-                document.getElementById('nomCli').value = "";
-                renderPedido();
-            }).catch(err => alert("Error al generar PDF: " + err));
+            // Total
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(14);
+            doc.text(`TOTAL A PAGAR: $${document.getElementById('totalTxt').innerText}`, 196, finalY, { align: "right" });
+
+            // Guardar
+            doc.save(`${idCli}_${nomCli.replace(/\s+/g, '_')}.pdf`);
+
+            // Limpiar pedido
+            alert("¡Pedido guardado!");
+            pedidoActual = [];
+            document.getElementById('idCli').value = "";
+            document.getElementById('nomCli').value = "";
+            renderPedido();
         }
 
         renderCatalogo();
-        filtrarProductos();
+        filtrar();
+        vaciarCatalogo(); // Limpiar el pedido si hay basura al cargar
     </script>
 </body>
 </html>
