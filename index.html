@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Pedidos + Importar Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        section { border: 1px solid #eee; padding: 20px; border-radius: 10px; margin-bottom: 20px; background: #fff; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; }
+        button { cursor: pointer; padding: 10px 15px; border-radius: 5px; border: none; font-weight: bold; transition: 0.3s; }
+        .btn-blue { background: #3498db; color: white; }
+        .btn-green { background: #27ae60; color: white; }
+        .btn-excel { background: #1f7244; color: white; }
+        .btn-del { background: #e74c3c; color: white; padding: 5px 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        #ticket { border: 2px solid #333; padding: 20px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Sistema de Ventas Inteligente</h1>
+
+    <section>
+        <h2>1. Catálogo de Productos</h2>
+        
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c8e6c9;">
+            <strong>📁 Carga masiva desde Excel:</strong><br>
+            <small>Asegurate que la columna A sea el Nombre y la B el Precio.</small><br><br>
+            <input type="file" id="excelInput" accept=".xlsx, .xls" class="btn-excel">
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="pNombre" placeholder="Producto manual">
+            <input type="number" id="pPrecio" placeholder="Precio $">
+            <button class="btn-blue" onclick="agregarManual()">+ Añadir</button>
+            <button class="btn-del" onclick="vaciarCatalogo()">Vaciar Todo</button>
+        </div>
+
+        <table id="tablaStock">
+            <thead><tr><th>Producto</th><th>Precio</th><th>Acción</th></tr></thead>
+            <tbody id="listaCat"></tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>2. Armar Pedido</h2>
+        <div class="input-group">
+            <input type="text" id="idCli" placeholder="ID Cliente">
+            <input type="text" id="nomCli" placeholder="Nombre Cliente">
+        </div>
+        <div class="input-group">
+            <select id="selProd"><option>Cargá productos primero...</option></select>
+            <input type="number" id="cant" value="1" style="max-width: 70px;">
+            <button class="btn-blue" onclick="alPedido()">Agregar al Ticket</button>
+        </div>
+
+        <div id="ticket">
+            <h3 style="text-align: center; margin-top: 0;">PEDIDO DE VENTA</h3>
+            <p><strong>Fecha:</strong> <span id="fecha"></span></p>
+            <p><strong>Cliente:</strong> <span id="resCli">-</span> (ID: <span id="resID">-</span>)</p>
+            <table>
+                <thead><tr><th>Cant</th><th>Detalle</th><th>Subtotal</th><th></th></tr></thead>
+                <tbody id="cuerpoPed"></tbody>
+            </table>
+            <h2 style="text-align: right;">TOTAL: $<span id="totalTxt">0.00</span></h2>
+        </div>
+        <button class="btn-green" style="width: 100%; font-size: 1.2rem; margin-top: 15px;" onclick="generarPDF()">💾 FINALIZAR Y GUARDAR PDF</button>
+    </section>
+</div>
+
+<script>
+    let stock = JSON.parse(localStorage.getItem('miStock')) || [];
+    let pedido = [];
+    document.getElementById('fecha').innerText = new Date().toLocaleDateString();
+
+    // --- LÓGICA DE EXCEL ---
+    document.getElementById('excelInput').addEventListener('change', function(e) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const filas = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+            // Procesar filas (saltamos la primera si es encabezado)
+            filas.forEach((fila, index) => {
+                if(index === 0 && isNaN(fila[1])) return; // Salta encabezados si el segundo valor no es número
+                if(fila[0] && fila[1]) {
+                    stock.push({ n: fila[0], p: parseFloat(fila[1]) });
+                }
+            });
+            guardarYRefrescar();
+            alert("¡Excel cargado con éxito!");
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    });
+
+    function agregarManual() {
+        const n = document.getElementById('pNombre').value;
+        const p = document.getElementById('pPrecio').value;
+        if(n && p) {
+            stock.push({n, p: parseFloat(p)});
+            document.getElementById('pNombre').value = "";
+            document.getElementById('pPrecio').value = "";
+            guardarYRefrescar();
+        }
+    }
+
+    function guardarYRefrescar() {
+        localStorage.setItem('miStock', JSON.stringify(stock));
+        renderCatalogo();
+    }
+
+    function vaciarCatalogo() {
+        if(confirm("¿Borrar todo el catálogo?")) { stock = []; guardarYRefrescar(); }
+    }
+
+    function renderCatalogo() {
+        const lista = document.getElementById('listaCat');
+        const sel = document.getElementById('selProd');
+        lista.innerHTML = "";
+        sel.innerHTML = "<option>Seleccionar producto...</option>";
+        
+        stock.forEach((p, i) => {
+            lista.innerHTML += `<tr><td>${p.n}</td><td>$${p.p}</td><td><button class="btn-del" onclick="borrarProd(${i})">✕</button></td></tr>`;
+            sel.innerHTML += `<option value="${i}">${p.n} ($${p.p})</option>`;
+        });
+    }
+
+    function borrarProd(i) { stock.splice(i, 1); guardarYRefrescar(); }
+
+    // --- LÓGICA PEDIDO ---
+    function alPedido() {
+        const i = document.getElementById('selProd').value;
+        const c = document.getElementById('cant').value;
+        if(i !== "Seleccionar producto..." && c > 0) {
+            const p = stock[i];
+            pedido.push({n: p.n, c, sub: p.p * c});
+            document.getElementById('resCli').innerText = document.getElementById('nomCli').value;
+            document.getElementById('resID').innerText = document.getElementById('idCli').value;
+            renderPedido();
+        }
+    }
+
+    function renderPedido() {
+        const cuerpo = document.getElementById('cuerpoPed');
+        cuerpo.innerHTML = "";
+        let total = 0;
+        pedido.forEach((item, index) => {
+            total += item.sub;
+            cuerpo.innerHTML += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td><button class="btn-del" onclick="pedido.splice(${index},1); renderPedido();">✕</button></td></tr>`;
+        });
+        document.getElementById('totalTxt').innerText = total.toFixed(2);
+    }
+
+    function generarPDF() {
+        const elemento = document.getElementById('ticket');
+        const id = document.getElementById('idCli').value || "Pedido";
+        const nom = document.getElementById('nomCli').value || "Cliente";
+        
+        // Ocultar botones X para el PDF
+        const botones = document.querySelectorAll('#ticket .btn-del');
+        botones.forEach(b => b.style.display = 'none');
+
+        html2pdf().from(elemento).save(`${id}_${nom}.pdf`).then(() => {
+            botones.forEach(b => b.style.display = 'inline-block');
+        });
+    }
+
+    renderCatalogo();
+</script>
+</body>
+</html>
