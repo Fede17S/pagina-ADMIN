@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - Gestión con Logo</title>
+    <title>DistriMar - Sistema con Observaciones</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -25,7 +25,9 @@
         .badge-patagonia { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .badge-clientes { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
 
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; font-family: inherit; }
+        textarea { resize: vertical; min-height: 80px; background: #fffdf5; border: 1px solid #ebdf9e; }
+        
         .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
@@ -67,10 +69,17 @@
                     <button class="btn btn-blue" onclick="agregar('ped')" style="margin:0; flex:1">+ AGREGAR</button>
                 </div>
             </div>
+
             <table id="tabla-ped">
                 <thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-ped"></tbody>
             </table>
+
+            <div style="margin-top: 20px;">
+                <label style="font-size: 13px; font-weight: bold; color: #555;">📝 OBSERVACIONES DEL VENDEDOR:</label>
+                <textarea id="obs-ped" placeholder="Escribí acá detalles sobre la entrega, pagos o faltantes..."></textarea>
+            </div>
+
             <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
             <button class="btn btn-green" onclick="procesarDocumento('pedido')">🟢 MANDAR POR WHATSAPP</button>
         </div>
@@ -81,7 +90,7 @@
             <input type="text" id="nomCli-rem" placeholder="Nombre Cliente">
 
             <div class="search-area">
-                <input type="text" id="bus-rem" placeholder="Buscar producto..." onkeyup="filtrar('rem')">
+                <input type="text" id="bus-rem" placeholder="Buscar producto para remito..." onkeyup="filtrar('rem')">
                 <div id="res-rem" class="lista-resultados"></div>
                 <div style="display:flex; gap:10px; margin-top:10px;">
                     <input type="number" id="cant-rem" value="1" style="width:70px; margin:0">
@@ -98,6 +107,7 @@
 
         <div id="catalogo" class="card">
             <h3>Cargar Logo de Empresa</h3>
+            <p style="font-size: 12px; color: #666;">Seleccioná la imagen de la camioneta para que aparezca en los PDFs.</p>
             <input type="file" id="subirLogo" accept="image/*">
             <img id="previewLogo" src="" alt="Vista previa del logo" style="display:none;">
             
@@ -116,9 +126,9 @@
     </div>
 
     <script>
-        let dbStock = JSON.parse(localStorage.getItem('dm_stock_v8')) || [];
-        let dbCli = JSON.parse(localStorage.getItem('dm_cli_v8')) || [];
-        let logoBase64 = localStorage.getItem('dm_logo_v8') || "";
+        let dbStock = JSON.parse(localStorage.getItem('dm_stock_v9')) || [];
+        let dbCli = JSON.parse(localStorage.getItem('dm_cli_v9')) || [];
+        let logoBase64 = localStorage.getItem('dm_logo_v9') || "";
         let ordenes = { ped: [], rem: [] };
         let listas = { ped: "Clientes", rem: "Clientes" };
         let selIdx = { ped: null, rem: null };
@@ -132,23 +142,22 @@
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
-        // --- MANEJO DEL LOGO ---
         document.getElementById('subirLogo').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onloadend = function() {
                 logoBase64 = reader.result;
-                localStorage.setItem('dm_logo_v8', logoBase64);
+                localStorage.setItem('dm_logo_v9', logoBase64);
                 document.getElementById('previewLogo').src = logoBase64;
                 document.getElementById('previewLogo').style.display = 'block';
-                alert("Logo guardado correctamente.");
+                alert("Logo guardado.");
             }
             reader.readAsDataURL(file);
         });
 
-        // --- LÓGICA DE DATOS (Simplificada) ---
         function buscarCli(tipo) {
             let id = document.getElementById(`idCli-${tipo}`).value.trim().toLowerCase();
             let c = dbCli.find(cli => cli.id.toString().toLowerCase() === id);
@@ -207,19 +216,18 @@
             document.getElementById(`body-${tipo}`).innerHTML = h;
         }
 
-        // --- GENERACIÓN DE PDF ---
         async function procesarDocumento(modo) {
             const tipo = (modo === 'pedido') ? 'ped' : 'rem';
-            if(ordenes[tipo].length === 0) return alert("Pedido vacío");
+            if(ordenes[tipo].length === 0) return alert("No hay productos cargados.");
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             let id = document.getElementById(`idCli-${tipo}`).value || "00";
             let nom = document.getElementById(`nomCli-${tipo}`).value || "Cliente";
+            let obs = document.getElementById('obs-ped').value; // Capturamos las observaciones
 
-            // SI HAY LOGO, LO PONEMOS
             if(logoBase64) {
-                try { doc.addImage(logoBase64, 'PNG', 14, 10, 40, 40); } catch(e) { console.error("Error logo", e); }
+                try { doc.addImage(logoBase64, 'PNG', 14, 10, 35, 35); } catch(e) {}
             }
 
             if(modo === 'remito') {
@@ -228,34 +236,44 @@
                 doc.setFontSize(10); doc.setFont("helvetica", "normal");
                 doc.text("Puerto Madryn, Chubut", 105, 26, {align:"center"});
                 doc.text("Tel/Whatsapp: 2804691951", 105, 31, {align:"center"});
-                doc.line(10, 55, 200, 55);
-                doc.setFontSize(24); doc.text("REMITO", 105, 68, {align:"center"});
-                doc.setFontSize(9); doc.text("DOCUMENTO NO VALIDO COMO FACTURA", 105, 75, {align:"center"});
-                doc.rect(100, 78, 10, 10); doc.text("X", 105, 85, {align:"center"});
-                
+                doc.line(10, 50, 200, 50);
+                doc.setFontSize(24); doc.text("REMITO", 105, 62, {align:"center"});
+                doc.setFontSize(9); doc.text("DOCUMENTO NO VALIDO COMO FACTURA", 105, 69, {align:"center"});
+                doc.rect(100, 72, 10, 10); doc.text("X", 105, 79, {align:"center"});
                 doc.setFontSize(11);
-                doc.text(`Cliente: ${nom} (${id})`, 14, 105);
-                doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 160, 105);
+                doc.text(`Cliente: ${nom} (${id})`, 14, 95);
+                doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 160, 95);
                 
                 let data = ordenes.rem.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
-                doc.autoTable({
-                    startY: 115,
-                    head: [['Cant', 'Producto', 'Precio U.', 'Subtotal']],
-                    body: data,
-                    theme: 'grid',
-                    headStyles: { fillColor: [40, 40, 40] }
-                });
+                doc.autoTable({ startY: 105, head: [['Cant', 'Producto', 'P.U.', 'Subtotal']], body: data, theme: 'grid' });
                 doc.text(`TOTAL: $${document.getElementById('total-rem').innerText}`, 196, doc.lastAutoTable.finalY + 12, {align:"right"});
-                doc.line(20, doc.lastAutoTable.finalY + 40, 80, doc.lastAutoTable.finalY + 40);
-                doc.text("Firma de Recibido", 25, doc.lastAutoTable.finalY + 45);
                 doc.save(`Remito_${nom}.pdf`);
             } else {
-                doc.setFontSize(18); doc.text("PEDIDO DISTRIMAR", 105, 25, {align:"center"});
+                // PDF DE PEDIDO CON OBSERVACIONES
+                doc.setFontSize(18); doc.text("PEDIDO DISTRIMAR", 105, 22, {align:"center"});
                 doc.setFontSize(11);
-                doc.text(`Cliente: ${nom} (${id})`, 60, 35);
-                doc.text(`Lista: ${listas.ped}`, 60, 41);
+                doc.text(`Cliente: ${nom} (${id})`, 55, 32);
+                doc.text(`Lista Aplicada: ${listas.ped}`, 55, 38);
+                doc.text(`Fecha: ${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`, 55, 44);
+                
                 let data = ordenes.ped.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
                 doc.autoTable({ startY: 55, head: [['Cant', 'Producto', 'P.U', 'Subtotal']], body: data });
+                
+                let finalY = doc.lastAutoTable.finalY + 10;
+                
+                // AGREGAR OBSERVACIONES AL PDF SI EXISTEN
+                if(obs.trim() !== "") {
+                    doc.setFont("helvetica", "bold");
+                    doc.text("OBSERVACIONES:", 14, finalY);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(10);
+                    let splitText = doc.splitTextToSize(obs, 180);
+                    doc.text(splitText, 14, finalY + 7);
+                    finalY += (splitText.length * 5) + 15;
+                }
+
+                doc.setFontSize(14);
+                doc.text(`TOTAL A PAGAR: $${document.getElementById('total-ped').innerText}`, 196, finalY, {align:"right"});
                 
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Pedido_${nom}.pdf`, { type: 'application/pdf' });
@@ -263,17 +281,19 @@
                     await navigator.share({ files: [file], title: `Pedido DistriMar` });
                 } else { doc.save(`Pedido_${nom}.pdf`); }
             }
-            ordenes[tipo] = []; renderTablas(tipo);
+            // Limpiar campos
+            ordenes[tipo] = []; 
+            if(tipo === 'ped') document.getElementById('obs-ped').value = "";
+            renderTablas(tipo);
         }
 
-        // --- CARGA EXCEL ---
         document.getElementById('xlStock').addEventListener('change', function(e) {
             let reader = new FileReader();
             reader.onload = (e) => {
                 let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
                 dbStock = []; filas.forEach((f, i) => { if(i>0 && f[0]) dbStock.push({n: f[0], pCli: parseFloat(f[1]) || 0, pPat: parseFloat(f[2]) || 0}); });
-                localStorage.setItem('dm_stock_v8', JSON.stringify(dbStock)); alert("Stock cargado");
+                localStorage.setItem('dm_stock_v9', JSON.stringify(dbStock)); alert("Stock actualizado.");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
@@ -284,12 +304,12 @@
                 let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
                 dbCli = []; filas.forEach((f, i) => { if(i>0 && f[0]) dbCli.push({id: f[0].toString(), nombre: f[1], lista: f[2] || "Clientes"}); });
-                localStorage.setItem('dm_cli_v8', JSON.stringify(dbCli)); alert("Clientes cargados");
+                localStorage.setItem('dm_cli_v9', JSON.stringify(dbCli)); alert("Clientes actualizados.");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        function borrarTodo() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
+        function borrarTodo() { if(confirm("¿Seguro querés borrar logo y base de datos?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
