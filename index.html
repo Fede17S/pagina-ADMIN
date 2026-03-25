@@ -2,90 +2,112 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Pedidos DistriMar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistema de Pedidos Mobile</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         :root { --blue: #0056b3; --green: #28a745; --red: #dc3545; --gray: #f4f7f6; }
-        body { font-family: Arial, sans-serif; background: var(--gray); margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--gray); margin: 0; padding: 0; }
         
-        /* Navegación */
         .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: bold; cursor: pointer; color: #555; }
-        .tab-btn.active { color: var(--blue); border-bottom: 3px solid var(--blue); background: #f0f4ff; }
+        .tab-btn { flex: 1; padding: 18px 10px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 15px; }
+        .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: #f8faff; }
 
-        .container { max-width: 800px; margin: 20px auto; padding: 10px; }
-        .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: none; }
+        .container { max-width: 800px; margin: 15px auto; padding: 10px; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; }
         .card.active { display: block; }
 
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        /* Inputs a 16px evitan que el iPhone haga zoom automático al escribir */
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
+        input:focus { border-color: var(--blue); }
         
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; transition: 0.2s; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
-        .btn-red { background: var(--red); font-size: 12px; width: auto; padding: 8px 15px; }
+        .btn-red { background: var(--red); font-size: 13px; width: auto; padding: 10px 15px; }
+        .btn:active { transform: scale(0.98); }
 
-        .search-area { background: #e9ecef; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .search-area { background: #e9ecef; padding: 15px; border-radius: 12px; margin: 15px 0; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        th { background: #f8f9fa; }
+        /* --- NUEVO DISEÑO DE LISTA PARA CELULARES --- */
+        .lista-resultados { max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 8px; margin-top: 5px; }
+        .item-prod { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; }
+        .item-prod:last-child { border-bottom: none; }
+        .item-prod.seleccionado { background: var(--blue); color: white; font-weight: bold; }
+
+        .flex-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
         
-        .remove { color: var(--red); cursor: pointer; font-weight: bold; text-decoration: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 15px; }
+        th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: #555; }
+        .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 18px; padding: 5px; }
     </style>
 </head>
 <body>
 
     <nav class="tabs">
-        <button class="tab-btn active" onclick="verTab('pedido')">📝 ARMAR PEDIDO</button>
-        <button class="tab-btn" onclick="verTab('catalogo')">📦 CATÁLOGO</button>
+        <button class="tab-btn active" onclick="verTab('pedido')">📝 PEDIDO</button>
+        <button class="tab-btn" onclick="verTab('catalogo')">📦 STOCK</button>
     </nav>
 
     <div class="container">
 
         <div id="pedido" class="card active">
-            <h2>Nuevo Pedido</h2>
-            <input type="text" id="idCli" placeholder="ID Cliente (Ej: 3825)">
+            <input type="text" id="idCli" placeholder="ID Cliente (Opcional)">
             <input type="text" id="nomCli" placeholder="Nombre del Cliente">
 
             <div class="search-area">
-                <label>🔍 Buscar Producto:</label>
-                <input type="text" id="motorBusqueda" placeholder="Escribe el nombre..." onkeyup="filtrar()">
-                <select id="selectProd" size="5"></select>
-                <input type="number" id="cant" value="1" min="1" style="margin-top: 10px;">
-                <button class="btn btn-blue" onclick="agregarItem()">+ AGREGAR A LA LISTA</button>
+                <label style="font-weight: bold; color: #444; font-size: 14px;">🔍 BUSCAR Y SELECCIONAR:</label>
+                <input type="text" id="motorBusqueda" placeholder="Toca acá para buscar..." onkeyup="filtrarMobile()">
+                
+                <div id="listaResultados" class="lista-resultados"></div>
+
+                <div class="flex-row">
+                    <label style="font-weight: bold; white-space: nowrap;">Cant:</label>
+                    <input type="number" id="cant" value="1" min="1" style="margin: 0;">
+                </div>
+                
+                <button class="btn btn-blue" onclick="agregarItem()">+ AGREGAR AL CARRITO</button>
             </div>
 
-            <div id="resumen">
-                <h3>Resumen:</h3>
+            <div id="resumen" style="border: 1px dashed #ccc; padding: 10px; border-radius: 8px;">
+                <h4 style="margin-top: 0;">Resumen del Pedido:</h4>
                 <table>
                     <thead><tr><th>Cant</th><th>Detalle</th><th>Subtotal</th><th></th></tr></thead>
                     <tbody id="tablaItems"></tbody>
                 </table>
-                <h2 style="text-align: right; color: var(--blue);">TOTAL: $<span id="totalVenta">0.00</span></h2>
+                <h2 style="text-align: right; color: var(--blue); margin-bottom: 0;">TOTAL: $<span id="totalVenta">0.00</span></h2>
             </div>
             
-            <button class="btn btn-green" onclick="descargarPDF_Final()">📥 GUARDAR PDF (FINALIZAR)</button>
+            <button class="btn btn-green" style="margin-top: 20px;" onclick="descargarPDF_Final()">📥 GUARDAR PDF Y FINALIZAR</button>
         </div>
 
         <div id="catalogo" class="card">
-            <h2>Mi Stock</h2>
+            <h2>Gestión de Catálogo</h2>
             <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <strong>Cargar Excel:</strong>
-                <input type="file" id="subirExcel" accept=".xlsx, .xls">
+                <strong>📂 Cargar Excel:</strong><br>
+                <small>Columna A: Nombre | Columna B: Precio</small>
+                <input type="file" id="subirExcel" accept=".xlsx, .xls" style="margin-top: 10px;">
             </div>
 
-            <input type="text" id="nuevoNombre" placeholder="Producto Manual">
+            <h4 style="margin-bottom: 5px;">Carga Manual:</h4>
+            <input type="text" id="nuevoNombre" placeholder="Nombre del Producto">
             <input type="number" id="nuevoPrecio" placeholder="Precio $">
-            <button class="btn btn-blue" onclick="guardarManual()">GUARDAR EN CATÁLOGO</button>
+            <button class="btn btn-blue" onclick="guardarManual()">GUARDAR PRODUCTO</button>
 
-            <hr style="margin: 30px 0;">
-            <button class="btn-red" onclick="borrarTodo()">BORRAR TODO EL CATÁLOGO</button>
-            <table id="listaStock">
-                <thead><tr><th>Nombre</th><th>Precio</th><th>Acción</th></tr></thead>
+            <hr style="margin: 25px 0; border: 0; border-top: 1px solid #ddd;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Mi Stock</h3>
+                <button class="btn-red" onclick="borrarTodo()">Vaciar Todo</button>
+            </div>
+            
+            <table>
+                <thead><tr><th>Nombre</th><th>Precio</th><th></th></tr></thead>
                 <tbody id="cuerpoStock"></tbody>
             </table>
         </div>
@@ -95,6 +117,7 @@
     <script>
         let db = JSON.parse(localStorage.getItem('distrimar_db')) || [];
         let orden = [];
+        let prodSeleccionadoIndex = null; // Variable para saber qué tocó en el celular
 
         function verTab(id) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
@@ -103,15 +126,14 @@
             event.currentTarget.classList.add('active');
         }
 
-        // --- CATALOGO ---
+        // --- LÓGICA DE CATÁLOGO ---
         function guardarManual() {
             let n = document.getElementById('nuevoNombre').value;
             let p = document.getElementById('nuevoPrecio').value;
             if(n && p) {
                 db.push({n, p: parseFloat(p)});
                 actualizar();
-                document.getElementById('nuevoNombre').value = "";
-                document.getElementById('nuevoPrecio').value = "";
+                document.getElementById('nuevoNombre').value = ""; document.getElementById('nuevoPrecio').value = "";
             }
         }
 
@@ -123,6 +145,7 @@
                 let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
                 filas.forEach((f, i) => { if(i>0 && f[0] && f[1]) db.push({n: f[0], p: parseFloat(f[1])}); });
                 actualizar();
+                alert("Catálogo importado con éxito");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
@@ -130,63 +153,91 @@
         function actualizar() {
             localStorage.setItem('distrimar_db', JSON.stringify(db));
             renderStock();
-            filtrar();
+            filtrarMobile();
         }
 
         function renderStock() {
             let html = "";
             db.forEach((p, i) => {
-                html += `<tr><td>${p.n}</td><td>$${p.p}</td><td><span class="remove" onclick="db.splice(${i},1); actualizar();">Eliminar</span></td></tr>`;
+                html += `<tr><td>${p.n}</td><td>$${p.p}</td><td style="text-align:center;"><span class="remove" onclick="db.splice(${i},1); actualizar();">✕</span></td></tr>`;
             });
             document.getElementById('cuerpoStock').innerHTML = html;
         }
 
-        function filtrar() {
+        function borrarTodo() { if(confirm("¿Seguro que querés borrar todo el catálogo?")) { db = []; actualizar(); } }
+
+        // --- LÓGICA DEL BUSCADOR MOBILE ---
+        function filtrarMobile() {
             let bus = document.getElementById('motorBusqueda').value.toLowerCase();
-            let select = document.getElementById('selectProd');
-            select.innerHTML = "";
+            let lista = document.getElementById('listaResultados');
+            lista.innerHTML = "";
+            prodSeleccionadoIndex = null; // Resetea la selección si vuelve a escribir
+
+            // Solo mostrar los primeros 30 resultados para no colgar el celular
+            let contador = 0;
+            
             db.forEach((p, i) => {
-                if(p.n.toLowerCase().includes(bus)) {
-                    let opt = document.createElement('option');
-                    opt.value = i;
-                    opt.text = `${p.n} ($${p.p})`;
-                    select.add(opt);
+                if(p.n.toLowerCase().includes(bus) && contador < 30) {
+                    let div = document.createElement('div');
+                    div.className = 'item-prod';
+                    div.innerHTML = `<span>${p.n}</span> <strong>$${p.p}</strong>`;
+                    
+                    // Al tocar el producto, se marca como seleccionado
+                    div.onclick = function() {
+                        prodSeleccionadoIndex = i;
+                        // Sacar el azul a todos
+                        document.querySelectorAll('.item-prod').forEach(el => el.classList.remove('seleccionado'));
+                        // Poner azul al tocado
+                        div.classList.add('seleccionado');
+                    };
+                    
+                    lista.appendChild(div);
+                    contador++;
                 }
             });
+
+            if(db.length === 0) { lista.innerHTML = "<div style='padding:15px;color:#666;'>No hay productos. Cargá el Excel primero.</div>"; }
         }
 
-        function borrarTodo() { if(confirm("¿Seguro quieres borrar todo?")) { db = []; actualizar(); } }
-
-        // --- PEDIDO ---
+        // --- LÓGICA DEL PEDIDO ---
         function agregarItem() {
-            let i = document.getElementById('selectProd').value;
             let c = parseInt(document.getElementById('cant').value);
-            if(i !== "" && c > 0) {
-                let p = db[i];
+            
+            if(prodSeleccionadoIndex !== null && c > 0) {
+                let p = db[prodSeleccionadoIndex];
                 orden.push({n: p.n, p: p.p, c: c, sub: p.p * c});
                 renderOrden();
-            } else { alert("Selecciona un producto."); }
+                
+                // Limpiar buscador para el próximo producto
+                document.getElementById('motorBusqueda').value = "";
+                document.getElementById('cant').value = "1";
+                filtrarMobile();
+                
+            } else { 
+                alert("Toca un producto de la lista blanca de arriba para seleccionarlo."); 
+            }
         }
 
         function renderOrden() {
             let html = ""; let t = 0;
             orden.forEach((item, index) => {
                 t += item.sub;
-                html += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td><span class="remove" onclick="orden.splice(${index},1); renderOrden();">✕</span></td></tr>`;
+                html += `<tr><td>${item.c}</td><td>${item.n}</td><td>$${item.sub.toFixed(2)}</td><td style="text-align:center;"><span class="remove" onclick="orden.splice(${index},1); renderOrden();">✕</span></td></tr>`;
             });
             document.getElementById('totalVenta').innerText = t.toFixed(2);
             document.getElementById('tablaItems').innerHTML = html;
         }
 
+        // --- LÓGICA PDF ---
         function descargarPDF_Final() {
-            if(orden.length === 0) return alert("Pedido vacío.");
+            if(orden.length === 0) return alert("El pedido está vacío.");
             
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                let id = document.getElementById('idCli').value || "000";
-                let nom = document.getElementById('nomCli').value || "Cliente";
+                let id = document.getElementById('idCli').value || "Consumidor";
+                let nom = document.getElementById('nomCli').value || "Final";
                 let fecha = new Date().toLocaleString();
 
                 doc.setFontSize(18);
@@ -194,7 +245,7 @@
                 
                 doc.setFontSize(11);
                 doc.text(`Cliente: ${nom}`, 14, 25);
-                doc.text(`ID Cliente: ${id}`, 14, 32);
+                doc.text(`Referencia: ${id}`, 14, 32);
                 doc.text(`Fecha: ${fecha}`, 14, 39);
 
                 let data = orden.map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
@@ -211,23 +262,21 @@
                 doc.setFontSize(14);
                 doc.text(`TOTAL: $${total}`, 196, doc.lastAutoTable.finalY + 10, { align: "right" });
 
-                // Esto fuerza la descarga en lugar de abrir ventana nueva
                 doc.save(`${id}_${nom.replace(/ /g, "_")}.pdf`);
                 
-                alert("PDF Descargado. Se limpiará el pedido.");
+                alert("PDF Descargado exitosamente.");
                 orden = [];
                 document.getElementById('idCli').value = "";
                 document.getElementById('nomCli').value = "";
                 renderOrden();
 
             } catch (error) {
-                alert("Error al crear el PDF. Intenta de nuevo.");
-                console.error(error);
+                alert("Error al generar PDF.");
             }
         }
 
         renderStock();
-        filtrar();
+        filtrarMobile();
     </script>
 </body>
 </html>
