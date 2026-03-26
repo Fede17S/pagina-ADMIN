@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V18 Buscador Inteligente</title>
+    <title>DistriMar - V19 Precisión</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -29,7 +29,7 @@
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; }
         .card.active { display: block; }
 
-        input, textarea, select { 
+        input, select { 
             width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
             border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; box-sizing: border-box;
         }
@@ -42,7 +42,6 @@
         .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); }
         .lista-resultados { max-height: 250px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; }
         .item-prod { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .item-prod:hover { background: rgba(0,0,0,0.05); }
         .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; }
         [data-theme="dark"] .cod-badge { background: #444; color: #eee; }
 
@@ -120,24 +119,23 @@
         </div>
 
         <div id="ajustes" class="card">
-            <h3>📂 Importar Catálogo</h3>
+            <h3>📂 Configuración</h3>
             <div class="search-area">
-                <strong>Instrucciones del Excel:</strong><br>
-                <small>Columna A: ID | Columna B: Nombre | Columna C: Precio | Columna D: Precio Patagonia (Opcional)</small>
-                <input type="text" id="nombreNuevaLista" placeholder="Nombre de la Lista (ej: Patagonia Mayo)">
+                <strong>Importar Catálogo (A:ID, B:Nom, C:Gral, D:Pat):</strong>
+                <input type="text" id="nombreNuevaLista" placeholder="Nombre de la Lista">
                 <input type="file" id="xlStock" accept=".xlsx, .xls">
             </div>
             <div class="search-area">
                 <strong>Clientes:</strong>
                 <input type="file" id="xlCli" accept=".xlsx, .xls">
             </div>
-            <button class="btn btn-red" onclick="borrarTodo()">BORRAR TODO EL SISTEMA</button>
+            <button class="btn btn-red" onclick="borrarTodo()">BORRAR TODO</button>
         </div>
 
     </div>
 
     <script>
-        const K_LISTAS = 'DM_LISTAS_V18'; const K_CLI = 'DM_CLI_V18'; const K_HOJ = 'DM_HOJ_V18';
+        const K_LISTAS = 'DM_LISTAS_V19'; const K_CLI = 'DM_CLI_V19'; const K_HOJ = 'DM_HOJ_V19';
 
         let misListas = JSON.parse(localStorage.getItem(K_LISTAS)) || {};
         let dbCli = JSON.parse(localStorage.getItem(K_CLI)) || [];
@@ -189,7 +187,6 @@
             }
         }
 
-        // --- EL NUEVO BUSCADOR INTELIGENTE ---
         function filtrar(t) {
             let bus = document.getElementById(`bus-${t}`).value.toLowerCase();
             let box = document.getElementById(`res-${t}`);
@@ -197,14 +194,13 @@
             if(bus.length < 1) return;
 
             stockActivo.forEach(p => {
-                // Busca coincidencia en ID o en Nombre
                 if(p.id.toLowerCase().includes(bus) || p.n.toLowerCase().includes(bus)) {
                     let precio = (tipoLista[t] === "Patagonia") ? p.pPat : p.pCli;
                     let div = document.createElement('div');
                     div.className = 'item-prod';
                     div.innerHTML = `
                         <div><span class="cod-badge">${p.id}</span> <span>${p.n}</span></div>
-                        <b>$${precio}</b>
+                        <b>$${precio.toFixed(2)}</b>
                     `;
                     div.onclick = () => {
                         itemSel[t] = { ...p, pre: precio };
@@ -240,7 +236,7 @@
             hojaRuta.forEach((f, i) => {
                 h += `<tr>
                     <td>${f.id}</td><td>${f.nom}</td><td>$${f.importe.toFixed(2)}</td>
-                    <td><input type="number" style="width:70px" value="${f.pago}" onchange="hojaRuta[${i}].pago=this.value;renderHoja()"></td>
+                    <td><input type="number" style="width:70px" value="${parseFloat(f.pago).toFixed(2)}" onchange="hojaRuta[${i}].pago=this.value;renderHoja()"></td>
                     <td>$${(f.importe - f.pago).toFixed(2)}</td>
                     <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td>
                 </tr>`;
@@ -262,7 +258,7 @@
             
             doc.autoTable({
                 startY: 35, head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']],
-                body: ordenes[t].map(i => [i.c, i.id, i.n, `$${i.p}`, `$${i.sub.toFixed(2)}`])
+                body: ordenes[t].map(i => [i.c, i.id, i.n, `$${i.p.toFixed(2)}`, `$${i.sub.toFixed(2)}`])
             });
 
             if(m === 'remito') {
@@ -277,23 +273,17 @@
             ordenes[t] = []; renderTabla(t);
         }
 
-        // --- IMPORTACIÓN CON ID ---
         document.getElementById('xlStock').addEventListener('change', function(e) {
             let n = document.getElementById('nombreNuevaLista').value;
             if(!n) return alert("Escribí un nombre para la lista");
             let r = new FileReader(); r.onload = (ev) => {
                 let wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
                 let raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                
-                // Mapeo: A=ID, B=Nombre, C=Precio Gral, D=Precio Patagonia
                 misListas[n] = raw.slice(1).filter(r => r[0]).map(r => ({ 
-                    id: r[0].toString(), 
-                    n: r[1], 
-                    pCli: parseFloat(r[2]), 
-                    pPat: parseFloat(r[3]) || parseFloat(r[2]) 
+                    id: r[0].toString(), n: r[1], pCli: parseFloat(r[2]) || 0, pPat: parseFloat(r[3]) || parseFloat(r[2]) || 0 
                 }));
                 localStorage.setItem(K_LISTAS, JSON.stringify(misListas)); 
-                actualizarSelector(); alert("Catálogo '" + n + "' cargado con éxito!");
+                actualizarSelector(); alert("Cargada!");
             }; r.readAsArrayBuffer(e.target.files[0]);
         });
 
