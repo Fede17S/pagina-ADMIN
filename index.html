@@ -1,212 +1,58 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V14 Importador PDF</title>
+<div id="ajustes" class="card">
+    <h3>⚙️ Herramientas de Carga Rápida</h3>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    
-    <style>
-        :root { --blue: #0056b3; --green: #25d366; --red: #dc3545; --gray: #f4f7f6; --dark: #333; }
-        body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding: 0; color: var(--dark); }
-        .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; }
-        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 11px; }
-        .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: #f8faff; }
-        .container { max-width: 900px; margin: 10px auto; padding: 10px; }
-        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; }
-        .card.active { display: block; }
-        input, textarea, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-blue { background: var(--blue); }
-        .btn-green { background: var(--green); }
-        .btn-red { background: var(--red); font-size: 11px; width: auto; padding: 8px 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid #eee; }
-        .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 18px; }
-        .search-area { background: #f1f3f5; padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid #dee2e6; }
-        .lista-resultados { max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 6px; }
-        .item-prod { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
-        #previewLogo { max-width: 100px; display: none; margin: 10px 0; border-radius: 5px; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-top: 5px; }
-    </style>
-</head>
-<body>
-
-    <nav class="tabs">
-        <button class="tab-btn active" onclick="verTab('pedido')">📝 PEDIDO</button>
-        <button class="tab-btn" onclick="verTab('remito')">🚚 REMITO</button>
-        <button class="tab-btn" onclick="verTab('hoja')">📋 HOJA RUTA</button>
-        <button class="tab-btn" onclick="verTab('ajustes')">⚙️ AJUSTES</button>
-    </nav>
-
-    <div class="container">
-
-        <div id="pedido" class="card active">
-            <input type="text" id="idCli-ped" placeholder="ID Cliente..." onkeyup="buscarCli('ped')">
-            <input type="text" id="nomCli-ped" placeholder="Nombre Cliente" readonly style="background:#eee">
-            <div id="badge-ped" class="badge">Lista: -</div>
-            <div class="search-area">
-                <input type="text" id="bus-ped" placeholder="Buscar producto..." onkeyup="filtrar('ped')">
-                <div id="res-ped" class="lista-resultados"></div>
-                <input type="number" id="cant-ped" value="1" style="width:80px">
-                <button class="btn btn-blue" onclick="agregar('ped')">+ AGREGAR</button>
-            </div>
-            <table id="tabla-ped"><thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead><tbody id="body-ped"></tbody></table>
-            <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
-            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 GENERAR PDF</button>
-        </div>
-
-        <div id="remito" class="card">
-            <button class="btn btn-blue" onclick="generarPDF('remito')">💾 GUARDAR REMITO</button>
-        </div>
-
-        <div id="hoja" class="card">
-            <h3 style="text-align:center">HOJA DE RUTA</h3>
-            <table id="tabla-hoja"><thead><tr><th>ID</th><th>Cliente</th><th>Total</th><th>A Cuenta</th><th>Saldo</th></tr></thead><tbody id="body-hoja"></tbody></table>
-            <button class="btn btn-gray" onclick="descargarHojaRuta()">🖨️ DESCARGAR HOJA</button>
-        </div>
-
-        <div id="ajustes" class="card">
-            <h2>⚙️ Configuración y Carga</h2>
-            
-            <div style="background:#fff3cd; padding:15px; border-radius:10px; border:1px solid #ffeeba; margin-bottom:20px;">
-                <strong>⚡ IMPORTADOR RÁPIDO DESDE PDF:</strong><br>
-                <small>1. Abrí tu PDF y seleccioná el texto de los productos.<br>
-                2. Copiá (Ctrl+C) y pegalo en el cuadro de abajo.<br>
-                3. Tocá el botón azul para procesar.</small>
-                <textarea id="textoPDF" placeholder="Pegá acá el texto del catálogo..." style="height:120px; margin-top:10px; font-size:12px;"></textarea>
-                <button class="btn btn-blue" onclick="procesarTextoCatalogo()">🚀 CARGAR ESTOS PRODUCTOS</button>
-            </div>
-
-            <hr>
-            <h3>Carga Tradicional (Excel)</h3>
-            <p>Productos:</p><input type="file" id="xlStock">
-            <p>Clientes:</p><input type="file" id="xlCli">
-            <p>Logo:</p><input type="file" id="subirLogo">
-            <img id="previewLogo" src="">
-            <hr>
-            <button class="btn-red" onclick="localStorage.clear(); location.reload();">⚠️ BORRAR TODA LA MEMORIA</button>
-        </div>
+    <div style="background:#e7f3ff; padding:15px; border-radius:10px; border:1px solid #b6d4fe; margin-bottom:20px;">
+        <strong>📄 Importador de Texto (PDF/Listas):</strong><br>
+        <small>Copiá el texto de tu PDF de precios y pegalo acá abajo. Intentaré detectar Nombres y Precios automáticamente.</small>
+        <textarea id="textoBruto" placeholder="Pegá acá el texto copiado del PDF..." style="height:100px; margin-top:10px;"></textarea>
+        <button class="btn btn-blue" onclick="procesarTextoPegado()">⚡ PROCESAR Y CARGAR AL STOCK</button>
     </div>
 
-    <script>
-        const K_STK = 'DM_STK_V14'; const K_CLI = 'DM_CLI_V14'; const K_LGO = 'DM_LGO_V14'; const K_HOJ = 'DM_HOJ_V14';
-        let dbStock = JSON.parse(localStorage.getItem(K_STK)) || [];
-        let dbCli = JSON.parse(localStorage.getItem(K_CLI)) || [];
-        let hojaRuta = JSON.parse(localStorage.getItem(K_HOJ)) || [];
-        let logoB64 = localStorage.getItem(K_LGO) || "";
-        let ordenes = { ped: [], rem: [] }; let listasCli = { ped: "Clientes", rem: "Clientes" }; let selIdx = { ped: null, rem: null };
+    <hr>
+    <h3>📦 Carga por Archivos Excel</h3>
+    <p>Cargar Stock (Excel):</p> <input type="file" id="xlStock" accept=".xlsx, .xls">
+    <p>Cargar Clientes (Excel):</p> <input type="file" id="xlCli" accept=".xlsx, .xls">
+    </div>
 
-        if(logoB64) { document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display = 'block'; }
+<script>
+// --- NUEVA FUNCIÓN PARA PROCESAR TEXTO PEGADO DE PDF ---
+function procesarTextoPegado() {
+    let texto = document.getElementById('textoBruto').value;
+    if(!texto) return alert("Pegá algo de texto primero");
 
-        function verTab(id) {
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
+    // Dividimos por líneas
+    let lineas = texto.split('\n');
+    let nuevosProductos = [];
 
-        // --- NUEVA FUNCIÓN: PROCESAR CATÁLOGO ---
-        function procesarTextoCatalogo() {
-            let texto = document.getElementById('textoPDF').value;
-            if(!texto) return alert("Pegá el texto primero");
+    lineas.forEach(linea => {
+        // Buscamos patrones de precios (ejemplo: $ 1.200,50 o 1200.50)
+        // Esta regex busca un nombre seguido de un número al final
+        let partes = linea.match(/(.*?)\s+\$?\s?([0-9\.,]+)$/);
+        
+        if(partes && partes.length >= 3) {
+            let nombre = partes[1].trim();
+            let precioStr = partes[2].replace(/\./g, '').replace(',', '.');
+            let precio = parseFloat(precioStr);
 
-            // Esta lógica busca: PRECIO (ej $1.234,50) + NOMBRE + CÓDIGO
-            // Es un poco flexible para que no falle si el PDF mezcla líneas
-            let lineas = texto.split('\n');
-            let detectados = [];
-            
-            // Unimos todo en un solo string para buscar patrones globales
-            let fullText = texto.replace(/\n/g, " ");
-            
-            // Patrón: Busca un precio, luego texto (nombre), luego "CÓD:" y el número
-            // Ejemplo del tuyo: $3.506,10 REXONA AERO WOMAN X150ML CÓD: 297
-            let regex = /\$?\s?([0-9\.]+[,\.][0-9]{2})\s+([^$]+?)\s+CÓD:\s?(\d+)/gi;
-            let match;
-
-            while ((match = regex.exec(fullText)) !== null) {
-                let precio = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
-                let nombre = match[2].trim();
-                let codigo = match[3];
-
-                detectados.push({
-                    n: `${nombre} (Cód:${codigo})`,
+            if(nombre && !isNaN(precio)) {
+                nuevosProductos.push({
+                    n: nombre,
                     pCli: precio,
-                    pPat: precio // Se puede ajustar después
+                    pPat: precio // Por defecto igualamos, luego se puede ajustar
                 });
             }
-
-            if(detectados.length > 0) {
-                if(confirm(`Detecté ${detectados.length} productos. ¿Los agrego al stock?`)) {
-                    dbStock = [...dbStock, ...detectados];
-                    localStorage.setItem(K_STK, JSON.stringify(dbStock));
-                    alert("✅ Cargados correctamente.");
-                    document.getElementById('textoPDF').value = "";
-                }
-            } else {
-                alert("No pude detectar productos con ese formato. Intentá copiar el texto de forma más limpia o pasame el PDF y yo te armo el Excel.");
-            }
         }
+    });
 
-        // --- LÓGICA DE BÚSQUEDA Y TABLAS (Igual a la anterior) ---
-        function buscarCli(t) {
-            let idIn = document.getElementById(`idCli-${t}`).value.trim();
-            let c = dbCli.find(cli => cli.id.toString().trim() === idIn);
-            if(c) {
-                document.getElementById(`nomCli-${t}`).value = c.nombre;
-                listasCli[t] = (c.lista && c.lista.toLowerCase().includes("patagonia")) ? "Patagonia" : "Clientes";
-                document.getElementById(`badge-${t}`).innerText = "Lista: " + listasCli[t];
-            } else { document.getElementById(`nomCli-${t}`).value = "❌ No encontrado"; }
-            filtrar(t);
+    if(nuevosProductos.length > 0) {
+        if(confirm(`He detectado ${nuevosProductos.length} productos. ¿Deseas sumarlos al stock actual?`)) {
+            dbStock = [...dbStock, ...nuevosProductos];
+            localStorage.setItem(K_STK, JSON.stringify(dbStock));
+            alert("✅ ¡Stock actualizado con éxito!");
+            document.getElementById('textoBruto').value = "";
         }
-
-        function filtrar(t) {
-            let bus = document.getElementById(`bus-${t}`).value.toLowerCase();
-            let box = document.getElementById(`res-${t}`);
-            box.innerHTML = ""; selIdx[t] = null;
-            if(bus.length < 1) return;
-            dbStock.forEach((p, i) => {
-                if(p.n.toLowerCase().includes(bus)) {
-                    let pre = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
-                    let div = document.createElement('div');
-                    div.className = 'item-prod';
-                    div.innerHTML = `<span>${p.n}</span> <strong>$${pre}</strong>`;
-                    div.onclick = () => { selIdx[t] = i; document.getElementById(`bus-${t}`).value = p.n; box.innerHTML = ""; };
-                    box.appendChild(div);
-                }
-            });
-        }
-
-        function agregar(t) {
-            let cant = parseInt(document.getElementById(`cant-${t}`).value);
-            if(selIdx[t] !== null && cant > 0) {
-                let p = dbStock[selIdx[t]];
-                let pre = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
-                ordenes[t].push({n: p.n, p: pre, c: cant, sub: pre * cant});
-                renderTabla(t);
-            }
-        }
-
-        function renderTabla(t) {
-            let h = ""; let tot = 0;
-            ordenes[t].forEach((it, i) => {
-                tot += it.sub;
-                h += `<tr><td>${it.c}</td><td>${it.n}</td><td>$${it.sub.toFixed(2)}</td><td class="remove" onclick="ordenes['${t}'].splice(${i},1);renderTabla('${t}')">✕</td></tr>`;
-            });
-            document.getElementById(`total-${t}`).innerText = tot.toFixed(2);
-            document.getElementById(`body-${t}`).innerHTML = h;
-        }
-
-        // --- ARCHIVOS ---
-        document.getElementById('subirLogo').addEventListener('change', function(e) {
-            let r = new FileReader(); r.onload = () => { logoB64 = r.result; localStorage.setItem(K_LGO, logoB64); document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display='block'; };
-            r.readAsDataURL(e.target.files[0]);
-        });
-        
-        // ... (Agregá el resto de tus funciones de Excel y PDF de la V13) ...
-    </script>
-</body>
-</html>
+    } else {
+        alert("No pude detectar el formato. Probá pasándome el PDF a mí para que yo te arme el Excel prolijo.");
+    }
+}
+</script>
