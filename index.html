@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V12 Búsqueda Pro</title>
+    <title>DistriMar - V13 Sistema Completo</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -22,6 +22,7 @@
         .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
+        .btn-gray { background: #444; }
         .btn-red { background: var(--red); font-size: 11px; width: auto; padding: 8px 12px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
         th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid #eee; }
@@ -45,101 +46,72 @@
     <div class="container">
 
         <div id="pedido" class="card active">
-            <label>ID Cliente:</label>
-            <input type="text" id="idCli-ped" placeholder="Escribí el ID del cliente..." onkeyup="buscarCli('ped')">
-            <input type="text" id="nomCli-ped" placeholder="Nombre del Cliente" readonly style="background:#f0f0f0; font-weight:bold;">
+            <input type="text" id="idCli-ped" placeholder="ID Cliente..." onkeyup="buscarCli('ped')">
+            <input type="text" id="nomCli-ped" placeholder="Nombre del Cliente" readonly style="background:#f0f0f0;">
             <div id="badge-ped" class="badge">Lista: -</div>
-
             <div class="search-area">
                 <input type="text" id="bus-ped" placeholder="Buscar producto..." onkeyup="filtrar('ped')">
                 <div id="res-ped" class="lista-resultados"></div>
-                <div style="display:flex; gap:5px; margin-top:10px;">
-                    <input type="number" id="cant-ped" value="1" style="width:80px; margin:0">
-                    <button class="btn btn-blue" onclick="agregar('ped')" style="margin:0; flex:1">+ AGREGAR</button>
-                </div>
+                <input type="number" id="cant-ped" value="1" style="width:80px; margin-top:10px;">
+                <button class="btn btn-blue" onclick="agregar('ped')">+ AGREGAR</button>
             </div>
-
-            <table id="tabla-ped">
-                <thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead>
-                <tbody id="body-ped"></tbody>
-            </table>
-            <textarea id="obs-ped" placeholder="Observaciones para el PDF..."></textarea>
+            <table id="tabla-ped"><thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead><tbody id="body-ped"></tbody></table>
+            <textarea id="obs-ped" placeholder="Observaciones para el pedido..."></textarea>
             <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
             <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 GENERAR PEDIDO</button>
         </div>
 
         <div id="remito" class="card">
-            <label>ID Cliente:</label>
-            <input type="text" id="idCli-rem" placeholder="Escribí el ID..." onkeyup="buscarCli('rem')">
-            <input type="text" id="nomCli-rem" placeholder="Nombre del Cliente" readonly style="background:#f0f0f0; font-weight:bold;">
-            <div id="badge-rem" class="badge">Lista: -</div>
-
+            <input type="text" id="idCli-rem" placeholder="ID Cliente..." onkeyup="buscarCli('rem')">
+            <input type="text" id="nomCli-rem" placeholder="Nombre del Cliente" readonly style="background:#f0f0f0;">
             <div class="search-area">
                 <input type="text" id="bus-rem" placeholder="Buscar producto..." onkeyup="filtrar('rem')">
                 <div id="res-rem" class="lista-resultados"></div>
-                <div style="display:flex; gap:5px; margin-top:10px;">
-                    <input type="number" id="cant-rem" value="1" style="width:80px; margin:0">
-                    <button class="btn btn-blue" onclick="agregar('rem')" style="margin:0; flex:1">+ AGREGAR</button>
-                </div>
+                <input type="number" id="cant-rem" value="1" style="width:80px; margin-top:10px;">
+                <button class="btn btn-blue" onclick="agregar('rem')">+ AGREGAR</button>
             </div>
-
-            <table id="tabla-rem">
-                <thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead>
-                <tbody id="body-rem"></tbody>
-            </table>
+            <table id="tabla-rem"><thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead><tbody id="body-rem"></tbody></table>
             <h3 style="text-align:right">TOTAL: $<span id="total-rem">0.00</span></h3>
             <button class="btn btn-blue" onclick="generarPDF('remito')">💾 GUARDAR Y SUMAR A RUTA</button>
         </div>
 
         <div id="hoja" class="card">
-            <h3 style="text-align:center">HOJA DE RUTA</h3>
-            <input type="text" id="repartidor" placeholder="Nombre del Repartidor">
+            <h3 style="text-align:center">HOJA DE RUTA - DISTRIMAR</h3>
+            <input type="text" id="repartidor" placeholder="Nombre del Repartidor" style="text-align:center; font-weight:bold;">
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Cliente</th><th>Total</th><th>Pagó</th><th>Tipo</th><th>Saldo</th><th></th></tr>
+                    <tr><th>ID</th><th>Cliente</th><th>Total</th><th>A Cuenta</th><th>Tipo</th><th>Saldo</th><th></th></tr>
                 </thead>
                 <tbody id="body-hoja"></tbody>
             </table>
-            <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:8px;">
-                <p>TOTAL RENDICIÓN: $<span id="total-hoja">0.00</span></p>
-                <p>TOTAL COBRADO: $<span id="recibido-hoja">0.00</span></p>
+            <div style="margin-top:20px; padding:15px; background:#f9f9f9; border-radius:10px; border:1px solid #eee;">
+                <p><strong>TOTAL RENDICIÓN:</strong> $<span id="total-hoja">0.00</span></p>
+                <p><strong>TOTAL COBRADO (Efe/Trans):</strong> $<span id="recibido-hoja">0.00</span></p>
             </div>
-            <button class="btn btn-gray" style="background:#333" onclick="descargarHojaRuta()">🖨️ DESCARGAR HOJA</button>
-            <button class="btn-red" onclick="borrarHoja()" style="margin-top:30px">VACIAR HOJA</button>
+            <button class="btn btn-gray" onclick="descargarHojaRuta()">🖨️ DESCARGAR PDF DE LA HOJA</button>
+            <button class="btn-red" onclick="borrarHoja()" style="margin-top:40px">⚠️ VACIAR TODA LA HOJA</button>
         </div>
 
         <div id="ajustes" class="card">
-            <h3>Configuración</h3>
-            <p>1. Cargar Logo:</p>
-            <input type="file" id="subirLogo" accept="image/*">
+            <h3>Ajustes de Base de Datos</h3>
+            <p>Cargar Logo:</p> <input type="file" id="subirLogo" accept="image/*">
             <img id="previewLogo" src="">
             <hr>
-            <p>2. Cargar Stock (Nombre, Precio Cli, Precio Pat):</p>
-            <input type="file" id="xlStock" accept=".xlsx, .xls">
+            <p>Cargar Stock (Excel):</p> <input type="file" id="xlStock" accept=".xlsx, .xls">
+            <p>Cargar Clientes (Excel):</p> <input type="file" id="xlCli" accept=".xlsx, .xls">
             <hr>
-            <p>3. Cargar Clientes (ID, Nombre, Lista):</p>
-            <input type="file" id="xlCli" accept=".xlsx, .xls">
-            <hr>
-            <button class="btn-red" onclick="limpiarMemoria()">⚠️ BORRAR TODO</button>
+            <button class="btn-red" onclick="limpiarMemoria()">BORRAR TODO</button>
         </div>
 
     </div>
 
     <script>
-        // Claves de memoria
-        const K_STK = 'DM_STK_V12';
-        const K_CLI = 'DM_CLI_V12';
-        const K_LGO = 'DM_LGO_V12';
-        const K_HOJ = 'DM_HOJ_V12';
-
+        const K_STK = 'DM_STK_V13'; const K_CLI = 'DM_CLI_V13'; const K_LGO = 'DM_LGO_V13'; const K_HOJ = 'DM_HOJ_V13';
         let dbStock = JSON.parse(localStorage.getItem(K_STK)) || [];
         let dbCli = JSON.parse(localStorage.getItem(K_CLI)) || [];
         let hojaRuta = JSON.parse(localStorage.getItem(K_HOJ)) || [];
         let logoB64 = localStorage.getItem(K_LGO) || "";
-
-        let ordenes = { ped: [], rem: [] };
-        let listasCli = { ped: "Clientes", rem: "Clientes" };
-        let selIdx = { ped: null, rem: null };
+        let ordenes = { ped: [], rem: [] }; let listasCli = { ped: "Clientes", rem: "Clientes" }; let selIdx = { ped: null, rem: null };
 
         if(logoB64) { document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display = 'block'; }
 
@@ -151,34 +123,17 @@
             if(id === 'hoja') renderHoja();
         }
 
-        // --- FUNCIÓN DE BÚSQUEDA CORREGIDA ---
         function buscarCli(t) {
-            let inputId = document.getElementById(`idCli-${t}`).value.trim();
-            let displayNombre = document.getElementById(`nomCli-${t}`);
-            let badge = document.getElementById(`badge-${t}`);
-
-            if(!inputId) {
-                displayNombre.value = "";
-                badge.innerText = "Lista: -";
-                badge.style.background = "#eee";
-                return;
-            }
-
-            // Buscamos convirtiendo ambos a String y quitando espacios
-            let clienteEncontrado = dbCli.find(c => c.id.toString().trim() === inputId);
-
-            if(clienteEncontrado) {
-                displayNombre.value = clienteEncontrado.nombre;
-                listasCli[t] = (clienteEncontrado.lista && clienteEncontrado.lista.toLowerCase().includes("patagonia")) ? "Patagonia" : "Clientes";
-                badge.innerText = "Lista: " + listasCli[t];
-                badge.style.background = (listasCli[t] === "Patagonia") ? "#fff3cd" : "#d1ecf1";
+            let idIn = document.getElementById(`idCli-${t}`).value.trim();
+            let c = dbCli.find(cli => cli.id.toString().trim() === idIn);
+            if(c) {
+                document.getElementById(`nomCli-${t}`).value = c.nombre;
+                listasCli[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
+                document.getElementById(`badge-${t}`).innerText = "Lista: " + listasCli[t];
             } else {
-                displayNombre.value = "❌ No encontrado";
-                badge.innerText = "Lista: -";
-                badge.style.background = "#ffdce0";
-                listasCli[t] = "Clientes";
+                document.getElementById(`nomCli-${t}`).value = "❌ No encontrado";
             }
-            filtrar(t); // Actualizar precios de búsqueda
+            filtrar(t);
         }
 
         function filtrar(t) {
@@ -186,18 +141,13 @@
             let box = document.getElementById(`res-${t}`);
             box.innerHTML = ""; selIdx[t] = null;
             if(bus.length < 1) return;
-
             dbStock.forEach((p, i) => {
                 if(p.n.toLowerCase().includes(bus)) {
                     let pre = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
                     let div = document.createElement('div');
                     div.className = 'item-prod';
                     div.innerHTML = `<span>${p.n}</span> <strong>$${pre}</strong>`;
-                    div.onclick = () => {
-                        selIdx[t] = i;
-                        document.getElementById(`bus-${t}`).value = p.n;
-                        box.innerHTML = "";
-                    };
+                    div.onclick = () => { selIdx[t] = i; document.getElementById(`bus-${t}`).value = p.n; box.innerHTML = ""; };
                     box.appendChild(div);
                 }
             });
@@ -229,7 +179,7 @@
                 tImp += f.importe; tRec += f.pago;
                 h += `<tr>
                     <td>${f.id}</td><td>${f.nom}</td><td>$${f.importe.toFixed(2)}</td>
-                    <td><input type="number" style="width:60px" value="${f.pago}" onchange="actH(${i},'pago',this.value)"></td>
+                    <td><input type="number" style="width:70px" value="${f.pago}" onchange="actH(${i},'pago',this.value)"></td>
                     <td><select onchange="actH(${i},'tipo',this.value)"><option value="Efe" ${f.tipo=='Efe'?'selected':''}>Efe</option><option value="Trans" ${f.tipo=='Trans'?'selected':''}>Trans</option></select></td>
                     <td style="color:${f.debe>0?'red':'green'}">$${f.debe.toFixed(2)}</td>
                     <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td>
@@ -247,60 +197,74 @@
             renderHoja();
         }
 
-        // --- EXCEL ---
+        // --- FUNCIÓN DE DESCARGA DE HOJA DE RUTA (LA QUE FALTABA) ---
+        async function descargarHojaRuta() {
+            if(hojaRuta.length === 0) return alert("La hoja de ruta está vacía.");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            if(logoB64) doc.addImage(logoB64, 'PNG', 14, 10, 25, 25);
+            doc.setFontSize(18); doc.text("HOJA DE RUTA - DISTRIMAR", 105, 20, {align:"center"});
+            doc.setFontSize(11);
+            doc.text(`Repartidor: ${document.getElementById('repartidor').value || '---'}`, 14, 40);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 160, 40);
+
+            let data = hojaRuta.map(f => [f.id, f.nom, `$${f.importe.toFixed(2)}`, `$${f.pago.toFixed(2)}`, f.tipo, `$${f.debe.toFixed(2)}`]);
+            
+            doc.autoTable({
+                startY: 45,
+                head: [['ID', 'Cliente', 'Importe', 'A Cuenta', 'Tipo', 'Saldo']],
+                body: data,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 86, 179] }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(12);
+            doc.text(`TOTAL RENDICIÓN: $${document.getElementById('total-hoja').innerText}`, 196, finalY, {align:"right"});
+            doc.text(`TOTAL COBRADO: $${document.getElementById('recibido-hoja').innerText}`, 196, finalY + 7, {align:"right"});
+
+            doc.save(`Hoja_Ruta_${new Date().toLocaleDateString()}.pdf`);
+        }
+
+        // --- EXCEL Y PDF ---
         document.getElementById('xlStock').addEventListener('change', function(e) {
-            let r = new FileReader();
-            r.onload = (ev) => {
+            let r = new FileReader(); r.onload = (ev) => {
                 let wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
                 let f = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                dbStock = f.slice(1).filter(row => row[0]).map(row => ({ n: row[0], pCli: row[1], pPat: row[2] }));
+                dbStock = f.slice(1).filter(r => r[0]).map(r => ({ n: r[0], pCli: r[1], pPat: r[2] }));
                 localStorage.setItem(K_STK, JSON.stringify(dbStock)); alert("Stock cargado.");
-            };
-            r.readAsArrayBuffer(e.target.files[0]);
+            }; r.readAsArrayBuffer(e.target.files[0]);
         });
 
         document.getElementById('xlCli').addEventListener('change', function(e) {
-            let r = new FileReader();
-            r.onload = (ev) => {
+            let r = new FileReader(); r.onload = (ev) => {
                 let wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
                 let f = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                // Guardamos ID como string y hacemos trim para evitar fallos de búsqueda
-                dbCli = f.slice(1).filter(row => row[0]).map(row => ({
-                    id: row[0].toString().trim(), 
-                    nombre: row[1], 
-                    lista: row[2] || "Clientes" 
-                }));
+                dbCli = f.slice(1).filter(r => r[0]).map(r => ({ id: r[0].toString(), nombre: r[1], lista: r[2] || "Clientes" }));
                 localStorage.setItem(K_CLI, JSON.stringify(dbCli)); alert("Clientes cargados.");
-            };
-            r.readAsArrayBuffer(e.target.files[0]);
+            }; r.readAsArrayBuffer(e.target.files[0]);
         });
 
         document.getElementById('subirLogo').addEventListener('change', function(e) {
-            let r = new FileReader();
-            r.onload = () => { logoB64 = r.result; localStorage.setItem(K_LGO, logoB64); document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display='block'; };
+            let r = new FileReader(); r.onload = () => { logoB64 = r.result; localStorage.setItem(K_LGO, logoB64); document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display='block'; };
             r.readAsDataURL(e.target.files[0]);
         });
 
-        // --- PDF ---
         async function generarPDF(m) {
             const t = (m === 'pedido') ? 'ped' : 'rem';
-            if(ordenes[t].length === 0) return alert("Tabla vacía");
+            if(ordenes[t].length === 0) return alert("Cargá productos.");
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            let nom = document.getElementById(`nomCli-${t}`).value || "Sin Nombre";
-            let id = document.getElementById(`idCli-${t}`).value || "00";
+            let nom = document.getElementById(`nomCli-${t}`).value;
+            let id = document.getElementById(`idCli-${t}`).value;
+            let tot = document.getElementById(`total-${t}`).innerText;
 
             if(logoB64) doc.addImage(logoB64, 'PNG', 14, 10, 30, 30);
-            doc.setFontSize(18); doc.text(m.toUpperCase() + " DISTRIMAR", 105, 25, {align:"center"});
+            doc.text(m.toUpperCase() + " DISTRIMAR", 105, 25, {align:"center"});
             doc.setFontSize(10); doc.text(`Cliente: ${nom} (${id})`, 50, 35);
+            doc.autoTable({ startY: 45, head: [['Cant', 'Prod', 'P.U', 'Sub']], body: ordenes[t].map(i=>[i.c, i.n, `$${i.p}`, `$${i.sub}`]) });
             
-            let data = ordenes[t].map(i => [i.c, i.n, `$${i.p.toFixed(2)}`, `$${i.sub.toFixed(2)}`]);
-            doc.autoTable({ startY: 45, head: [['Cant', 'Producto', 'P.U', 'Subtotal']], body: data });
-            
-            let finalY = doc.lastAutoTable.finalY + 10;
-            let tot = document.getElementById(`total-${t}`).innerText;
-            doc.text(`TOTAL: $${tot}`, 196, finalY, {align:"right"});
-
             if(m === 'remito') {
                 hojaRuta.push({ id, nom, importe: parseFloat(tot), pago: 0, tipo: "Efe", debe: parseFloat(tot) });
                 localStorage.setItem(K_HOJ, JSON.stringify(hojaRuta));
@@ -308,9 +272,7 @@
             } else {
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Pedido_${nom}.pdf`, { type: 'application/pdf' });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({ files: [file], title: 'Pedido' });
-                } else { doc.save(`Pedido_${nom}.pdf`); }
+                if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); } else { doc.save(`Pedido_${nom}.pdf`); }
             }
             ordenes[t] = []; renderTabla(t);
         }
