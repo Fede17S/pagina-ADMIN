@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - Sistema Permanente</title>
+    <title>DistriMar - V12 Búsqueda Pro</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -12,32 +12,25 @@
     <style>
         :root { --blue: #0056b3; --green: #25d366; --red: #dc3545; --gray: #f4f7f6; --dark: #333; }
         body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding: 0; color: var(--dark); }
-        
-        .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; overflow-x: auto; }
-        .tab-btn { flex: 1; padding: 15px 10px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 11px; white-space: nowrap; }
+        .tabs { display: flex; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 10; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 11px; }
         .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: #f8faff; }
-
         .container { max-width: 900px; margin: 10px auto; padding: 10px; }
         .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; }
         .card.active { display: block; }
-
-        input, textarea, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
         .btn-red { background: var(--red); font-size: 11px; width: auto; padding: 8px 12px; }
-
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
         th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid #eee; }
-        .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 16px; padding: 0 10px; }
-
+        .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 18px; }
         .search-area { background: #f1f3f5; padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid #dee2e6; }
-        .lista-resultados { max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; }
-        .item-prod { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; font-size: 14px; }
-        .item-prod:hover { background: #f0f7ff; }
-        
-        #previewLogo { max-width: 100px; display: none; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; background: #eee; }
+        .lista-resultados { max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 6px; }
+        .item-prod { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
+        #previewLogo { max-width: 100px; display: none; margin: 10px 0; border-radius: 5px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -52,9 +45,10 @@
     <div class="container">
 
         <div id="pedido" class="card active">
-            <input type="text" id="idCli-ped" placeholder="ID Cliente (ej: 3825)" onkeyup="buscarCli('ped')">
-            <input type="text" id="nomCli-ped" placeholder="Nombre del Cliente" readonly style="background:#f9f9f9">
-            <div id="lista-ped" class="badge">Lista: -</div>
+            <label>ID Cliente:</label>
+            <input type="text" id="idCli-ped" placeholder="Escribí el ID del cliente..." onkeyup="buscarCli('ped')">
+            <input type="text" id="nomCli-ped" placeholder="Nombre del Cliente" readonly style="background:#f0f0f0; font-weight:bold;">
+            <div id="badge-ped" class="badge">Lista: -</div>
 
             <div class="search-area">
                 <input type="text" id="bus-ped" placeholder="Buscar producto..." onkeyup="filtrar('ped')">
@@ -69,15 +63,17 @@
                 <thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-ped"></tbody>
             </table>
-            <textarea id="obs-ped" placeholder="Observaciones (se verán en el PDF)..." style="margin-top:15px;"></textarea>
+            <textarea id="obs-ped" placeholder="Observaciones para el PDF..."></textarea>
             <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
-            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 GENERAR Y COMPARTIR</button>
+            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 GENERAR PEDIDO</button>
         </div>
 
         <div id="remito" class="card">
-            <input type="text" id="idCli-rem" placeholder="ID Cliente..." onkeyup="buscarCli('rem')">
-            <input type="text" id="nomCli-rem" placeholder="Nombre del Cliente" readonly style="background:#f9f9f9">
-            
+            <label>ID Cliente:</label>
+            <input type="text" id="idCli-rem" placeholder="Escribí el ID..." onkeyup="buscarCli('rem')">
+            <input type="text" id="nomCli-rem" placeholder="Nombre del Cliente" readonly style="background:#f0f0f0; font-weight:bold;">
+            <div id="badge-rem" class="badge">Lista: -</div>
+
             <div class="search-area">
                 <input type="text" id="bus-rem" placeholder="Buscar producto..." onkeyup="filtrar('rem')">
                 <div id="res-rem" class="lista-resultados"></div>
@@ -96,72 +92,56 @@
         </div>
 
         <div id="hoja" class="card">
-            <h3 style="text-align:center">HOJA DE RUTA - DISTRIMAR</h3>
-            <input type="text" id="repartidor" placeholder="Nombre del Repartidor" style="text-align:center;">
-            
+            <h3 style="text-align:center">HOJA DE RUTA</h3>
+            <input type="text" id="repartidor" placeholder="Nombre del Repartidor">
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Cliente</th><th>Importe</th><th>A Cuenta</th><th>Tipo</th><th>Debe</th><th></th></tr>
+                    <tr><th>ID</th><th>Cliente</th><th>Total</th><th>Pagó</th><th>Tipo</th><th>Saldo</th><th></th></tr>
                 </thead>
                 <tbody id="body-hoja"></tbody>
             </table>
-
-            <div style="margin-top:20px; border-top:2px solid #eee; padding-top:10px;">
-                <p><strong>TOTAL RENDICIÓN:</strong> $<span id="total-hoja">0.00</span></p>
-                <p><strong>TOTAL RECIBIDO:</strong> $<span id="recibido-hoja">0.00</span></p>
+            <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:8px;">
+                <p>TOTAL RENDICIÓN: $<span id="total-hoja">0.00</span></p>
+                <p>TOTAL COBRADO: $<span id="recibido-hoja">0.00</span></p>
             </div>
-            
-            <button class="btn btn-gray" style="background:#333" onclick="descargarHojaRuta()">🖨️ DESCARGAR PDF DE HOJA</button>
-            <button class="btn-red" onclick="borrarHoja()" style="margin-top:30px">⚠️ VACIAR HOJA DE RUTA</button>
+            <button class="btn btn-gray" style="background:#333" onclick="descargarHojaRuta()">🖨️ DESCARGAR HOJA</button>
+            <button class="btn-red" onclick="borrarHoja()" style="margin-top:30px">VACIAR HOJA</button>
         </div>
 
         <div id="ajustes" class="card">
-            <h2>Configuración del Sistema</h2>
-            
-            <div style="background:#fff4e5; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #ffd8a8">
-                <strong>💡 Importante:</strong> Cargá los archivos una sola vez. El sistema los recordará aunque cierres la página.
-            </div>
-
-            <h3>1. Logo de Empresa</h3>
+            <h3>Configuración</h3>
+            <p>1. Cargar Logo:</p>
             <input type="file" id="subirLogo" accept="image/*">
-            <img id="previewLogo" src="" alt="Logo guardado">
-
+            <img id="previewLogo" src="">
             <hr>
-            <h3>2. Base de Datos (Excel)</h3>
-            <label>Cargar Stock (Nombre, Precio Cli, Precio Pat):</label>
+            <p>2. Cargar Stock (Nombre, Precio Cli, Precio Pat):</p>
             <input type="file" id="xlStock" accept=".xlsx, .xls">
-            
-            <label style="margin-top:10px; display:block;">Cargar Clientes (ID, Nombre, Lista):</label>
-            <input type="file" id="xlCli" accept=".xlsx, .xls">
-
             <hr>
-            <button class="btn-red" onclick="limpiarTodo()">❌ BORRAR TODA LA MEMORIA</button>
+            <p>3. Cargar Clientes (ID, Nombre, Lista):</p>
+            <input type="file" id="xlCli" accept=".xlsx, .xls">
+            <hr>
+            <button class="btn-red" onclick="limpiarMemoria()">⚠️ BORRAR TODO</button>
         </div>
 
     </div>
 
     <script>
-        // --- INICIALIZACIÓN Y CARGA DESDE MEMORIA ---
-        const KEY_STOCK = 'DM_BASE_STOCK_V11';
-        const KEY_CLI = 'DM_BASE_CLI_V11';
-        const KEY_LOGO = 'DM_BASE_LOGO_V11';
-        const KEY_HOJA = 'DM_BASE_HOJA_V11';
+        // Claves de memoria
+        const K_STK = 'DM_STK_V12';
+        const K_CLI = 'DM_CLI_V12';
+        const K_LGO = 'DM_LGO_V12';
+        const K_HOJ = 'DM_HOJ_V12';
 
-        let dbStock = JSON.parse(localStorage.getItem(KEY_STOCK)) || [];
-        let dbCli = JSON.parse(localStorage.getItem(KEY_CLI)) || [];
-        let hojaRuta = JSON.parse(localStorage.getItem(KEY_HOJA)) || [];
-        let logoBase64 = localStorage.getItem(KEY_LOGO) || "";
+        let dbStock = JSON.parse(localStorage.getItem(K_STK)) || [];
+        let dbCli = JSON.parse(localStorage.getItem(K_CLI)) || [];
+        let hojaRuta = JSON.parse(localStorage.getItem(K_HOJ)) || [];
+        let logoB64 = localStorage.getItem(K_LGO) || "";
 
         let ordenes = { ped: [], rem: [] };
         let listasCli = { ped: "Clientes", rem: "Clientes" };
-        let indexSeleccionado = { ped: null, rem: null };
+        let selIdx = { ped: null, rem: null };
 
-        // Mostrar logo si existe
-        if(logoBase64) {
-            const img = document.getElementById('previewLogo');
-            img.src = logoBase64;
-            img.style.display = 'block';
-        }
+        if(logoB64) { document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display = 'block'; }
 
         function verTab(id) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
@@ -171,37 +151,50 @@
             if(id === 'hoja') renderHoja();
         }
 
-        // --- BÚSQUEDA DE CLIENTES ---
+        // --- FUNCIÓN DE BÚSQUEDA CORREGIDA ---
         function buscarCli(t) {
-            let id = document.getElementById(`idCli-${t}`).value.trim();
-            let c = dbCli.find(cli => cli.id.toString() === id);
-            if(c) {
-                document.getElementById(`nomCli-${t}`).value = c.nombre;
-                listasCli[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
-                document.getElementById(`lista-${t}`).innerText = "Lista: " + listasCli[t];
+            let inputId = document.getElementById(`idCli-${t}`).value.trim();
+            let displayNombre = document.getElementById(`nomCli-${t}`);
+            let badge = document.getElementById(`badge-${t}`);
+
+            if(!inputId) {
+                displayNombre.value = "";
+                badge.innerText = "Lista: -";
+                badge.style.background = "#eee";
+                return;
+            }
+
+            // Buscamos convirtiendo ambos a String y quitando espacios
+            let clienteEncontrado = dbCli.find(c => c.id.toString().trim() === inputId);
+
+            if(clienteEncontrado) {
+                displayNombre.value = clienteEncontrado.nombre;
+                listasCli[t] = (clienteEncontrado.lista && clienteEncontrado.lista.toLowerCase().includes("patagonia")) ? "Patagonia" : "Clientes";
+                badge.innerText = "Lista: " + listasCli[t];
+                badge.style.background = (listasCli[t] === "Patagonia") ? "#fff3cd" : "#d1ecf1";
             } else {
-                document.getElementById(`nomCli-${t}`).value = "";
+                displayNombre.value = "❌ No encontrado";
+                badge.innerText = "Lista: -";
+                badge.style.background = "#ffdce0";
                 listasCli[t] = "Clientes";
             }
-            filtrar(t);
+            filtrar(t); // Actualizar precios de búsqueda
         }
 
-        // --- FILTRO DE PRODUCTOS ---
         function filtrar(t) {
             let bus = document.getElementById(`bus-${t}`).value.toLowerCase();
             let box = document.getElementById(`res-${t}`);
-            box.innerHTML = ""; indexSeleccionado[t] = null;
-            
+            box.innerHTML = ""; selIdx[t] = null;
             if(bus.length < 1) return;
 
             dbStock.forEach((p, i) => {
                 if(p.n.toLowerCase().includes(bus)) {
-                    let precio = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
+                    let pre = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
                     let div = document.createElement('div');
                     div.className = 'item-prod';
-                    div.innerHTML = `<span>${p.n}</span> <strong>$${precio}</strong>`;
+                    div.innerHTML = `<span>${p.n}</span> <strong>$${pre}</strong>`;
                     div.onclick = () => {
-                        indexSeleccionado[t] = i;
+                        selIdx[t] = i;
                         document.getElementById(`bus-${t}`).value = p.n;
                         box.innerHTML = "";
                     };
@@ -212,13 +205,11 @@
 
         function agregar(t) {
             let cant = parseInt(document.getElementById(`cant-${t}`).value);
-            if(indexSeleccionado[t] !== null && cant > 0) {
-                let p = dbStock[indexSeleccionado[t]];
-                let precio = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
-                ordenes[t].push({n: p.n, p: precio, c: cant, sub: precio * cant});
+            if(selIdx[t] !== null && cant > 0) {
+                let p = dbStock[selIdx[t]];
+                let pre = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
+                ordenes[t].push({n: p.n, p: pre, c: cant, sub: pre * cant});
                 renderTabla(t);
-                document.getElementById(`bus-${t}`).value = "";
-                indexSeleccionado[t] = null;
             }
         }
 
@@ -232,133 +223,100 @@
             document.getElementById(`body-${t}`).innerHTML = h;
         }
 
-        // --- HOJA DE RUTA ---
         function renderHoja() {
             let h = ""; let tImp = 0; let tRec = 0;
             hojaRuta.forEach((f, i) => {
-                tImp += f.importe;
-                tRec += f.pago;
+                tImp += f.importe; tRec += f.pago;
                 h += `<tr>
-                    <td>${f.id}</td>
-                    <td>${f.nom}</td>
-                    <td>$${f.importe.toFixed(2)}</td>
-                    <td><input type="number" class="in-tabla" style="width:70px" value="${f.pago}" onchange="actHoja(${i}, 'pago', this.value)"></td>
-                    <td>
-                        <select onchange="actHoja(${i}, 'tipo', this.value)" style="width:70px; padding:2px; font-size:11px;">
-                            <option value="Efe" ${f.tipo=='Efe'?'selected':''}>Efe</option>
-                            <option value="Trans" ${f.tipo=='Trans'?'selected':''}>Trans</option>
-                        </select>
-                    </td>
+                    <td>${f.id}</td><td>${f.nom}</td><td>$${f.importe.toFixed(2)}</td>
+                    <td><input type="number" style="width:60px" value="${f.pago}" onchange="actH(${i},'pago',this.value)"></td>
+                    <td><select onchange="actH(${i},'tipo',this.value)"><option value="Efe" ${f.tipo=='Efe'?'selected':''}>Efe</option><option value="Trans" ${f.tipo=='Trans'?'selected':''}>Trans</option></select></td>
                     <td style="color:${f.debe>0?'red':'green'}">$${f.debe.toFixed(2)}</td>
-                    <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja();">✕</td>
+                    <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td>
                 </tr>`;
             });
             document.getElementById('body-hoja').innerHTML = h;
             document.getElementById('total-hoja').innerText = tImp.toFixed(2);
             document.getElementById('recibido-hoja').innerText = tRec.toFixed(2);
-            localStorage.setItem(KEY_HOJA, JSON.stringify(hojaRuta));
+            localStorage.setItem(K_HOJ, JSON.stringify(hojaRuta));
         }
 
-        function actHoja(i, campo, valor) {
-            if(campo === 'pago') {
-                hojaRuta[i].pago = parseFloat(valor) || 0;
-                hojaRuta[i].debe = hojaRuta[i].importe - hojaRuta[i].pago;
-            } else { hojaRuta[i].tipo = valor; }
+        function actH(i, c, v) {
+            if(c === 'pago') { hojaRuta[i].pago = parseFloat(v) || 0; hojaRuta[i].debe = hojaRuta[i].importe - hojaRuta[i].pago; }
+            else { hojaRuta[i].tipo = v; }
             renderHoja();
         }
 
-        // --- GUARDADO DE EXCEL (PERSISTENCIA) ---
+        // --- EXCEL ---
         document.getElementById('xlStock').addEventListener('change', function(e) {
-            let reader = new FileReader();
-            reader.onload = (ev) => {
+            let r = new FileReader();
+            r.onload = (ev) => {
                 let wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
-                let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                dbStock = filas.slice(1).filter(f => f[0]).map(f => ({
-                    n: f[0], pCli: parseFloat(f[1]) || 0, pPat: parseFloat(f[2]) || 0
-                }));
-                localStorage.setItem(KEY_STOCK, JSON.stringify(dbStock));
-                alert("✅ Stock guardado permanentemente (" + dbStock.length + " productos)");
+                let f = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                dbStock = f.slice(1).filter(row => row[0]).map(row => ({ n: row[0], pCli: row[1], pPat: row[2] }));
+                localStorage.setItem(K_STK, JSON.stringify(dbStock)); alert("Stock cargado.");
             };
-            reader.readAsArrayBuffer(e.target.files[0]);
+            r.readAsArrayBuffer(e.target.files[0]);
         });
 
         document.getElementById('xlCli').addEventListener('change', function(e) {
-            let reader = new FileReader();
-            reader.onload = (ev) => {
+            let r = new FileReader();
+            r.onload = (ev) => {
                 let wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
-                let filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                dbCli = filas.slice(1).filter(f => f[0]).map(f => ({
-                    id: f[0].toString(), nombre: f[1], lista: f[2] || "Clientes"
+                let f = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                // Guardamos ID como string y hacemos trim para evitar fallos de búsqueda
+                dbCli = f.slice(1).filter(row => row[0]).map(row => ({
+                    id: row[0].toString().trim(), 
+                    nombre: row[1], 
+                    lista: row[2] || "Clientes" 
                 }));
-                localStorage.setItem(KEY_CLI, JSON.stringify(dbCli));
-                alert("✅ Clientes guardados permanentemente (" + dbCli.length + " clientes)");
+                localStorage.setItem(K_CLI, JSON.stringify(dbCli)); alert("Clientes cargados.");
             };
-            reader.readAsArrayBuffer(e.target.files[0]);
+            r.readAsArrayBuffer(e.target.files[0]);
         });
 
         document.getElementById('subirLogo').addEventListener('change', function(e) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                logoBase64 = reader.result;
-                localStorage.setItem(KEY_LOGO, logoBase64);
-                document.getElementById('previewLogo').src = logoBase64;
-                document.getElementById('previewLogo').style.display = 'block';
-            };
-            reader.readAsDataURL(e.target.files[0]);
+            let r = new FileReader();
+            r.onload = () => { logoB64 = r.result; localStorage.setItem(K_LGO, logoB64); document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display='block'; };
+            r.readAsDataURL(e.target.files[0]);
         });
 
-        // --- PDF Y WHATSAPP ---
-        async function generarPDF(modo) {
-            const t = (modo === 'pedido') ? 'ped' : 'rem';
-            if(ordenes[t].length === 0) return alert("Cargá productos primero");
-
+        // --- PDF ---
+        async function generarPDF(m) {
+            const t = (m === 'pedido') ? 'ped' : 'rem';
+            if(ordenes[t].length === 0) return alert("Tabla vacía");
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            let nomCli = document.getElementById(`nomCli-${t}`).value || "Consumidor Final";
-            let idCli = document.getElementById(`idCli-${t}`).value || "00";
+            let nom = document.getElementById(`nomCli-${t}`).value || "Sin Nombre";
+            let id = document.getElementById(`idCli-${t}`).value || "00";
 
-            if(logoBase64) doc.addImage(logoBase64, 'PNG', 14, 10, 30, 30);
+            if(logoB64) doc.addImage(logoB64, 'PNG', 14, 10, 30, 30);
+            doc.setFontSize(18); doc.text(m.toUpperCase() + " DISTRIMAR", 105, 25, {align:"center"});
+            doc.setFontSize(10); doc.text(`Cliente: ${nom} (${id})`, 50, 35);
             
-            doc.setFontSize(18); doc.text(modo.toUpperCase() + " DISTRIMAR", 105, 25, {align:"center"});
-            doc.setFontSize(10);
-            doc.text(`Cliente: ${nomCli} (${idCli})`, 50, 35);
-            doc.text(`Fecha: ${new Date().toLocaleString()}`, 50, 40);
-
-            let data = ordenes[t].map(it => [it.c, it.n, `$${it.p.toFixed(2)}`, `$${it.sub.toFixed(2)}`]);
+            let data = ordenes[t].map(i => [i.c, i.n, `$${i.p.toFixed(2)}`, `$${i.sub.toFixed(2)}`]);
             doc.autoTable({ startY: 45, head: [['Cant', 'Producto', 'P.U', 'Subtotal']], body: data });
-
+            
             let finalY = doc.lastAutoTable.finalY + 10;
+            let tot = document.getElementById(`total-${t}`).innerText;
+            doc.text(`TOTAL: $${tot}`, 196, finalY, {align:"right"});
 
-            if(t === 'ped') {
-                let obs = document.getElementById('obs-ped').value;
-                if(obs) {
-                    doc.setFont("helvetica", "bold"); doc.text("OBSERVACIONES:", 14, finalY);
-                    doc.setFont("helvetica", "normal");
-                    doc.text(doc.splitTextToSize(obs, 180), 14, finalY + 7);
-                    finalY += 20;
-                }
-            }
-
-            let total = document.getElementById(`total-${t}`).innerText;
-            doc.setFontSize(14); doc.text(`TOTAL: $${total}`, 196, finalY, {align:"right"});
-
-            if(modo === 'remito') {
-                hojaRuta.push({ id: idCli, nom: nomCli, importe: parseFloat(total), pago: 0, tipo: "Efe", debe: parseFloat(total) });
-                localStorage.setItem(KEY_HOJA, JSON.stringify(hojaRuta));
-                doc.save(`Remito_${nomCli}.pdf`);
+            if(m === 'remito') {
+                hojaRuta.push({ id, nom, importe: parseFloat(tot), pago: 0, tipo: "Efe", debe: parseFloat(tot) });
+                localStorage.setItem(K_HOJ, JSON.stringify(hojaRuta));
+                doc.save(`Remito_${nom}.pdf`);
             } else {
                 const pdfBlob = doc.output('blob');
-                const file = new File([pdfBlob], `Pedido_${nomCli}.pdf`, { type: 'application/pdf' });
+                const file = new File([pdfBlob], `Pedido_${nom}.pdf`, { type: 'application/pdf' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({ files: [file], title: 'Enviar Pedido' });
-                } else { doc.save(`Pedido_${nomCli}.pdf`); }
+                    await navigator.share({ files: [file], title: 'Pedido' });
+                } else { doc.save(`Pedido_${nom}.pdf`); }
             }
-
             ordenes[t] = []; renderTabla(t);
         }
 
-        function borrarHoja() { if(confirm("¿Borrar la hoja de ruta?")) { hojaRuta = []; renderHoja(); } }
-        function limpiarTodo() { if(confirm("¿BORRAR TODO? Se perderán productos, clientes y logo.")) { localStorage.clear(); location.reload(); } }
+        function borrarHoja() { if(confirm("¿Vaciar?")) { hojaRuta = []; renderHoja(); } }
+        function limpiarMemoria() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
