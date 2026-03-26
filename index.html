@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V19 Precisión</title>
+    <title>DistriMar - V20 Full System</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -29,7 +29,7 @@
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; }
         .card.active { display: block; }
 
-        input, select { 
+        input, select, textarea { 
             width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
             border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; box-sizing: border-box;
         }
@@ -50,6 +50,7 @@
         .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; }
         
         .badge { display: inline-block; padding: 3px 8px; border-radius: 5px; background: var(--blue); color: #fff; font-size: 10px; margin-top: 5px; }
+        #previewLogo { max-width: 150px; margin: 10px 0; border-radius: 8px; display: none; }
     </style>
 </head>
 <body>
@@ -85,8 +86,9 @@
                 <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-ped"></tbody>
             </table>
+            <textarea id="obs-ped" placeholder="Observaciones del pedido..." rows="2" style="margin-top:10px;"></textarea>
             <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
-            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 ENVIAR PEDIDO</button>
+            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 ENVIAR PEDIDO (PDF)</button>
         </div>
 
         <div id="remito" class="card">
@@ -105,6 +107,7 @@
                 <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-rem"></tbody>
             </table>
+            <textarea id="obs-rem" placeholder="Observaciones del remito..." rows="2" style="margin-top:10px;"></textarea>
             <h3 style="text-align:right">TOTAL: $<span id="total-rem">0.00</span></h3>
             <button class="btn btn-blue" onclick="generarPDF('remito')">💾 GUARDAR Y SUMAR A RUTA</button>
         </div>
@@ -115,11 +118,17 @@
                 <thead><tr><th>ID</th><th>Cliente</th><th>Total</th><th>Pago</th><th>Saldo</th><th></th></tr></thead>
                 <tbody id="body-hoja"></tbody>
             </table>
+            <button class="btn btn-green" onclick="descargarHojaRuta()" style="margin-top:20px;">📥 DESCARGAR HOJA DE RUTA (PDF)</button>
             <button class="btn-red" onclick="borrarHoja()" style="margin-top:30px">VACIAR HOJA</button>
         </div>
 
         <div id="ajustes" class="card">
             <h3>📂 Configuración</h3>
+            <div class="search-area">
+                <strong>Logo de la Empresa:</strong>
+                <input type="file" id="subirLogo" accept="image/*">
+                <img id="previewLogo" alt="Logo Empresa">
+            </div>
             <div class="search-area">
                 <strong>Importar Catálogo (A:ID, B:Nom, C:Gral, D:Pat):</strong>
                 <input type="text" id="nombreNuevaLista" placeholder="Nombre de la Lista">
@@ -129,17 +138,18 @@
                 <strong>Clientes:</strong>
                 <input type="file" id="xlCli" accept=".xlsx, .xls">
             </div>
-            <button class="btn btn-red" onclick="borrarTodo()">BORRAR TODO</button>
+            <button class="btn btn-red" onclick="borrarTodo()">BORRAR TODA LA MEMORIA</button>
         </div>
 
     </div>
 
     <script>
-        const K_LISTAS = 'DM_LISTAS_V19'; const K_CLI = 'DM_CLI_V19'; const K_HOJ = 'DM_HOJ_V19';
+        const K_LISTAS = 'DM_LISTAS_V20'; const K_CLI = 'DM_CLI_V20'; const K_HOJ = 'DM_HOJ_V20'; const K_LOGO = 'DM_LOGO_V20';
 
         let misListas = JSON.parse(localStorage.getItem(K_LISTAS)) || {};
         let dbCli = JSON.parse(localStorage.getItem(K_CLI)) || [];
         let hojaRuta = JSON.parse(localStorage.getItem(K_HOJ)) || [];
+        let logoBase64 = localStorage.getItem(K_LOGO) || "";
         let stockActivo = [];
         let ordenes = { ped: [], rem: [] };
         let tipoLista = { ped: "Clientes", rem: "Clientes" };
@@ -148,6 +158,11 @@
         window.onload = () => {
             actualizarSelector();
             if(localStorage.getItem('DM_THEME') === 'dark') document.documentElement.setAttribute("data-theme", "dark");
+            if(logoBase64) {
+                const img = document.getElementById('previewLogo');
+                img.src = logoBase64;
+                img.style.display = 'block';
+            }
         };
 
         function verTab(id) {
@@ -192,16 +207,12 @@
             let box = document.getElementById(`res-${t}`);
             box.innerHTML = ""; itemSel[t] = null;
             if(bus.length < 1) return;
-
             stockActivo.forEach(p => {
                 if(p.id.toLowerCase().includes(bus) || p.n.toLowerCase().includes(bus)) {
                     let precio = (tipoLista[t] === "Patagonia") ? p.pPat : p.pCli;
                     let div = document.createElement('div');
                     div.className = 'item-prod';
-                    div.innerHTML = `
-                        <div><span class="cod-badge">${p.id}</span> <span>${p.n}</span></div>
-                        <b>$${precio.toFixed(2)}</b>
-                    `;
+                    div.innerHTML = `<div><span class="cod-badge">${p.id}</span> <span>${p.n}</span></div><b>$${precio.toFixed(2)}</b>`;
                     div.onclick = () => {
                         itemSel[t] = { ...p, pre: precio };
                         document.getElementById(`bus-${t}`).value = `[${p.id}] ${p.n}`;
@@ -234,12 +245,10 @@
         function renderHoja() {
             let h = "";
             hojaRuta.forEach((f, i) => {
-                h += `<tr>
-                    <td>${f.id}</td><td>${f.nom}</td><td>$${f.importe.toFixed(2)}</td>
-                    <td><input type="number" style="width:70px" value="${parseFloat(f.pago).toFixed(2)}" onchange="hojaRuta[${i}].pago=this.value;renderHoja()"></td>
-                    <td>$${(f.importe - f.pago).toFixed(2)}</td>
-                    <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td>
-                </tr>`;
+                h += `<tr><td>${f.id}</td><td>${f.nom}</td><td>$${f.importe.toFixed(2)}</td>
+                <td><input type="number" style="width:70px" value="${f.pago}" onchange="hojaRuta[${i}].pago=this.value;renderHoja()"></td>
+                <td>$${(f.importe - f.pago).toFixed(2)}</td>
+                <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td></tr>`;
             });
             document.getElementById('body-hoja').innerHTML = h;
             localStorage.setItem(K_HOJ, JSON.stringify(hojaRuta));
@@ -249,17 +258,32 @@
             const t = (m === 'pedido') ? 'ped' : 'rem';
             if(ordenes[t].length === 0) return alert("Cargá productos");
             const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            
             let nomCli = document.getElementById(`nomCli-${t}`).value;
             let idCli = document.getElementById(`idCli-${t}`).value;
+            let obs = document.getElementById(`obs-${t}`).value;
             let tot = document.getElementById(`total-${t}`).innerText;
 
-            doc.text("DISTRIMAR - " + m.toUpperCase(), 105, 20, {align:"center"});
-            doc.setFontSize(10); doc.text(`Cliente: ${nomCli}`, 14, 30);
+            if(logoBase64) doc.addImage(logoBase64, 'PNG', 14, 10, 30, 30);
             
+            doc.setFontSize(18); doc.text("DISTRIMAR - " + m.toUpperCase(), 105, 25, {align:"center"});
+            doc.setFontSize(10);
+            doc.text(`Cliente: ${nomCli} (ID: ${idCli})`, 14, 45);
+            doc.text(`Lista Aplicada: ${tipoLista[t]}`, 14, 50);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 55);
+
             doc.autoTable({
-                startY: 35, head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']],
-                body: ordenes[t].map(i => [i.c, i.id, i.n, `$${i.p.toFixed(2)}`, `$${i.sub.toFixed(2)}`])
+                startY: 60, head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']],
+                body: ordenes[t].map(i => [i.c, i.id, i.n, `$${i.p.toFixed(2)}`, `$${i.sub.toFixed(2)}`]),
+                foot: [['', '', '', 'TOTAL', `$${tot}`]]
             });
+
+            if(obs) {
+                let finalY = doc.lastAutoTable.finalY + 10;
+                doc.text("OBSERVACIONES:", 14, finalY);
+                doc.setFontSize(9);
+                doc.text(obs, 14, finalY + 5);
+            }
 
             if(m === 'remito') {
                 hojaRuta.push({ id: idCli, nom: nomCli, importe: parseFloat(tot), pago: 0 });
@@ -270,8 +294,32 @@
                 const file = new File([blob], `Pedido_${nomCli}.pdf`, { type: 'application/pdf' });
                 if(navigator.share) await navigator.share({ files: [file] }); else doc.save(`Pedido_${nomCli}.pdf`);
             }
-            ordenes[t] = []; renderTabla(t);
+            ordenes[t] = []; document.getElementById(`obs-${t}`).value = ""; renderTabla(t);
         }
+
+        function descargarHojaRuta() {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            doc.text("HOJA DE RUTA - DISTRIMAR", 105, 20, {align:"center"});
+            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 30);
+            doc.autoTable({
+                startY: 35, head: [['ID', 'Cliente', 'Importe', 'Pago', 'Saldo']],
+                body: hojaRuta.map(f => [f.id, f.nom, `$${f.importe.toFixed(2)}`, `$${parseFloat(f.pago).toFixed(2)}`, `$${(f.importe - f.pago).toFixed(2)}`])
+            });
+            doc.save(`Hoja_Ruta_${new Date().toLocaleDateString()}.pdf`);
+        }
+
+        // --- MANEJO DE ARCHIVOS ---
+        document.getElementById('subirLogo').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                logoBase64 = reader.result;
+                localStorage.setItem(K_LOGO, logoBase64);
+                const img = document.getElementById('previewLogo');
+                img.src = logoBase64;
+                img.style.display = 'block';
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
 
         document.getElementById('xlStock').addEventListener('change', function(e) {
             let n = document.getElementById('nombreNuevaLista').value;
@@ -283,7 +331,7 @@
                     id: r[0].toString(), n: r[1], pCli: parseFloat(r[2]) || 0, pPat: parseFloat(r[3]) || parseFloat(r[2]) || 0 
                 }));
                 localStorage.setItem(K_LISTAS, JSON.stringify(misListas)); 
-                actualizarSelector(); alert("Cargada!");
+                actualizarSelector(); alert("Catálogo cargado!");
             }; r.readAsArrayBuffer(e.target.files[0]);
         });
 
