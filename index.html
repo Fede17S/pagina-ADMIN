@@ -3,98 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V15 Premium</title>
+    <title>DistriMar - V16 Multi-Listas</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* VARIABLES DE COLOR PARA LOS DOS MODOS */
         :root {
-            --blue: #0056b3;
-            --green: #25d366;
-            --red: #dc3545;
-            
-            /* Modo Claro (Default) */
-            --bg: #f4f7f6;
-            --card-bg: #ffffff;
-            --text: #333333;
-            --border: #dddddd;
-            --input-bg: #ffffff;
-            --tab-inactive: #666666;
-            --tab-active-bg: #f8faff;
-            --search-bg: #f1f3f5;
+            --blue: #0056b3; --green: #25d366; --red: #dc3545;
+            --bg: #f4f7f6; --card-bg: #ffffff; --text: #333; --border: #ddd;
+            --input-bg: #fff; --search-bg: #f1f3f5;
         }
-
         [data-theme="dark"] {
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --text: #e0e0e0;
-            --border: #333333;
-            --input-bg: #2d2d2d;
-            --tab-inactive: #aaaaaa;
-            --tab-active-bg: #252525;
-            --search-bg: #2d2d2d;
+            --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --border: #333;
+            --input-bg: #2d2d2d; --search-bg: #2d2d2d;
         }
 
-        body { 
-            font-family: -apple-system, sans-serif; 
-            background: var(--bg); 
-            margin: 0; padding: 0; 
-            color: var(--text); 
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* NAVEGACIÓN */
-        .tabs { 
-            display: flex; 
-            background: var(--card-bg); 
-            border-bottom: 2px solid var(--border); 
-            position: sticky; top: 0; z-index: 10; 
-        }
-        .tab-btn { 
-            flex: 1; padding: 15px 5px; border: none; background: none; 
-            font-weight: bold; cursor: pointer; color: var(--tab-inactive); font-size: 11px; 
-        }
-        .tab-btn.active { 
-            color: var(--blue); border-bottom: 4px solid var(--blue); background: var(--tab-active-bg); 
-        }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; }
+        .tabs { display: flex; background: var(--card-bg); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 10; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; font-size: 11px; }
+        .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: rgba(0,86,179,0.05); }
         
-        .theme-toggle {
-            padding: 10px; border: none; background: none; cursor: pointer; font-size: 18px;
-        }
-
         .container { max-width: 900px; margin: 10px auto; padding: 10px; }
-        .card { 
-            background: var(--card-bg); padding: 20px; border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; 
-        }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; }
         .card.active { display: block; }
 
         input, textarea, select { 
-            width: 100%; padding: 12px; margin: 5px 0; 
-            border: 1px solid var(--border); border-radius: 8px; 
-            box-sizing: border-box; font-size: 16px; 
-            background: var(--input-bg); color: var(--text);
+            width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
+            border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; box-sizing: border-box;
         }
 
         .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
-        .btn-gray { background: #444; }
-        .btn-red { background: var(--red); font-size: 11px; width: auto; padding: 8px 12px; }
+        .btn-red { background: var(--red); font-size: 12px; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); }
-        .remove { color: var(--red); cursor: pointer; font-weight: bold; font-size: 18px; }
-
-        .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); }
-        .lista-resultados { max-height: 150px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; }
+        .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; }
+        .lista-resultados { max-height: 200px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; }
         .item-prod { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; }
         
-        #previewLogo { max-width: 100px; display: none; margin: 10px 0; border-radius: 5px; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-top: 5px; background: var(--blue); color: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid var(--border); }
+        .remove { color: var(--red); font-weight: bold; cursor: pointer; }
+
+        .manual-box { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; color: #856404; display: none; }
+        [data-theme="dark"] .manual-box { background: #332b00; color: #ffecb5; }
     </style>
 </head>
 <body>
@@ -102,138 +56,167 @@
     <nav class="tabs">
         <button class="tab-btn active" onclick="verTab('pedido')">📝 PEDIDO</button>
         <button class="tab-btn" onclick="verTab('remito')">🚚 REMITO</button>
-        <button class="tab-btn" onclick="verTab('hoja')">📋 RUTA</button>
-        <button class="tab-btn" onclick="verTab('ajustes')">⚙️</button>
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+        <button class="tab-btn" onclick="verTab('ajustes')">⚙️ CONFIG</button>
+        <button style="background:none; border:none; cursor:pointer;" onclick="toggleTheme()">🌓</button>
     </nav>
 
     <div class="container">
 
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 12px; font-weight: bold;">📦 CATÁLOGO ACTIVO:</label>
+            <select id="selectorStock" onchange="cambiarListaActiva()">
+                <option value="">Cargando listas...</option>
+            </select>
+        </div>
+
         <div id="pedido" class="card active">
-            <input type="text" id="idCli-ped" placeholder="ID Cliente..." onkeyup="buscarCli('ped')">
-            <input type="text" id="nomCli-ped" placeholder="Nombre Cliente" readonly style="opacity: 0.7;">
-            <div id="badge-ped" class="badge">Lista: -</div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="idCli-ped" placeholder="ID Cliente..." onkeyup="buscarCli('ped')">
+                <button class="btn btn-blue" style="width: 50px; margin: 5px 0;" onclick="activarManual('ped')">✍️</button>
+            </div>
+            
+            <div id="manual-ped" class="manual-box">
+                <b>Modo Manual:</b> Ingresá nombre y elegí lista.
+                <select id="manualLista-ped" onchange="actualizarTipoLista('ped')">
+                    <option value="Clientes">Lista General</option>
+                    <option value="Patagonia">Lista Patagonia</option>
+                </select>
+            </div>
+
+            <input type="text" id="nomCli-ped" placeholder="Nombre del Cliente" readonly>
+            
             <div class="search-area">
                 <input type="text" id="bus-ped" placeholder="Buscar producto..." onkeyup="filtrar('ped')">
                 <div id="res-ped" class="lista-resultados"></div>
-                <input type="number" id="cant-ped" value="1" style="width:80px; margin-top:10px;">
-                <button class="btn btn-blue" onclick="agregar('ped')">+ AGREGAR</button>
+                <input type="number" id="cant-ped" value="1" style="width:100px; margin-top:10px;">
+                <button class="btn btn-blue" onclick="agregar('ped')">+ AGREGAR AL CARRITO</button>
             </div>
-            <table id="tabla-ped"><thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead><tbody id="body-ped"></tbody></table>
-            <textarea id="obs-ped" placeholder="Observaciones..."></textarea>
-            <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
-            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 GENERAR PEDIDO</button>
-        </div>
 
-        <div id="remito" class="card">
-            <input type="text" id="idCli-rem" placeholder="ID Cliente..." onkeyup="buscarCli('rem')">
-            <input type="text" id="nomCli-rem" placeholder="Nombre Cliente" readonly style="opacity: 0.7;">
-            <div class="search-area">
-                <input type="text" id="bus-rem" placeholder="Buscar producto..." onkeyup="filtrar('rem')">
-                <div id="res-rem" class="lista-resultados"></div>
-                <input type="number" id="cant-rem" value="1" style="width:80px; margin-top:10px;">
-                <button class="btn btn-blue" onclick="agregar('rem')">+ AGREGAR</button>
-            </div>
-            <table id="tabla-rem"><thead><tr><th>Cant</th><th>Detalle</th><th>Sub</th><th></th></tr></thead><tbody id="body-rem"></tbody></table>
-            <h3 style="text-align:right">TOTAL: $<span id="total-rem">0.00</span></h3>
-            <button class="btn btn-blue" onclick="generarPDF('remito')">💾 GUARDAR Y SUMAR A RUTA</button>
-        </div>
-
-        <div id="hoja" class="card">
-            <h3 style="text-align:center">HOJA DE RUTA - DISTRIMAR</h3>
-            <input type="text" id="repartidor" placeholder="Nombre del Repartidor">
-            <table>
-                <thead>
-                    <tr><th>ID</th><th>Cliente</th><th>Total</th><th>A Cuenta</th><th>Saldo</th><th></th></tr>
-                </thead>
-                <tbody id="body-hoja"></tbody>
+            <table id="tabla-ped">
+                <thead><tr><th>Cant</th><th>Producto</th><th>Subtotal</th><th></th></tr></thead>
+                <tbody id="body-ped"></tbody>
             </table>
-            <div style="margin-top:20px; padding:15px; background:rgba(128,128,128,0.1); border-radius:10px;">
-                <p><strong>TOTAL RENDICIÓN:</strong> $<span id="total-hoja">0.00</span></p>
-                <p><strong>TOTAL COBRADO:</strong> $<span id="recibido-hoja">0.00</span></p>
-            </div>
-            <button class="btn btn-gray" onclick="descargarHojaRuta()">🖨️ DESCARGAR PDF DE LA HOJA</button>
-            <button class="btn-red" onclick="borrarHoja()" style="margin-top:40px">⚠️ VACIAR TODA LA HOJA</button>
+            <h3 style="text-align:right">TOTAL: $<span id="total-ped">0.00</span></h3>
+            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 ENVIAR PEDIDO (WhatsApp/PDF)</button>
         </div>
 
         <div id="ajustes" class="card">
-            <h3>⚙️ Ajustes de Sistema</h3>
+            <h3>📂 Gestión de Listas y Datos</h3>
+            
             <div class="search-area">
-                <strong>📄 IMPORTADOR RÁPIDO (Copiado de PDF):</strong>
-                <textarea id="textoBruto" placeholder="Pegá el texto aquí..." style="height:80px;"></textarea>
-                <button class="btn btn-blue" onclick="procesarTextoPegado()">⚡ PROCESAR TEXTO</button>
+                <strong>1. Cargar Nuevo Catálogo de Precios:</strong>
+                <input type="text" id="nombreNuevaLista" placeholder="Nombre (ej: Ofertas Junio)">
+                <input type="file" id="xlStock" accept=".xlsx, .xls">
+                <small>El Excel debe tener: Nombre | Precio General | Precio Patagonia</small>
             </div>
-            <hr>
-            <p>Cargar Logo:</p> <input type="file" id="subirLogo" accept="image/*">
-            <img id="previewLogo" src="">
-            <hr>
-            <p>Cargar Stock (Excel):</p> <input type="file" id="xlStock" accept=".xlsx, .xls">
-            <p>Cargar Clientes (Excel):</p> <input type="file" id="xlCli" accept=".xlsx, .xls">
-            <hr>
-            <button class="btn-red" onclick="limpiarMemoria()">BORRAR TODO</button>
+
+            <div class="search-area">
+                <strong>2. Cargar Base de Clientes:</strong>
+                <input type="file" id="xlCli" accept=".xlsx, .xls">
+            </div>
+
+            <div class="search-area">
+                <strong>3. Logo de la Empresa:</strong>
+                <input type="file" id="subirLogo" accept="image/*">
+            </div>
+
+            <button class="btn btn-red" onclick="borrarTodo()">⚠️ BORRAR TODA LA MEMORIA</button>
         </div>
 
     </div>
 
     <script>
-        const K_STK = 'DM_STK_V15'; const K_CLI = 'DM_CLI_V15'; const K_LGO = 'DM_LGO_V15'; 
-        const K_HOJ = 'DM_HOJ_V15'; const K_THEME = 'DM_THEME_V15';
+        // CLAVES DE MEMORIA
+        const K_LISTAS = 'DM_LISTAS_INDEX'; // Índice de nombres de listas de stock
+        const K_CLI = 'DM_CLI_V16';
+        const K_LGO = 'DM_LGO_V16';
+        const K_THEME = 'DM_THEME_V16';
 
-        let dbStock = JSON.parse(localStorage.getItem(K_STK)) || [];
+        let misListas = JSON.parse(localStorage.getItem(K_LISTAS)) || {}; // { "Nombre": [data] }
         let dbCli = JSON.parse(localStorage.getItem(K_CLI)) || [];
-        let hojaRuta = JSON.parse(localStorage.getItem(K_HOJ)) || [];
+        let stockActivo = [];
+        let listaActualNombre = localStorage.getItem('DM_LAST_LIST') || "";
         let logoB64 = localStorage.getItem(K_LGO) || "";
-        let theme = localStorage.getItem(K_THEME) || "light";
 
-        let ordenes = { ped: [], rem: [] }; 
-        let listasCli = { ped: "Clientes", rem: "Clientes" }; 
-        let selIdx = { ped: null, rem: null };
+        // INICIO
+        window.onload = () => {
+            actualizarSelector();
+            if(localStorage.getItem(K_THEME) === 'dark') toggleTheme(true);
+        };
 
-        // --- INICIALIZACIÓN ---
-        document.documentElement.setAttribute("data-theme", theme);
-        document.getElementById('themeBtn').innerText = theme === 'dark' ? '☀️' : '🌙';
-        if(logoB64) { document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display = 'block'; }
-
-        function toggleTheme() {
-            theme = theme === 'light' ? 'dark' : 'light';
-            document.documentElement.setAttribute("data-theme", theme);
-            localStorage.setItem(K_THEME, theme);
-            document.getElementById('themeBtn').innerText = theme === 'dark' ? '☀️' : '🌙';
+        function actualizarSelector() {
+            const sel = document.getElementById('selectorStock');
+            sel.innerHTML = "";
+            Object.keys(misListas).forEach(nombre => {
+                let opt = document.createElement('option');
+                opt.value = nombre; opt.innerText = nombre;
+                if(nombre === listaActualNombre) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            if(Object.keys(misListas).length === 0) {
+                sel.innerHTML = "<option>No hay listas cargadas</option>";
+            }
+            cambiarListaActiva();
         }
 
-        function verTab(id) {
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            event.currentTarget.classList.add('active');
-            if(id === 'hoja') renderHoja();
+        function cambiarListaActiva() {
+            listaActualNombre = document.getElementById('selectorStock').value;
+            stockActivo = misListas[listaActualNombre] || [];
+            localStorage.setItem('DM_LAST_LIST', listaActualNombre);
         }
+
+        // CLIENTES
+        let tipoListaActual = "Clientes";
 
         function buscarCli(t) {
-            let idIn = document.getElementById(`idCli-${t}`).value.trim();
-            let c = dbCli.find(cli => cli.id.toString().trim() === idIn);
+            let id = document.getElementById(`idCli-${t}`).value.trim();
+            let c = dbCli.find(cli => cli.id.toString() === id);
+            let nomInput = document.getElementById(`nomCli-${t}`);
+            
             if(c) {
-                document.getElementById(`nomCli-${t}`).value = c.nombre;
-                listasCli[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
-                document.getElementById(`badge-${t}`).innerText = "Lista: " + listasCli[t];
+                nomInput.value = c.nombre;
+                nomInput.readOnly = true;
+                tipoListaActual = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
+                document.getElementById(`manual-${t}`).style.display = 'none';
             } else {
-                document.getElementById(`nomCli-${t}`).value = "❌ No encontrado";
+                nomInput.value = "❌ No encontrado";
             }
-            filtrar(t);
         }
+
+        function activarManual(t) {
+            let nomInput = document.getElementById(`nomCli-${t}`);
+            nomInput.readOnly = false;
+            nomInput.value = "";
+            nomInput.focus();
+            document.getElementById(`manual-${t}`).style.display = 'block';
+            tipoListaActual = document.getElementById(`manualLista-${t}`).value;
+        }
+
+        function actualizarTipoLista(t) {
+            tipoListaActual = document.getElementById(`manualLista-${t}`).value;
+        }
+
+        // FILTRADO Y CARRITO
+        let orden = [];
+        let itemSel = null;
 
         function filtrar(t) {
             let bus = document.getElementById(`bus-${t}`).value.toLowerCase();
             let box = document.getElementById(`res-${t}`);
-            box.innerHTML = ""; selIdx[t] = null;
-            if(bus.length < 1) return;
-            dbStock.forEach((p, i) => {
+            box.innerHTML = ""; itemSel = null;
+            if(bus.length < 2) return;
+
+            stockActivo.forEach((p, i) => {
                 if(p.n.toLowerCase().includes(bus)) {
-                    let pre = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
+                    let precio = (tipoListaActual === "Patagonia") ? p.pPat : p.pCli;
                     let div = document.createElement('div');
                     div.className = 'item-prod';
-                    div.innerHTML = `<span>${p.n}</span> <strong>$${pre}</strong>`;
-                    div.onclick = () => { selIdx[t] = i; document.getElementById(`bus-${t}`).value = p.n; box.innerHTML = ""; };
+                    div.innerHTML = `<span>${p.n}</span> <b>$${precio}</b>`;
+                    div.onclick = () => {
+                        itemSel = { ...p, precioSeleccionado: precio };
+                        document.getElementById(`bus-${t}`).value = p.n;
+                        box.innerHTML = "";
+                    };
                     box.appendChild(div);
                 }
             });
@@ -241,129 +224,106 @@
 
         function agregar(t) {
             let cant = parseInt(document.getElementById(`cant-${t}`).value);
-            if(selIdx[t] !== null && cant > 0) {
-                let p = dbStock[selIdx[t]];
-                let pre = (listasCli[t] === "Patagonia") ? p.pPat : p.pCli;
-                ordenes[t].push({n: p.n, p: pre, c: cant, sub: pre * cant});
+            if(itemSel && cant > 0) {
+                orden.push({ n: itemSel.n, p: itemSel.precioSeleccionado, c: cant, sub: itemSel.precioSeleccionado * cant });
                 renderTabla(t);
+                document.getElementById(`bus-${t}`).value = "";
+                itemSel = null;
             }
         }
 
         function renderTabla(t) {
-            let h = ""; let tot = 0;
-            ordenes[t].forEach((it, i) => {
-                tot += it.sub;
-                h += `<tr><td>${it.c}</td><td>${it.n}</td><td>$${it.sub.toFixed(2)}</td><td class="remove" onclick="ordenes['${t}'].splice(${i},1);renderTabla('${t}')">✕</td></tr>`;
+            let h = ""; let total = 0;
+            orden.forEach((it, i) => {
+                total += it.sub;
+                h += `<tr><td>${it.c}</td><td>${it.n}</td><td>$${it.sub.toFixed(2)}</td><td class="remove" onclick="orden.splice(${i},1);renderTabla('${t}')">✕</td></tr>`;
             });
-            document.getElementById(`total-${t}`).innerText = tot.toFixed(2);
             document.getElementById(`body-${t}`).innerHTML = h;
+            document.getElementById(`total-${t}`).innerText = total.toFixed(2);
         }
 
-        function renderHoja() {
-            let h = ""; let tImp = 0; let tRec = 0;
-            hojaRuta.forEach((f, i) => {
-                tImp += f.importe; tRec += f.pago;
-                h += `<tr>
-                    <td>${f.id}</td><td>${f.nom}</td><td>$${f.importe.toFixed(2)}</td>
-                    <td><input type="number" style="width:70px" value="${f.pago}" onchange="actH(${i},'pago',this.value)"></td>
-                    <td style="color:${f.debe>0?'#ff4d4d':'#25d366'}">$${f.debe.toFixed(2)}</td>
-                    <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td>
-                </tr>`;
-            });
-            document.getElementById('body-hoja').innerHTML = h;
-            document.getElementById('total-hoja').innerText = tImp.toFixed(2);
-            document.getElementById('recibido-hoja').innerText = tRec.toFixed(2);
-            localStorage.setItem(K_HOJ, JSON.stringify(hojaRuta));
-        }
-
-        function actH(i, c, v) {
-            if(c === 'pago') { hojaRuta[i].pago = parseFloat(v) || 0; hojaRuta[i].debe = hojaRuta[i].importe - hojaRuta[i].pago; }
-            renderHoja();
-        }
-
-        async function descargarHojaRuta() {
-            if(hojaRuta.length === 0) return alert("La hoja está vacía.");
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            if(logoB64) doc.addImage(logoB64, 'PNG', 14, 10, 25, 25);
-            doc.setFontSize(18); doc.text("HOJA DE RUTA - DISTRIMAR", 105, 20, {align:"center"});
-            doc.setFontSize(11);
-            doc.text(`Repartidor: ${document.getElementById('repartidor').value || '---'}`, 14, 40);
-            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 160, 40);
-            doc.autoTable({
-                startY: 45,
-                head: [['ID', 'Cliente', 'Importe', 'A Cuenta', 'Saldo']],
-                body: hojaRuta.map(f => [f.id, f.nom, `$${f.importe.toFixed(2)}`, `$${f.pago.toFixed(2)}`, `$${f.debe.toFixed(2)}`]),
-                theme: 'grid', headStyles: { fillColor: [0, 86, 179] }
-            });
-            doc.save(`Hoja_Ruta_${new Date().toLocaleDateString()}.pdf`);
-        }
-
-        async function generarPDF(m) {
-            const t = (m === 'pedido') ? 'ped' : 'rem';
-            if(ordenes[t].length === 0) return alert("Cargá productos.");
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            let nom = document.getElementById(`nomCli-${t}`).value;
-            let id = document.getElementById(`idCli-${t}`).value;
-            let tot = document.getElementById(`total-${t}`).innerText;
-
-            if(logoB64) doc.addImage(logoB64, 'PNG', 14, 10, 30, 30);
-            doc.text(m.toUpperCase() + " DISTRIMAR", 105, 25, {align:"center"});
-            doc.setFontSize(10); doc.text(`Cliente: ${nom} (${id})`, 50, 35);
-            doc.autoTable({ startY: 45, head: [['Cant', 'Prod', 'P.U', 'Sub']], body: ordenes[t].map(i=>[i.c, i.n, `$${i.p}`, `$${i.sub}`]) });
-            
-            if(m === 'remito') {
-                hojaRuta.push({ id, nom, importe: parseFloat(tot), pago: 0, debe: parseFloat(tot) });
-                localStorage.setItem(K_HOJ, JSON.stringify(hojaRuta));
-                doc.save(`Remito_${nom}.pdf`);
-            } else {
-                const pdfBlob = doc.output('blob');
-                const file = new File([pdfBlob], `Pedido_${nom}.pdf`, { type: 'application/pdf' });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); } else { doc.save(`Pedido_${nom}.pdf`); }
-            }
-            ordenes[t] = []; renderTabla(t);
-        }
-
-        // --- EXCEL E IMPORTACIÓN ---
+        // CARGA DE ARCHIVOS
         document.getElementById('xlStock').addEventListener('change', function(e) {
-            let r = new FileReader(); r.onload = (ev) => {
-                let wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
-                let f = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                dbStock = f.slice(1).filter(r => r[0]).map(r => ({ n: r[0], pCli: r[1], pPat: r[2] }));
-                localStorage.setItem(K_STK, JSON.stringify(dbStock)); alert("Stock cargado.");
-            }; r.readAsArrayBuffer(e.target.files[0]);
+            let nombre = document.getElementById('nombreNuevaLista').value.trim();
+            if(!nombre) return alert("Poné un nombre a la lista antes de subirla");
+            
+            let r = new FileReader();
+            r.onload = (ev) => {
+                let data = new Uint8Array(ev.target.result);
+                let wb = XLSX.read(data, {type: 'array'});
+                let raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                
+                let procesado = raw.slice(1).filter(r => r[0]).map(r => ({
+                    n: r[0], pCli: parseFloat(r[1]) || 0, pPat: parseFloat(r[2]) || 0
+                }));
+
+                misListas[nombre] = procesado;
+                localStorage.setItem(K_LISTAS, JSON.stringify(misListas));
+                alert("Lista '" + nombre + "' cargada con éxito!");
+                actualizarSelector();
+            };
+            r.readAsArrayBuffer(e.target.files[0]);
         });
 
         document.getElementById('xlCli').addEventListener('change', function(e) {
-            let r = new FileReader(); r.onload = (ev) => {
+            let r = new FileReader();
+            r.onload = (ev) => {
                 let wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
-                let f = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                dbCli = f.slice(1).filter(r => r[0]).map(r => ({ id: r[0].toString(), nombre: r[1], lista: r[2] || "Clientes" }));
-                localStorage.setItem(K_CLI, JSON.stringify(dbCli)); alert("Clientes cargados.");
-            }; r.readAsArrayBuffer(e.target.files[0]);
+                let raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                dbCli = raw.slice(1).filter(r => r[0]).map(r => ({
+                    id: r[0].toString(), nombre: r[1], lista: r[2] || "Clientes"
+                }));
+                localStorage.setItem(K_CLI, JSON.stringify(dbCli));
+                alert("Base de clientes actualizada.");
+            };
+            r.readAsArrayBuffer(e.target.files[0]);
         });
 
-        function procesarTextoPegado() {
-            let texto = document.getElementById('textoBruto').value;
-            let lineas = texto.split('\n'); let nuevos = [];
-            lineas.forEach(l => {
-                let match = l.match(/(.*?)\s+\$?\s?([0-9\.,]+)/);
-                if(match) {
-                    let p = parseFloat(match[2].replace(/\./g, '').replace(',', '.'));
-                    if(!isNaN(p)) nuevos.push({ n: match[1].trim(), pCli: p, pPat: p });
-                }
-            });
-            if(nuevos.length > 0) { dbStock = [...dbStock, ...nuevos]; localStorage.setItem(K_STK, JSON.stringify(dbStock)); alert("Cargados!"); }
+        // UTILIDADES
+        function verTab(id) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
-        document.getElementById('subirLogo').addEventListener('change', function(e) {
-            let r = new FileReader(); r.onload = () => { logoB64 = r.result; localStorage.setItem(K_LGO, logoB64); document.getElementById('previewLogo').src = logoB64; document.getElementById('previewLogo').style.display='block'; };
-            r.readAsDataURL(e.target.files[0]);
-        });
+        function toggleTheme(forceDark = false) {
+            let theme = document.documentElement.getAttribute("data-theme");
+            if(theme === "dark" && !forceDark) {
+                document.documentElement.setAttribute("data-theme", "light");
+                localStorage.setItem(K_THEME, 'light');
+            } else {
+                document.documentElement.setAttribute("data-theme", "dark");
+                localStorage.setItem(K_THEME, 'dark');
+            }
+        }
 
-        function borrarHoja() { if(confirm("¿Vaciar?")) { hojaRuta = []; renderHoja(); } }
-        function limpiarMemoria() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
+        async function generarPDF(m) {
+            if(orden.length === 0) return alert("Carrito vacío");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let cli = document.getElementById(`nomCli-ped`).value;
+            
+            doc.setFontSize(18); doc.text("DISTRIMAR - PEDIDO", 105, 20, {align:"center"});
+            doc.setFontSize(12); doc.text("Cliente: " + cli, 14, 30);
+            doc.text("Catálogo: " + listaActualNombre, 14, 37);
+
+            doc.autoTable({
+                startY: 45,
+                head: [['Cant', 'Producto', 'P. Unit', 'Subtotal']],
+                body: orden.map(i => [i.c, i.n, `$${i.p}`, `$${i.sub.toFixed(2)}`]),
+            });
+
+            const blob = doc.output('blob');
+            const file = new File([blob], `Pedido_${cli}.pdf`, { type: 'application/pdf' });
+            if (navigator.share) {
+                await navigator.share({ files: [file], title: 'Pedido DistriMar' });
+            } else {
+                doc.save(`Pedido_${cli}.pdf`);
+            }
+        }
+
+        function borrarTodo() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
