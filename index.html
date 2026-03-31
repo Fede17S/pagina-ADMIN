@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V27 Full Sync</title>
+    <title>DistriMar - V28 Final Fixed</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -60,7 +60,7 @@
     </nav>
 
     <div class="container">
-        <span id="sync-msg" class="cloud-status">🔄 Cargando...</span>
+        <span id="sync-msg" class="cloud-status">🔄 Sincronizando datos...</span>
 
         <div id="pedido" class="card active">
             <input type="text" id="idCli-ped" placeholder="ID Cliente..." oninput="vincularCli('id', 'ped')">
@@ -75,7 +75,7 @@
                 <button class="btn btn-blue" onclick="agregar('ped')">+ AGREGAR</button>
             </div>
 
-            <table id="tabla-ped">
+            <table>
                 <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-ped"></tbody>
             </table>
@@ -96,8 +96,8 @@
                 <button class="btn btn-blue" onclick="agregar('rem')">+ AGREGAR</button>
             </div>
 
-            <table id="tabla-rem">
-                <thead><tr><th>Cant</th><th>Producto</th><th>Subtotal</th><th></th></tr></thead>
+            <table>
+                <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-rem"></tbody>
             </table>
             <h3 style="text-align:right">TOTAL: $<span id="total-rem">0,00</span></h3>
@@ -106,7 +106,7 @@
 
         <div id="hoja" class="card">
             <h3>📋 Rendición de Ruta</h3>
-            <table id="tabla-hoja">
+            <table>
                 <thead><tr><th>Cliente</th><th>Total</th><th>Pago</th><th>Saldo</th><th></th></tr></thead>
                 <tbody id="body-hoja"></tbody>
             </table>
@@ -114,16 +114,18 @@
         </div>
 
         <div id="ajustes" class="card">
+            <h3>⚙️ Configuración</h3>
             <label>Link Catálogo (CSV):</label>
             <input type="text" id="url-stk">
             <label>Link Clientes (CSV):</label>
             <input type="text" id="url-cli">
             <button class="btn btn-blue" onclick="guardarCloud()">GUARDAR Y SINCRONIZAR</button>
+            <button class="btn btn-red" onclick="localStorage.clear(); location.reload();" style="background:#dc3545; margin-top:30px">BORRAR DATOS LOCALES</button>
         </div>
     </div>
 
     <script>
-        const K = { STK: 'DM_STK_V27', CLI: 'DM_CLI_V27', HOJ: 'DM_HOJ_V27', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
+        const K = { STK: 'DM_STK_V28', CLI: 'DM_CLI_V28', HOJ: 'DM_HOJ_V28', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
         let dbStock = JSON.parse(localStorage.getItem(K.STK)) || [];
         let dbCli = JSON.parse(localStorage.getItem(K.CLI)) || [];
         let hojaRuta = JSON.parse(localStorage.getItem(K.HOJ)) || [];
@@ -131,6 +133,7 @@
         let tipoLista = { ped: "Clientes", rem: "Clientes" };
         let itemSel = { ped: null, rem: null };
 
+        // --- ARREGLO PRECIOS AR ---
         function parseLocalFloat(val) {
             if (!val) return 0;
             let s = val.toString().trim().replace(/"/g, '');
@@ -140,6 +143,18 @@
         }
 
         function fM(num) { return Number(num).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        // --- MOTOR CSV ROBUSTO ---
+        function splitCSV(row, sep) {
+            const res = []; let word = ''; let quotes = false;
+            for (let char of row) {
+                if (char === '"') quotes = !quotes;
+                else if (char === sep && !quotes) { res.push(word); word = ''; }
+                else word += char;
+            }
+            res.push(word);
+            return res.map(v => v.trim().replace(/"/g, ''));
+        }
 
         window.onload = () => {
             document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || "";
@@ -154,23 +169,27 @@
             try {
                 if(urlS) {
                     const res = await fetch(urlS); const text = await res.text();
-                    dbStock = text.split('\n').slice(1).map(l => {
-                        const r = l.split(/[,;]/);
-                        return { id: r[0]?.trim(), n: r[1]?.trim(), pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
+                    const lines = text.split(/\r?\n/).filter(l => l.trim());
+                    const sep = lines[0].includes(';') ? ';' : ',';
+                    dbStock = lines.slice(1).map(l => {
+                        const r = splitCSV(l, sep);
+                        return { id: r[0], n: r[1], pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
                     }).filter(p => p.id);
                     localStorage.setItem(K.STK, JSON.stringify(dbStock));
                 }
                 if(urlC) {
                     const resC = await fetch(urlC); const textC = await resC.text();
-                    dbCli = textC.split('\n').slice(1).map(l => {
-                        const r = l.split(/[,;]/);
-                        return { id: r[0]?.trim(), nombre: r[1]?.trim(), lista: r[2]?.trim() || "Clientes" };
+                    const linesC = textC.split(/\r?\n/).filter(l => l.trim());
+                    const sepC = linesC[0].includes(';') ? ';' : ',';
+                    dbCli = linesC.slice(1).map(l => {
+                        const r = splitCSV(l, sepC);
+                        return { id: r[0], nombre: r[1], lista: r[2] || "Clientes" };
                     }).filter(c => c.id);
                     localStorage.setItem(K.CLI, JSON.stringify(dbCli));
                 }
-                msg.innerText = "✅ Datos listos";
+                msg.innerText = "✅ Datos actualizados";
                 actualizarDL();
-            } catch(e) { msg.innerText = "⚠️ Error de red"; }
+            } catch(e) { msg.innerText = "⚠️ Modo Local"; actualizarDL(); }
         }
 
         function actualizarDL() {
@@ -179,43 +198,22 @@
             document.getElementById('dl-cli-rem').innerHTML = html;
         }
 
-        // --- LA DOBLE VÍA (CORREGIDA) ---
         function vincularCli(origen, t) {
-            const idInput = document.getElementById(`idCli-${t}`);
-            const nomInput = document.getElementById(`nomCli-${t}`);
-            const badge = document.getElementById(`badge-${t}`);
-
-            let encontrado = null;
-
-            if (origen === 'id') {
-                const val = idInput.value.trim();
-                encontrado = dbCli.find(c => c.id.toString() === val);
-                if (encontrado) nomInput.value = encontrado.nombre;
-            } else {
-                const val = nomInput.value.trim();
-                encontrado = dbCli.find(c => c.nombre === val);
-                if (encontrado) idInput.value = encontrado.id;
-            }
-
+            const idIn = document.getElementById(`idCli-${t}`);
+            const nomIn = document.getElementById(`nomCli-${t}`);
+            let encontrado = (origen === 'id') ? dbCli.find(c => c.id.toString() === idIn.value.trim()) : dbCli.find(c => c.nombre === nomIn.value.trim());
             if (encontrado) {
+                idIn.value = encontrado.id;
+                nomIn.value = encontrado.nombre;
                 tipoLista[t] = encontrado.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
-                badge.innerText = "Lista: " + tipoLista[t];
-                // Si cambiamos de lista, hay que refrescar precios de productos ya agregados
-                ordenes[t].forEach(it => {
-                    let pOriginal = dbStock.find(ps => ps.id === it.id);
-                    if(pOriginal) {
-                        it.p = (tipoLista[t] === "Patagonia") ? pOriginal.pPat : pOriginal.pCli;
-                        it.sub = it.p * it.c;
-                    }
-                });
-                renderTabla(t);
+                document.getElementById(`badge-${t}`).innerText = "Lista: " + tipoLista[t];
             }
         }
 
         function filtrar(t) {
             let bus = document.getElementById(`bus-${t}`).value.toLowerCase();
             let box = document.getElementById(`res-${t}`);
-            box.innerHTML = ""; itemSel[t] = null;
+            box.innerHTML = "";
             if(bus.length < 1) return;
             dbStock.forEach(p => {
                 if(p.id.toLowerCase().includes(bus) || p.n.toLowerCase().includes(bus)) {
@@ -261,7 +259,6 @@
                 <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td></tr>`;
             });
             document.getElementById('body-hoja').innerHTML = h;
-            localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));
         }
 
         async function generarPDF(m) {
@@ -290,10 +287,7 @@
         function descargarHojaRuta() {
             const { jsPDF } = window.jspdf; const doc = new jsPDF();
             doc.text("HOJA DE RUTA - DISTRIMAR", 105, 20, {align:"center"});
-            doc.autoTable({
-                startY: 30, head: [['ID', 'Cliente', 'Importe', 'Pago', 'Saldo']],
-                body: hojaRuta.map(f => [f.id, f.nom, `$${fM(f.importe)}`, `$${fM(f.pago)}`, `$${fM(f.importe - f.pago)}`])
-            });
+            doc.autoTable({ startY: 30, head: [['ID', 'Cliente', 'Importe', 'Pago', 'Saldo']], body: hojaRuta.map(f => [f.id, f.nom, `$${fM(f.importe)}`, `$${fM(f.pago)}`, `$${fM(f.importe - f.pago)}`]) });
             doc.save(`Ruta_${new Date().toLocaleDateString()}.pdf`);
         }
 
