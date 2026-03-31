@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V25 Fixed</title>
+    <title>DistriMar - V27 Full Sync</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -28,7 +28,7 @@
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; margin-bottom: 20px; }
         .card.active { display: block; }
 
-        input, select, textarea { 
+        input { 
             width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
             border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 14px; box-sizing: border-box;
         }
@@ -40,15 +40,14 @@
         .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); }
         .lista-resultados { max-height: 250px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; }
         .item-prod { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 5px; }
-        [data-theme="dark"] .cod-badge { background: #444; color: #eee; }
-
+        .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        
         .cloud-status { font-size: 10px; color: var(--green); margin-bottom: 10px; display: block; text-align: center; font-weight: bold; }
         .badge { display: inline-block; padding: 3px 8px; border-radius: 5px; background: var(--blue); color: #fff; font-size: 10px; margin-top: 5px; }
         
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid var(--border); }
-        .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; width: 30px; }
+        .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; }
     </style>
 </head>
 <body>
@@ -58,28 +57,25 @@
         <button class="tab-btn" onclick="verTab('remito')">🚚 REMITO</button>
         <button class="tab-btn" onclick="verTab('hoja')">📋 RUTA</button>
         <button class="tab-btn" onclick="verTab('ajustes')">⚙️ CONFIG</button>
-        <button style="background:none; border:none; cursor:pointer;" onclick="toggleTheme()">🌓</button>
     </nav>
 
     <div class="container">
-        <span id="sync-msg" class="cloud-status">🔄 Sincronizando datos...</span>
+        <span id="sync-msg" class="cloud-status">🔄 Cargando...</span>
 
         <div id="pedido" class="card active">
-            <input type="text" id="idCli-ped" placeholder="ID Cliente..." onkeyup="buscarCli('ped')">
-            <input list="lista-clientes-ped" id="nomCli-ped" placeholder="Escribí nombre del cliente..." oninput="autoCompleteNombre('ped')">
-            <datalist id="lista-clientes-ped"></datalist>
+            <input type="text" id="idCli-ped" placeholder="ID Cliente..." oninput="vincularCli('id', 'ped')">
+            <input list="dl-cli-ped" id="nomCli-ped" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'ped')">
+            <datalist id="dl-cli-ped"></datalist>
             <div id="badge-ped" class="badge">Lista: Clientes</div>
 
             <div class="search-area">
                 <input type="text" id="bus-ped" placeholder="Buscar producto..." onkeyup="filtrar('ped')">
                 <div id="res-ped" class="lista-resultados"></div>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <input type="number" id="cant-ped" value="1" style="flex:1">
-                    <button class="btn btn-blue" onclick="agregar('ped')" style="flex:2">+ AGREGAR</button>
-                </div>
+                <input type="number" id="cant-ped" value="1" style="margin-top:10px;">
+                <button class="btn btn-blue" onclick="agregar('ped')">+ AGREGAR</button>
             </div>
 
-            <table>
+            <table id="tabla-ped">
                 <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-ped"></tbody>
             </table>
@@ -88,22 +84,20 @@
         </div>
 
         <div id="remito" class="card">
-            <input type="text" id="idCli-rem" placeholder="ID Cliente..." onkeyup="buscarCli('rem')">
-            <input list="lista-clientes-rem" id="nomCli-rem" placeholder="Nombre del cliente..." oninput="autoCompleteNombre('rem')">
-            <datalist id="lista-clientes-rem"></datalist>
+            <input type="text" id="idCli-rem" placeholder="ID Cliente..." oninput="vincularCli('id', 'rem')">
+            <input list="dl-cli-rem" id="nomCli-rem" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'rem')">
+            <datalist id="dl-cli-rem"></datalist>
             <div id="badge-rem" class="badge">Lista: Clientes</div>
 
             <div class="search-area">
                 <input type="text" id="bus-rem" placeholder="Buscar producto..." onkeyup="filtrar('rem')">
                 <div id="res-rem" class="lista-resultados"></div>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <input type="number" id="cant-rem" value="1" style="flex:1">
-                    <button class="btn btn-blue" onclick="agregar('rem')" style="flex:2">+ AGREGAR</button>
-                </div>
+                <input type="number" id="cant-rem" value="1" style="margin-top:10px;">
+                <button class="btn btn-blue" onclick="agregar('rem')">+ AGREGAR</button>
             </div>
 
-            <table>
-                <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
+            <table id="tabla-rem">
+                <thead><tr><th>Cant</th><th>Producto</th><th>Subtotal</th><th></th></tr></thead>
                 <tbody id="body-rem"></tbody>
             </table>
             <h3 style="text-align:right">TOTAL: $<span id="total-rem">0,00</span></h3>
@@ -112,33 +106,24 @@
 
         <div id="hoja" class="card">
             <h3>📋 Rendición de Ruta</h3>
-            <div id="hoja-content">
-                <table>
-                    <thead><tr><th>Cliente</th><th>Total</th><th>Pago</th><th>Saldo</th><th></th></tr></thead>
-                    <tbody id="body-hoja"></tbody>
-                </table>
-            </div>
-            <button class="btn btn-green" onclick="descargarHojaRuta()" style="margin-top:20px">📥 DESCARGAR PDF</button>
+            <table id="tabla-hoja">
+                <thead><tr><th>Cliente</th><th>Total</th><th>Pago</th><th>Saldo</th><th></th></tr></thead>
+                <tbody id="body-hoja"></tbody>
+            </table>
+            <button class="btn btn-green" onclick="descargarHojaRuta()" style="margin-top:20px;">📥 DESCARGAR PDF</button>
         </div>
 
         <div id="ajustes" class="card">
-            <h3>⚙️ Configuración Cloud</h3>
-            <p style="font-size: 11px;">Asegúrate que el link termine en <b>output=csv</b></p>
-            <label>Link de Catálogo:</label>
+            <label>Link Catálogo (CSV):</label>
             <input type="text" id="url-stk">
-            <label>Link de Clientes (Opcional):</label>
+            <label>Link Clientes (CSV):</label>
             <input type="text" id="url-cli">
-            <button class="btn btn-blue" onclick="guardarCloud()">FORCE SYNC / GUARDAR</button>
-            <hr>
-            <button class="btn btn-red" onclick="borrarTodo()" style="background:var(--red); margin-top:20px">LIMPIAR TODO</button>
+            <button class="btn btn-blue" onclick="guardarCloud()">GUARDAR Y SINCRONIZAR</button>
         </div>
     </div>
 
     <script>
-        const K = { STK: 'DM_STK_V25', CLI: 'DM_CLI_V25', HOJ: 'DM_HOJ_V25', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
-        // Convertimos tu link pubhtml a CSV automáticamente
-        const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRQGGGUL7sB1gqhvZLKJtqtYgIZbyfbK9EmUKPnPpwFNX-uEYrRN2VWGgpOF3WDxheXKvkIr0VW8oVF/pub?output=csv";
-
+        const K = { STK: 'DM_STK_V27', CLI: 'DM_CLI_V27', HOJ: 'DM_HOJ_V27', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
         let dbStock = JSON.parse(localStorage.getItem(K.STK)) || [];
         let dbCli = JSON.parse(localStorage.getItem(K.CLI)) || [];
         let hojaRuta = JSON.parse(localStorage.getItem(K.HOJ)) || [];
@@ -146,60 +131,85 @@
         let tipoLista = { ped: "Clientes", rem: "Clientes" };
         let itemSel = { ped: null, rem: null };
 
-        // --- MOTOR DE LIMPIEZA DE PRECIOS (FIX AR) ---
         function parseLocalFloat(val) {
             if (!val) return 0;
             let s = val.toString().trim().replace(/"/g, '');
-            // Si el Excel viene como 1.558,40 -> quitamos puntos, cambiamos coma por punto
-            if (s.includes(',') && s.includes('.')) {
-                s = s.replace(/\./g, '').replace(',', '.');
-            } else if (s.includes(',')) {
-                s = s.replace(',', '.');
-            }
+            if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
+            else if (s.includes(',')) s = s.replace(',', '.');
             return parseFloat(s) || 0;
         }
 
-        function fM(num) {
-            return Number(num).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        // --- PARSER DE CSV INTELIGENTE ---
-        function splitCSV(row, sep) {
-            const res = []; let word = ''; let quotes = false;
-            for (let char of row) {
-                if (char === '"') quotes = !quotes;
-                else if (char === sep && !quotes) { res.push(word); word = ''; }
-                else word += char;
-            }
-            res.push(word);
-            return res.map(v => v.trim().replace(/"/g, ''));
-        }
+        function fM(num) { return Number(num).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
         window.onload = () => {
-            if(localStorage.getItem('DM_THEME') === 'dark') document.documentElement.setAttribute("data-theme", "dark");
-            if(!localStorage.getItem(K.URL_STK)) localStorage.setItem(K.URL_STK, LINK_CSV);
-            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK);
+            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || "";
             document.getElementById('url-cli').value = localStorage.getItem(K.URL_CLI) || "";
             sincronizarTodo();
         };
 
         async function sincronizarTodo() {
             const urlS = localStorage.getItem(K.URL_STK);
+            const urlC = localStorage.getItem(K.URL_CLI);
             const msg = document.getElementById('sync-msg');
             try {
                 if(urlS) {
                     const res = await fetch(urlS); const text = await res.text();
-                    const lines = text.split(/\r?\n/).filter(l => l.trim());
-                    const sep = lines[0].includes(';') ? ';' : ',';
-                    dbStock = lines.slice(1).map(l => {
-                        const r = splitCSV(l, sep);
-                        return { id: r[0], n: r[1], pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
-                    });
+                    dbStock = text.split('\n').slice(1).map(l => {
+                        const r = l.split(/[,;]/);
+                        return { id: r[0]?.trim(), n: r[1]?.trim(), pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
+                    }).filter(p => p.id);
                     localStorage.setItem(K.STK, JSON.stringify(dbStock));
                 }
-                msg.innerText = "✅ Precios y Clientes actualizados (" + new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}) + ")";
-                actualizarDataLists();
-            } catch(e) { msg.innerText = "⚠️ Modo Offline (Datos guardados)"; }
+                if(urlC) {
+                    const resC = await fetch(urlC); const textC = await resC.text();
+                    dbCli = textC.split('\n').slice(1).map(l => {
+                        const r = l.split(/[,;]/);
+                        return { id: r[0]?.trim(), nombre: r[1]?.trim(), lista: r[2]?.trim() || "Clientes" };
+                    }).filter(c => c.id);
+                    localStorage.setItem(K.CLI, JSON.stringify(dbCli));
+                }
+                msg.innerText = "✅ Datos listos";
+                actualizarDL();
+            } catch(e) { msg.innerText = "⚠️ Error de red"; }
+        }
+
+        function actualizarDL() {
+            const html = dbCli.map(c => `<option value="${c.nombre}">`).join('');
+            document.getElementById('dl-cli-ped').innerHTML = html;
+            document.getElementById('dl-cli-rem').innerHTML = html;
+        }
+
+        // --- LA DOBLE VÍA (CORREGIDA) ---
+        function vincularCli(origen, t) {
+            const idInput = document.getElementById(`idCli-${t}`);
+            const nomInput = document.getElementById(`nomCli-${t}`);
+            const badge = document.getElementById(`badge-${t}`);
+
+            let encontrado = null;
+
+            if (origen === 'id') {
+                const val = idInput.value.trim();
+                encontrado = dbCli.find(c => c.id.toString() === val);
+                if (encontrado) nomInput.value = encontrado.nombre;
+            } else {
+                const val = nomInput.value.trim();
+                encontrado = dbCli.find(c => c.nombre === val);
+                if (encontrado) idInput.value = encontrado.id;
+            }
+
+            if (encontrado) {
+                tipoLista[t] = encontrado.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
+                badge.innerText = "Lista: " + tipoLista[t];
+                // Si cambiamos de lista, hay que refrescar precios de productos ya agregados
+                ordenes[t].forEach(it => {
+                    let pOriginal = dbStock.find(ps => ps.id === it.id);
+                    if(pOriginal) {
+                        it.p = (tipoLista[t] === "Patagonia") ? pOriginal.pPat : pOriginal.pCli;
+                        it.sub = it.p * it.c;
+                    }
+                });
+                renderTabla(t);
+            }
         }
 
         function filtrar(t) {
@@ -240,26 +250,6 @@
             });
             document.getElementById(`total-${t}`).innerText = fM(total);
             document.getElementById(`body-${t}`).innerHTML = h;
-        }
-
-        function autoCompleteNombre(t) {
-            const val = document.getElementById(`nomCli-${t}`).value;
-            const c = dbCli.find(cli => cli.nombre === val);
-            if(c) {
-                document.getElementById(`idCli-${t}`).value = c.id;
-                tipoLista[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
-                document.getElementById(`badge-${t}`).innerText = "Lista: " + tipoLista[t];
-            }
-        }
-
-        function buscarCli(t) {
-            let id = document.getElementById(`idCli-${t}`).value.trim();
-            let c = dbCli.find(cli => cli.id.toString() === id);
-            if(c) {
-                document.getElementById(`nomCli-${t}`).value = c.nombre;
-                tipoLista[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
-                document.getElementById(`badge-${t}`).innerText = "Lista: " + tipoLista[t];
-            }
         }
 
         function renderHoja() {
@@ -311,14 +301,8 @@
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            event.currentTarget.classList.add('active');
+            if(event) event.currentTarget.classList.add('active');
             if(id === 'hoja') renderHoja();
-        }
-
-        function toggleTheme() {
-            let t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-            document.documentElement.setAttribute("data-theme", t);
-            localStorage.setItem('DM_THEME', t);
         }
 
         function guardarCloud() {
@@ -326,14 +310,6 @@
             localStorage.setItem(K.URL_CLI, document.getElementById('url-cli').value);
             sincronizarTodo();
         }
-        
-        function actualizarDataLists() {
-            const html = dbCli.map(c => `<option value="${c.nombre}">`).join('');
-            document.getElementById('lista-clientes-ped').innerHTML = html;
-            document.getElementById('lista-clientes-rem').innerHTML = html;
-        }
-
-        function borrarTodo() { if(confirm("¿BORRAR TODO?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
