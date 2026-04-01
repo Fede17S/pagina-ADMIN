@@ -195,11 +195,55 @@
             }
         }
 
-        function actualizarDL() {
-            const h = dbCli.map(c => `<option value="${c.nombre}">`).join('');
-            document.getElementById('dl-cli-ped').innerHTML = h;
-            document.getElementById('dl-cli-rem').innerHTML = h;
-        }
+       function filtrar(t) {
+    const inputBusqueda = document.getElementById(`bus-${t}`);
+    const box = document.getElementById(`res-${t}`);
+    const bus = inputBusqueda.value.toLowerCase().trim();
+    
+    box.innerHTML = "";
+    
+    // Si no hay texto o es muy corto, escondemos la lista y salimos
+    if (bus.length < 1) {
+        box.style.display = "none";
+        return;
+    }
+
+    // Filtramos los productos (máximo 15 para que no colapse el celu)
+    const matches = dbStock.filter(p => 
+        p.id.toLowerCase().includes(bus) || 
+        p.n.toLowerCase().includes(bus)
+    ).slice(0, 15);
+
+    if (matches.length > 0) {
+        box.style.display = "block"; // Aseguramos que se vea
+        matches.forEach(p => {
+            let pre = (tipoLista[t] === "Patagonia") ? p.pPat : p.pCli;
+            let div = document.createElement('div');
+            div.className = 'item-prod';
+            // Usamos innerHTML pero con un estilo que facilite el click en dedos grandes
+            div.innerHTML = `
+                <div style="pointer-events:none">
+                    <span class="cod-badge">${p.id}</span> 
+                    <span style="font-size:14px">${p.n}</span>
+                </div>
+                <b style="pointer-events:none">$${fM(pre)}</b>
+            `;
+            
+            // Evento de selección reforzado para touch
+            div.onclick = (e) => {
+                e.preventDefault();
+                itemSel[t] = { ...p, pre };
+                inputBusqueda.value = p.n;
+                box.innerHTML = "";
+                box.style.display = "none";
+            };
+            box.appendChild(div);
+        });
+    } else {
+        box.style.display = "none";
+    }
+}
+        
 
         function vincularCli(origen, t) {
             const idIn = document.getElementById(`idCli-${t}`), nomIn = document.getElementById(`nomCli-${t}`);
@@ -227,7 +271,7 @@
             let cant = parseFloat(document.getElementById(`cant-${t}`).value);
             if(itemSel[t] && cant > 0) {
                 ordenes[t].push({ id: itemSel[t].id, n: itemSel[t].n, p: itemSel[t].pre, c: cant, sub: itemSel[t].pre * cant });
-                renderTabla(t); document.getElementById(`bus-${t}`).value = ""; document.getElementById(`res-${t}`).innerHTML = ""; itemSel[t] = null;
+                renderTabla(t); document.getElementById(`-${t}`).value = ""; document.getElementById(`res-${t}`).innerHTML = ""; itemSel[t] = null;
             }
         }
 
