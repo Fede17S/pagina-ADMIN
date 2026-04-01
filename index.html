@@ -1,84 +1,361 @@
-<script>
-    const K = { STK: 'DM_STK_V33', CLI: 'DM_CLI_V33', HOJ: 'DM_HOJ_V33', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DistriMar - V33 Notes Sync</title>
     
-    // LOGO DISTRIMAR EN BASE64
-    const LOGO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA..."; // (He acortado esto por espacio, usa el código completo abajo)
-
-    let dbStock = [], dbCli = [], hojaRuta = JSON.parse(localStorage.getItem(K.HOJ)) || [];
-    let ordenes = { ped: [], rem: [] }, tipoLista = { ped: "Clientes", rem: "Clientes" }, itemSel = { ped: null, rem: null };
-
-    // ... (Funciones parseLocalFloat, fM, splitCSV, window.onload, sincronizarTodo, actualizarDL, vincularCli, filtrar, agregar, renderTabla, renderHoja permanecen igual) ...
-
-    async function generarPDF(m) {
-        const t = (m === 'pedido') ? 'ped' : 'rem'; 
-        if(ordenes[t].length === 0) return;
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        :root {
+            --blue: #0056b3; --green: #25d366; --red: #dc3545;
+            --bg: #f4f7f6; --card-bg: #ffffff; --text: #333; --border: #ddd;
+            --input-bg: #fff; --search-bg: #f1f3f5;
+        }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; touch-action: manipulation; }
+        .tabs { display: flex; background: var(--card-bg); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; font-size: 11px; }
+        .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: rgba(0,86,179,0.05); }
         
-        const { jsPDF } = window.jspdf; 
-        const doc = new jsPDF();
-        
-        let nom = document.getElementById(`nomCli-${t}`).value || "Mostrador";
-        let tot = document.getElementById(`total-${t}`).innerText;
-        let obs = document.getElementById(`obs-${t}`).value.trim();
+        .container { max-width: 900px; margin: 10px auto; padding: 10px; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; margin-bottom: 20px; }
+        .card.active { display: block; }
 
-        // --- ENCABEZADO CON LOGO ---
-        // Insertamos el logo (x, y, ancho, alto)
-        // Nota: He usado una versión simplificada del logo. Para el código final, pega aquí el Base64 de tu imagen.
-        try {
-            doc.addImage(LOGO_BASE64, 'PNG', 14, 10, 30, 30);
-        } catch(e) { console.error("Error al cargar logo", e); }
-
-        doc.setFontSize(18);
-        doc.setTextColor(0, 86, 179); // Azul DistriMar
-        doc.setFont("helvetica", "bold");
-        doc.text("DISTRIMAR", 50, 22);
-        
-        doc.setFontSize(14);
-        doc.setTextColor(100);
-        doc.text(m.toUpperCase(), 50, 30);
-        
-        // Datos del comprobante a la derecha del logo
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(50);
-        doc.text(`Cliente: ${nom}`, 50, 38);
-        doc.text(`Lista: ${tipoLista[t]}`, 50, 43);
-        doc.text(`Fecha: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 140, 22);
-
-        // --- TABLA DE PRODUCTOS ---
-        doc.autoTable({ 
-            startY: 48, 
-            head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']], 
-            body: ordenes[t].map(i => [i.c, i.id, i.n, `$${fM(i.p)}`, `$${fM(i.sub)}`]),
-            foot: [['','','','TOTAL',`$${tot}`]],
-            theme: 'striped',
-            headStyles: { fillColor: [0, 86, 179], fontSize: 11 },
-            footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontSize: 12, fontStyle: 'bold' },
-            margin: { left: 14, right: 14 }
-        });
-
-        // OBSERVACIONES
-        if(obs !== "") {
-            let finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "bold");
-            doc.text("OBSERVACIONES:", 14, finalY);
-            doc.setFont("helvetica", "normal");
-            let splitObs = doc.splitTextToSize(obs, 180);
-            doc.text(splitObs, 14, finalY + 7);
+        input, textarea { 
+            width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
+            border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; 
+            box-sizing: border-box; font-family: sans-serif;
         }
 
-        if(m === 'remito') {
-            hojaRuta.push({ id: document.getElementById(`idCli-rem`).value, nom: nom, importe: parseLocalFloat(tot), pago: 0 });
-            localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-blue { background: var(--blue); }
+        .btn-green { background: var(--green); }
+
+        .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); position: relative; }
+        .lista-resultados { 
+            position: absolute; top: 60px; left: 0; width: 100%; 
+            max-height: 250px; overflow-y: auto; background: var(--card-bg); 
+            border: 1px solid var(--border); border-radius: 8px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; display: none;
+        }
+        .item-prod { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .item-prod:active { background: #e9ecef; }
+        .item-prod * { pointer-events: none; }
+        .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        
+        .cloud-status { font-size: 10px; color: var(--green); margin-bottom: 10px; display: block; text-align: center; font-weight: bold; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 5px; background: var(--blue); color: #fff; font-size: 10px; margin-top: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid var(--border); }
+        .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; padding: 10px; }
+        
+        .obs-box { margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="verTab('pedido')">📝 PEDIDO</button>
+        <button class="tab-btn" onclick="verTab('remito')">🚚 REMITO</button>
+        <button class="tab-btn" onclick="verTab('hoja')">📋 RUTA</button>
+        <button class="tab-btn" onclick="verTab('ajustes')">⚙️ CONFIG</button>
+    </nav>
+
+    <div class="container">
+        <span id="sync-msg" class="cloud-status">🔄 Sincronizando...</span>
+
+        <div id="pedido" class="card active">
+            <input type="text" id="idCli-ped" placeholder="ID Cliente..." oninput="vincularCli('id', 'ped')">
+            <input list="dl-cli-ped" id="nomCli-ped" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'ped')">
+            <datalist id="dl-cli-ped"></datalist>
+            <div id="badge-ped" class="badge">Lista: Clientes</div>
+
+            <div class="search-area">
+                <input type="text" id="bus-ped" placeholder="🔍 Buscar producto..." oninput="filtrar('ped')" autocomplete="off">
+                <div id="res-ped" class="lista-resultados"></div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="number" id="cant-ped" value="1" style="flex:1">
+                    <button class="btn btn-blue" onclick="agregar('ped')" style="flex:2">+ AGREGAR</button>
+                </div>
+            </div>
+
+            <table>
+                <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
+                <tbody id="body-ped"></tbody>
+            </table>
+
+            <div class="obs-box">
+                <textarea id="obs-ped" placeholder="Añadir observaciones al pedido (ej: Entregar por la tarde, cobrar recargo)..." rows="2"></textarea>
+            </div>
+
+            <h3 style="text-align:right">TOTAL: $<span id="total-ped">0,00</span></h3>
+            <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 ENVIAR PEDIDO</button>
+        </div>
+
+        <div id="remito" class="card">
+            <input type="text" id="idCli-rem" placeholder="ID Cliente..." oninput="vincularCli('id', 'rem')">
+            <input list="dl-cli-rem" id="nomCli-rem" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'rem')">
+            <datalist id="dl-cli-rem"></datalist>
+            <div id="badge-rem" class="badge">Lista: Clientes</div>
+
+            <div class="search-area">
+                <input type="text" id="bus-rem" placeholder="🔍 Buscar producto..." oninput="filtrar('rem')" autocomplete="off">
+                <div id="res-rem" class="lista-resultados"></div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="number" id="cant-rem" value="1" style="flex:1">
+                    <button class="btn btn-blue" onclick="agregar('rem')" style="flex:2">+ AGREGAR</button>
+                </div>
+            </div>
+
+            <table>
+                <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
+                <tbody id="body-rem"></tbody>
+            </table>
+
+            <div class="obs-box">
+                <textarea id="obs-rem" placeholder="Observaciones para el remito/hoja de ruta..." rows="2"></textarea>
+            </div>
+
+            <h3 style="text-align:right">TOTAL: $<span id="total-rem">0,00</span></h3>
+            <button class="btn btn-blue" onclick="generarPDF('remito')">💾 GUARDAR EN RUTA</button>
+        </div>
+
+        <div id="hoja" class="card">
+            <h3>📋 Rendición de Ruta</h3>
+            <table>
+                <thead><tr><th>Cliente</th><th>Total</th><th>Pago</th><th>Saldo</th><th></th></tr></thead>
+                <tbody id="body-hoja"></tbody>
+            </table>
+            <button class="btn btn-green" onclick="descargarHojaRuta()" style="margin-top:20px;">📥 DESCARGAR PDF</button>
+        </div>
+
+        <div id="ajustes" class="card">
+            <h3>⚙️ Configuración Cloud</h3>
+            <label>Link Catálogo (CSV):</label>
+            <input type="text" id="url-stk">
+            <label>Link Clientes (CSV):</label>
+            <input type="text" id="url-cli">
+            <button class="btn btn-blue" onclick="guardarCloud()">GUARDAR Y RECARGAR</button>
+            <button class="btn btn-red" onclick="if(confirm('¿Borrar todo?')){localStorage.clear(); location.reload();}" style="background:#dc3545; margin-top:30px">RESETEAR SISTEMA</button>
+        </div>
+    </div>
+
+    <script>
+        const K = { STK: 'DM_STK_V33', CLI: 'DM_CLI_V33', HOJ: 'DM_HOJ_V33', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
+        let dbStock = [], dbCli = [], hojaRuta = JSON.parse(localStorage.getItem(K.HOJ)) || [];
+        let ordenes = { ped: [], rem: [] }, tipoLista = { ped: "Clientes", rem: "Clientes" }, itemSel = { ped: null, rem: null };
+
+        function parseLocalFloat(val) {
+            if (!val) return 0;
+            let s = val.toString().trim().replace(/"/g, '');
+            if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
+            else if (s.includes(',')) s = s.replace(',', '.');
+            return parseFloat(s) || 0;
         }
 
-        const blob = doc.output('blob'), file = new File([blob], `${m}_${nom}.pdf`, { type: 'application/pdf' });
-        if(navigator.share) await navigator.share({ files: [file] }); else doc.save(`${m}_${nom}.pdf`);
-        
-        ordenes[t] = []; 
-        document.getElementById(`obs-${t}`).value = "";
-        renderTabla(t);
-    }
+        function fM(num) { return Number(num).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-    // ... (Resto de funciones: descargarHojaRuta, verTab, guardarCloud) ...
-</script>
+        function splitCSV(row, sep) {
+            const res = []; let word = '', quotes = false;
+            for (let char of row) {
+                if (char === '"') quotes = !quotes;
+                else if (char === sep && !quotes) { res.push(word); word = ''; }
+                else word += char;
+            }
+            res.push(word);
+            return res.map(v => v.trim().replace(/"/g, ''));
+        }
+
+        window.onload = () => {
+            const defaultURL_STK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRQGGGUL7sB1gqhvZLKJtqtYgIZbyfbK9EmUKPnPpwFNX-uEYrRN2VWGgpOF3WDxheXKvkIr0VW8oVF/pub?output=csv"; 
+            const defaultURL_CLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStWgQatDMyC-hkTph-idGBLXnjBBymRd26tz-kCY-hJaRZGzFtObAh5C0mCO25yzXZjubZ-xt3oq6s/pub?output=csv";
+
+            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || defaultURL_STK;
+            document.getElementById('url-cli').value = localStorage.getItem(K.URL_CLI) || defaultURL_CLI;
+            sincronizarTodo();
+        };
+
+        async function sincronizarTodo() {
+            const urlS = document.getElementById('url-stk').value;
+            const urlC = document.getElementById('url-cli').value;
+            const msg = document.getElementById('sync-msg');
+            try {
+                const [resS, resC] = await Promise.all([fetch(urlS), fetch(urlC)]);
+                const [textS, textC] = await Promise.all([resS.text(), resC.text()]);
+                
+                const linesS = textS.split(/\r?\n/).filter(l => l.trim());
+                const sepS = linesS[0].includes(';') ? ';' : ',';
+                dbStock = linesS.slice(1).map(l => {
+                    const r = splitCSV(l, sepS);
+                    return { id: r[0], n: r[1], pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
+                }).filter(p => p.id);
+
+                const linesC = textC.split(/\r?\n/).filter(l => l.trim());
+                const sepC = linesC[0].includes(';') ? ';' : ',';
+                dbCli = linesC.slice(1).map(l => {
+                    const r = splitCSV(l, sepC);
+                    return { id: r[0], nombre: r[1], lista: r[2] || "Clientes" };
+                }).filter(c => c.id);
+
+                localStorage.setItem(K.STK, JSON.stringify(dbStock));
+                localStorage.setItem(K.CLI, JSON.stringify(dbCli));
+                msg.innerText = "✅ Datos Actualizados";
+                actualizarDL();
+            } catch(e) { 
+                dbStock = JSON.parse(localStorage.getItem(K.STK)) || [];
+                dbCli = JSON.parse(localStorage.getItem(K.CLI)) || [];
+                msg.innerText = "⚠️ Modo Local"; 
+                actualizarDL(); 
+            }
+        }
+
+        function actualizarDL() {
+            const h = dbCli.map(c => `<option value="${c.nombre}">`).join('');
+            document.getElementById('dl-cli-ped').innerHTML = h;
+            document.getElementById('dl-cli-rem').innerHTML = h;
+        }
+
+        function vincularCli(origen, t) {
+            const idIn = document.getElementById(`idCli-${t}`), nomIn = document.getElementById(`nomCli-${t}`);
+            let c = (origen === 'id') ? dbCli.find(x => x.id.toString() === idIn.value.trim()) : dbCli.find(x => x.nombre.trim() === nomIn.value.trim());
+            if (c) {
+                idIn.value = c.id; nomIn.value = c.nombre;
+                tipoLista[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
+                document.getElementById(`badge-${t}`).innerText = "Lista: " + tipoLista[t];
+            }
+        }
+
+        function filtrar(t) {
+            const box = document.getElementById(`res-${t}`);
+            const bus = document.getElementById(`bus-${t}`).value.toLowerCase().trim();
+            box.innerHTML = "";
+            if(bus.length < 1) { box.style.display = "none"; return; }
+            const res = dbStock.filter(p => p.id.toLowerCase().includes(bus) || p.n.toLowerCase().includes(bus)).slice(0, 15);
+            if(res.length > 0) {
+                box.style.display = "block";
+                res.forEach(p => {
+                    let pre = (tipoLista[t] === "Patagonia") ? p.pPat : p.pCli;
+                    let div = document.createElement('div');
+                    div.className = 'item-prod';
+                    div.innerHTML = `<div><span class="cod-badge">${p.id}</span> ${p.n}</div><b>$${fM(pre)}</b>`;
+                    div.onclick = () => {
+                        itemSel[t] = {...p, pre};
+                        document.getElementById(`bus-${t}`).value = p.n;
+                        box.innerHTML = "";
+                        box.style.display = "none";
+                    };
+                    box.appendChild(div);
+                });
+            } else { box.style.display = "none"; }
+        }
+
+        function agregar(t) {
+            let cant = parseFloat(document.getElementById(`cant-${t}`).value);
+            if(itemSel[t] && cant > 0) {
+                ordenes[t].push({ id: itemSel[t].id, n: itemSel[t].n, p: itemSel[t].pre, c: cant, sub: itemSel[t].pre * cant });
+                renderTabla(t);
+                document.getElementById(`bus-${t}`).value = "";
+                document.getElementById(`res-${t}`).style.display = "none";
+                itemSel[t] = null;
+            }
+        }
+
+        function renderTabla(t) {
+            let h = "", total = 0;
+            ordenes[t].forEach((it, i) => {
+                total += it.sub;
+                h += `<tr><td>${it.c}</td><td>${it.n}</td><td>$${fM(it.sub)}</td><td class="remove" onclick="ordenes['${t}'].splice(${i},1);renderTabla('${t}')">✕</td></tr>`;
+            });
+            document.getElementById(`total-${t}`).innerText = fM(total);
+            document.getElementById(`body-${t}`).innerHTML = h;
+        }
+
+        function renderHoja() {
+            let h = "";
+            hojaRuta.forEach((f, i) => {
+                h += `<tr><td>${f.nom}</td><td>$${fM(f.importe)}</td>
+                <td><input type="number" style="width:70px" value="${f.pago}" onchange="hojaRuta[${i}].pago=this.value;localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()"></td>
+                <td>$${fM(f.importe - f.pago)}</td>
+                <td class="remove" onclick="if(confirm('¿Borrar?')){hojaRuta.splice(${i},1);localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()}">✕</td></tr>`;
+            });
+            document.getElementById('body-hoja').innerHTML = h;
+        }
+
+        async function generarPDF(m) {
+            const t = (m === 'pedido') ? 'ped' : 'rem'; 
+            if(ordenes[t].length === 0) return;
+            
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF();
+            
+            let nom = document.getElementById(`nomCli-${t}`).value || "Mostrador";
+            let tot = document.getElementById(`total-${t}`).innerText;
+            let obs = document.getElementById(`obs-${t}`).value.trim();
+
+            doc.setFontSize(18);
+            doc.text("DISTRIMAR - " + m.toUpperCase(), 105, 20, {align:"center"});
+            
+            doc.setFontSize(12);
+            doc.text(`Cliente: ${nom}`, 14, 30);
+            doc.text(`Lista: ${tipoLista[t]}`, 14, 36);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 14, 42);
+
+            doc.autoTable({ 
+                startY: 48, 
+                head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']], 
+                body: ordenes[t].map(i => [i.c, i.id, i.n, `$${fM(i.p)}`, `$${fM(i.sub)}`]),
+                foot: [['','','','TOTAL',`$${tot}`]],
+                theme: 'striped',
+                headStyles: { fillColor: [0, 86, 179] }
+            });
+
+            // AGREGAR OBSERVACIONES SI EXISTEN
+            if(obs !== "") {
+                let finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFont("helvetica", "bold");
+                doc.text("OBSERVACIONES:", 14, finalY);
+                doc.setFont("helvetica", "normal");
+                // Split text para que no se salga de la hoja
+                let splitObs = doc.splitTextToSize(obs, 180);
+                doc.text(splitObs, 14, finalY + 7);
+            }
+
+            if(m === 'remito') {
+                hojaRuta.push({ id: document.getElementById(`idCli-rem`).value, nom: nom, importe: parseLocalFloat(tot), pago: 0 });
+                localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));
+            }
+
+            const blob = doc.output('blob'), file = new File([blob], `${m}_${nom}.pdf`, { type: 'application/pdf' });
+            if(navigator.share) await navigator.share({ files: [file] }); else doc.save(`${m}_${nom}.pdf`);
+            
+            // Limpiar todo después de enviar
+            ordenes[t] = []; 
+            document.getElementById(`obs-${t}`).value = "";
+            renderTabla(t);
+        }
+
+        function descargarHojaRuta() {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            doc.text("HOJA DE RUTA - DISTRIMAR", 105, 20, {align:"center"});
+            doc.autoTable({ startY: 30, head: [['ID', 'Cliente', 'Importe', 'Pago', 'Saldo']], body: hojaRuta.map(f => [f.id, f.nom, `$${fM(f.importe)}`, `$${fM(f.pago)}`, `$${fM(f.importe - f.pago)}`]) });
+            doc.save(`Ruta_${new Date().toLocaleDateString()}.pdf`);
+        }
+
+        function verTab(id) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active'); if(event) event.currentTarget.classList.add('active');
+            if(id === 'hoja') renderHoja();
+        }
+
+        function guardarCloud() {
+            localStorage.setItem(K.URL_STK, document.getElementById('url-stk').value);
+            localStorage.setItem(K.URL_CLI, document.getElementById('url-cli').value);
+            location.reload();
+        }
+    </script>
+</body>
+</html>
