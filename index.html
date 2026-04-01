@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V32 Mobile Fix</title>
+    <title>DistriMar - V33 Notes Sync</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -23,17 +23,16 @@
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; margin-bottom: 20px; }
         .card.active { display: block; }
 
-        input { 
+        input, textarea { 
             width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
             border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; 
-            box-sizing: border-box;
+            box-sizing: border-box; font-family: sans-serif;
         }
 
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
 
-        /* BUSCADOR OPTIMIZADO PARA MÓVIL */
         .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); position: relative; }
         .lista-resultados { 
             position: absolute; top: 60px; left: 0; width: 100%; 
@@ -43,7 +42,7 @@
         }
         .item-prod { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .item-prod:active { background: #e9ecef; }
-        .item-prod * { pointer-events: none; } /* Hace que el click sea en el div entero */
+        .item-prod * { pointer-events: none; }
         .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         
         .cloud-status { font-size: 10px; color: var(--green); margin-bottom: 10px; display: block; text-align: center; font-weight: bold; }
@@ -52,6 +51,8 @@
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid var(--border); }
         .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; padding: 10px; }
+        
+        .obs-box { margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 10px; }
     </style>
 </head>
 <body>
@@ -85,6 +86,11 @@
                 <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-ped"></tbody>
             </table>
+
+            <div class="obs-box">
+                <textarea id="obs-ped" placeholder="Añadir observaciones al pedido (ej: Entregar por la tarde, cobrar recargo)..." rows="2"></textarea>
+            </div>
+
             <h3 style="text-align:right">TOTAL: $<span id="total-ped">0,00</span></h3>
             <button class="btn btn-green" onclick="generarPDF('pedido')">🟢 ENVIAR PEDIDO</button>
         </div>
@@ -108,6 +114,11 @@
                 <thead><tr><th>Cant</th><th>Producto</th><th>Sub</th><th></th></tr></thead>
                 <tbody id="body-rem"></tbody>
             </table>
+
+            <div class="obs-box">
+                <textarea id="obs-rem" placeholder="Observaciones para el remito/hoja de ruta..." rows="2"></textarea>
+            </div>
+
             <h3 style="text-align:right">TOTAL: $<span id="total-rem">0,00</span></h3>
             <button class="btn btn-blue" onclick="generarPDF('remito')">💾 GUARDAR EN RUTA</button>
         </div>
@@ -133,7 +144,7 @@
     </div>
 
     <script>
-        const K = { STK: 'DM_STK_V32', CLI: 'DM_CLI_V32', HOJ: 'DM_HOJ_V32', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
+        const K = { STK: 'DM_STK_V33', CLI: 'DM_CLI_V33', HOJ: 'DM_HOJ_V33', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
         let dbStock = [], dbCli = [], hojaRuta = JSON.parse(localStorage.getItem(K.HOJ)) || [];
         let ordenes = { ped: [], rem: [] }, tipoLista = { ped: "Clientes", rem: "Clientes" }, itemSel = { ped: null, rem: null };
 
@@ -159,7 +170,6 @@
         }
 
         window.onload = () => {
-            // REEMPLAZA ESTOS LINKS CON TUS CSV PUBLICADOS
             const defaultURL_STK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRQGGGUL7sB1gqhvZLKJtqtYgIZbyfbK9EmUKPnPpwFNX-uEYrRN2VWGgpOF3WDxheXKvkIr0VW8oVF/pub?output=csv"; 
             const defaultURL_CLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStWgQatDMyC-hkTph-idGBLXnjBBymRd26tz-kCY-hJaRZGzFtObAh5C0mCO25yzXZjubZ-xt3oq6s/pub?output=csv";
 
@@ -172,7 +182,6 @@
             const urlS = document.getElementById('url-stk').value;
             const urlC = document.getElementById('url-cli').value;
             const msg = document.getElementById('sync-msg');
-            if(!urlS || urlS.includes("TU_LINK")) { msg.innerText = "⚠️ Falta configurar URLs"; return; }
             try {
                 const [resS, resC] = await Promise.all([fetch(urlS), fetch(urlC)]);
                 const [textS, textC] = await Promise.all([resS.text(), resC.text()]);
@@ -219,19 +228,12 @@
             }
         }
 
-        // --- BUSCADOR CORREGIDO PARA MÓVILES ---
         function filtrar(t) {
             const box = document.getElementById(`res-${t}`);
             const bus = document.getElementById(`bus-${t}`).value.toLowerCase().trim();
             box.innerHTML = "";
-            
-            if(bus.length < 1) {
-                box.style.display = "none";
-                return;
-            }
-
+            if(bus.length < 1) { box.style.display = "none"; return; }
             const res = dbStock.filter(p => p.id.toLowerCase().includes(bus) || p.n.toLowerCase().includes(bus)).slice(0, 15);
-            
             if(res.length > 0) {
                 box.style.display = "block";
                 res.forEach(p => {
@@ -247,9 +249,7 @@
                     };
                     box.appendChild(div);
                 });
-            } else {
-                box.style.display = "none";
-            }
+            } else { box.style.display = "none"; }
         }
 
         function agregar(t) {
@@ -285,19 +285,56 @@
         }
 
         async function generarPDF(m) {
-            const t = (m === 'pedido') ? 'ped' : 'rem'; if(ordenes[t].length === 0) return;
-            const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            let nom = document.getElementById(`nomCli-${t}`).value || "Mostrador", tot = document.getElementById(`total-${t}`).innerText;
+            const t = (m === 'pedido') ? 'ped' : 'rem'; 
+            if(ordenes[t].length === 0) return;
+            
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF();
+            
+            let nom = document.getElementById(`nomCli-${t}`).value || "Mostrador";
+            let tot = document.getElementById(`total-${t}`).innerText;
+            let obs = document.getElementById(`obs-${t}`).value.trim();
+
+            doc.setFontSize(18);
             doc.text("DISTRIMAR - " + m.toUpperCase(), 105, 20, {align:"center"});
-            doc.text(`Cliente: ${nom} | Lista: ${tipoLista[t]}`, 14, 30);
-            doc.autoTable({ startY: 35, head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']], body: ordenes[t].map(i => [i.c, i.id, i.n, `$${fM(i.p)}`, `$${fM(i.sub)}`]), foot: [['','','','TOTAL',`$${tot}`]] });
+            
+            doc.setFontSize(12);
+            doc.text(`Cliente: ${nom}`, 14, 30);
+            doc.text(`Lista: ${tipoLista[t]}`, 14, 36);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 14, 42);
+
+            doc.autoTable({ 
+                startY: 48, 
+                head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']], 
+                body: ordenes[t].map(i => [i.c, i.id, i.n, `$${fM(i.p)}`, `$${fM(i.sub)}`]),
+                foot: [['','','','TOTAL',`$${tot}`]],
+                theme: 'striped',
+                headStyles: { fillColor: [0, 86, 179] }
+            });
+
+            // AGREGAR OBSERVACIONES SI EXISTEN
+            if(obs !== "") {
+                let finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFont("helvetica", "bold");
+                doc.text("OBSERVACIONES:", 14, finalY);
+                doc.setFont("helvetica", "normal");
+                // Split text para que no se salga de la hoja
+                let splitObs = doc.splitTextToSize(obs, 180);
+                doc.text(splitObs, 14, finalY + 7);
+            }
+
             if(m === 'remito') {
                 hojaRuta.push({ id: document.getElementById(`idCli-rem`).value, nom: nom, importe: parseLocalFloat(tot), pago: 0 });
                 localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));
             }
+
             const blob = doc.output('blob'), file = new File([blob], `${m}_${nom}.pdf`, { type: 'application/pdf' });
             if(navigator.share) await navigator.share({ files: [file] }); else doc.save(`${m}_${nom}.pdf`);
-            ordenes[t] = []; renderTabla(t);
+            
+            // Limpiar todo después de enviar
+            ordenes[t] = []; 
+            document.getElementById(`obs-${t}`).value = "";
+            renderTabla(t);
         }
 
         function descargarHojaRuta() {
