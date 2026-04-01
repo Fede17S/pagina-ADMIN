@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V28 Final Fixed</title>
+    <title>DistriMar - V29 Cloud Sync</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -19,7 +19,7 @@
             --input-bg: #2d2d2d; --search-bg: #2d2d2d;
         }
 
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; touch-action: manipulation; }
         .tabs { display: flex; background: var(--card-bg); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100; }
         .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; font-size: 11px; }
         .tab-btn.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: rgba(0,86,179,0.05); }
@@ -30,7 +30,8 @@
 
         input { 
             width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
-            border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 14px; box-sizing: border-box;
+            border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; /* 16px evita zoom automático en iPhone */
+            box-sizing: border-box;
         }
 
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -38,8 +39,8 @@
         .btn-green { background: var(--green); }
 
         .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); }
-        .lista-resultados { max-height: 250px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; }
-        .item-prod { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .lista-resultados { max-height: 200px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; }
+        .item-prod { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         
         .cloud-status { font-size: 10px; color: var(--green); margin-bottom: 10px; display: block; text-align: center; font-weight: bold; }
@@ -47,7 +48,7 @@
         
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid var(--border); }
-        .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; }
+        .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; padding: 10px; }
     </style>
 </head>
 <body>
@@ -60,11 +61,11 @@
     </nav>
 
     <div class="container">
-        <span id="sync-msg" class="cloud-status">🔄 Sincronizando datos...</span>
+        <span id="sync-msg" class="cloud-status">🔄 Sincronizando con la Nube...</span>
 
         <div id="pedido" class="card active">
             <input type="text" id="idCli-ped" placeholder="ID Cliente..." oninput="vincularCli('id', 'ped')">
-            <input list="dl-cli-ped" id="nomCli-ped" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'ped')">
+            <input list="dl-cli-ped" id="nomCli-ped" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'ped')" onchange="vincularCli('nom', 'ped')">
             <datalist id="dl-cli-ped"></datalist>
             <div id="badge-ped" class="badge">Lista: Clientes</div>
 
@@ -85,7 +86,7 @@
 
         <div id="remito" class="card">
             <input type="text" id="idCli-rem" placeholder="ID Cliente..." oninput="vincularCli('id', 'rem')">
-            <input list="dl-cli-rem" id="nomCli-rem" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'rem')">
+            <input list="dl-cli-rem" id="nomCli-rem" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'rem')" onchange="vincularCli('nom', 'rem')">
             <datalist id="dl-cli-rem"></datalist>
             <div id="badge-rem" class="badge">Lista: Clientes</div>
 
@@ -114,18 +115,23 @@
         </div>
 
         <div id="ajustes" class="card">
-            <h3>⚙️ Configuración</h3>
+            <h3>⚙️ Configuración Cloud</h3>
+            <p style="font-size: 11px; color: #666;">Pega aquí tus enlaces "Publicar en la Web" de Google Sheets (formato CSV).</p>
             <label>Link Catálogo (CSV):</label>
             <input type="text" id="url-stk">
             <label>Link Clientes (CSV):</label>
             <input type="text" id="url-cli">
-            <button class="btn btn-blue" onclick="guardarCloud()">GUARDAR Y SINCRONIZAR</button>
-            <button class="btn btn-red" onclick="localStorage.clear(); location.reload();" style="background:#dc3545; margin-top:30px">BORRAR DATOS LOCALES</button>
+            <button class="btn btn-blue" onclick="guardarCloud()">GUARDAR Y RECARGAR</button>
         </div>
     </div>
 
     <script>
-        const K = { STK: 'DM_STK_V28', CLI: 'DM_CLI_V28', HOJ: 'DM_HOJ_V28', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
+        // --- PEGA TUS LINKS AQUÍ PARA QUE FUNCIONEN EN TODOS LOS TELÉFONOS ---
+        const DEFAULT_URL_STK = https://docs.google.com/spreadsheets/d/e/2PACX-1vRQGGGUL7sB1gqhvZLKJtqtYgIZbyfbK9EmUKPnPpwFNX-uEYrRN2VWGgpOF3WDxheXKvkIr0VW8oVF/pubhtml; 
+        const DEFAULT_URL_CLI = https://docs.google.com/spreadsheets/d/e/2PACX-1vStWgQatDMyC-hkTph-idGBLXnjBBymRd26tz-kCY-hJaRZGzFtObAh5C0mCO25yzXZjubZ-xt3oq6s/pub?output=csv;
+        // --------------------------------------------------------------------
+
+        const K = { STK: 'DM_STK_V29', CLI: 'DM_CLI_V29', HOJ: 'DM_HOJ_V29', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
         let dbStock = JSON.parse(localStorage.getItem(K.STK)) || [];
         let dbCli = JSON.parse(localStorage.getItem(K.CLI)) || [];
         let hojaRuta = JSON.parse(localStorage.getItem(K.HOJ)) || [];
@@ -133,7 +139,6 @@
         let tipoLista = { ped: "Clientes", rem: "Clientes" };
         let itemSel = { ped: null, rem: null };
 
-        // --- ARREGLO PRECIOS AR ---
         function parseLocalFloat(val) {
             if (!val) return 0;
             let s = val.toString().trim().replace(/"/g, '');
@@ -144,7 +149,6 @@
 
         function fM(num) { return Number(num).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-        // --- MOTOR CSV ROBUSTO ---
         function splitCSV(row, sep) {
             const res = []; let word = ''; let quotes = false;
             for (let char of row) {
@@ -157,39 +161,48 @@
         }
 
         window.onload = () => {
-            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || "";
-            document.getElementById('url-cli').value = localStorage.getItem(K.URL_CLI) || "";
+            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || DEFAULT_URL_STK;
+            document.getElementById('url-cli').value = localStorage.getItem(K.URL_CLI) || DEFAULT_URL_CLI;
             sincronizarTodo();
         };
 
         async function sincronizarTodo() {
-            const urlS = localStorage.getItem(K.URL_STK);
-            const urlC = localStorage.getItem(K.URL_CLI);
+            const urlS = document.getElementById('url-stk').value;
+            const urlC = document.getElementById('url-cli').value;
             const msg = document.getElementById('sync-msg');
-            try {
-                if(urlS) {
-                    const res = await fetch(urlS); const text = await res.text();
-                    const lines = text.split(/\r?\n/).filter(l => l.trim());
-                    const sep = lines[0].includes(';') ? ';' : ',';
-                    dbStock = lines.slice(1).map(l => {
-                        const r = splitCSV(l, sep);
-                        return { id: r[0], n: r[1], pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
-                    }).filter(p => p.id);
-                    localStorage.setItem(K.STK, JSON.stringify(dbStock));
-                }
-                if(urlC) {
-                    const resC = await fetch(urlC); const textC = await resC.text();
-                    const linesC = textC.split(/\r?\n/).filter(l => l.trim());
-                    const sepC = linesC[0].includes(';') ? ';' : ',';
-                    dbCli = linesC.slice(1).map(l => {
-                        const r = splitCSV(l, sepC);
-                        return { id: r[0], nombre: r[1], lista: r[2] || "Clientes" };
-                    }).filter(c => c.id);
-                    localStorage.setItem(K.CLI, JSON.stringify(dbCli));
-                }
-                msg.innerText = "✅ Datos actualizados";
+            
+            if(!urlS || !urlC) {
+                msg.innerText = "⚠️ Falta configurar URLs en Ajustes";
                 actualizarDL();
-            } catch(e) { msg.innerText = "⚠️ Modo Local"; actualizarDL(); }
+                return;
+            }
+
+            try {
+                const [resS, resC] = await Promise.all([fetch(urlS), fetch(urlC)]);
+                const [textS, textC] = await Promise.all([resS.text(), resC.text()]);
+
+                const linesS = textS.split(/\r?\n/).filter(l => l.trim());
+                const sepS = linesS[0].includes(';') ? ';' : ',';
+                dbStock = linesS.slice(1).map(l => {
+                    const r = splitCSV(l, sepS);
+                    return { id: r[0], n: r[1], pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
+                }).filter(p => p.id);
+
+                const linesC = textC.split(/\r?\n/).filter(l => l.trim());
+                const sepC = linesC[0].includes(';') ? ';' : ',';
+                dbCli = linesC.slice(1).map(l => {
+                    const r = splitCSV(l, sepC);
+                    return { id: r[0], nombre: r[1], lista: r[2] || "Clientes" };
+                }).filter(c => c.id);
+
+                localStorage.setItem(K.STK, JSON.stringify(dbStock));
+                localStorage.setItem(K.CLI, JSON.stringify(dbCli));
+                msg.innerText = "✅ Sincronizado: " + new Date().toLocaleTimeString();
+                actualizarDL();
+            } catch(e) {
+                msg.innerText = "⚠️ Usando datos locales (Sin conexión)";
+                actualizarDL();
+            }
         }
 
         function actualizarDL() {
@@ -201,12 +214,16 @@
         function vincularCli(origen, t) {
             const idIn = document.getElementById(`idCli-${t}`);
             const nomIn = document.getElementById(`nomCli-${t}`);
-            let encontrado = (origen === 'id') ? dbCli.find(c => c.id.toString() === idIn.value.trim()) : dbCli.find(c => c.nombre === nomIn.value.trim());
-            if (encontrado) {
-                idIn.value = encontrado.id;
-                nomIn.value = encontrado.nombre;
-                tipoLista[t] = encontrado.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
-                document.getElementById(`badge-${t}`).innerText = "Lista: " + tipoLista[t];
+            const badge = document.getElementById(`badge-${t}`);
+            
+            let c = (origen === 'id') 
+                ? dbCli.find(x => x.id.toString() === idIn.value.trim()) 
+                : dbCli.find(x => x.nombre.trim() === nomIn.value.trim());
+
+            if (c) {
+                if (origen === 'id') nomIn.value = c.nombre; else idIn.value = c.id;
+                tipoLista[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
+                badge.innerText = "Lista: " + tipoLista[t];
             }
         }
 
@@ -223,7 +240,7 @@
                     div.innerHTML = `<div><span class="cod-badge">${p.id}</span> ${p.n}</div><b>$${fM(precio)}</b>`;
                     div.onclick = () => {
                         itemSel[t] = { ...p, pre: precio };
-                        document.getElementById(`bus-${t}`).value = `[${p.id}] ${p.n}`;
+                        document.getElementById(`bus-${t}`).value = p.n;
                         box.innerHTML = "";
                     };
                     box.appendChild(div);
@@ -237,6 +254,7 @@
                 ordenes[t].push({ id: itemSel[t].id, n: itemSel[t].n, p: itemSel[t].pre, c: cant, sub: itemSel[t].pre * cant });
                 renderTabla(t);
                 document.getElementById(`bus-${t}`).value = ""; itemSel[t] = null;
+                document.getElementById(`cant-${t}`).value = 1;
             }
         }
 
@@ -254,9 +272,9 @@
             let h = "";
             hojaRuta.forEach((f, i) => {
                 h += `<tr><td>${f.nom}</td><td>$${fM(f.importe)}</td>
-                <td><input type="number" style="width:70px" value="${f.pago}" onchange="hojaRuta[${i}].pago=this.value;renderHoja()"></td>
+                <td><input type="number" style="width:80px" value="${f.pago}" onchange="hojaRuta[${i}].pago=this.value;localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()"></td>
                 <td>$${fM(f.importe - f.pago)}</td>
-                <td class="remove" onclick="hojaRuta.splice(${i},1);renderHoja()">✕</td></tr>`;
+                <td class="remove" onclick="if(confirm('¿Borrar?')){hojaRuta.splice(${i},1);localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()}">✕</td></tr>`;
             });
             document.getElementById('body-hoja').innerHTML = h;
         }
@@ -269,11 +287,7 @@
             let tot = document.getElementById(`total-${t}`).innerText;
             doc.text("DISTRIMAR - " + m.toUpperCase(), 105, 20, {align:"center"});
             doc.text(`Cliente: ${nom} | Lista: ${tipoLista[t]}`, 14, 30);
-            doc.autoTable({
-                startY: 35, head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']],
-                body: ordenes[t].map(i => [i.c, i.id, i.n, `$${fM(i.p)}`, `$${fM(i.sub)}`]),
-                foot: [['','','','TOTAL',`$${tot}`]]
-            });
+            doc.autoTable({ startY: 35, head: [['Cant', 'Cod', 'Producto', 'P.U', 'Sub']], body: ordenes[t].map(i => [i.c, i.id, i.n, `$${fM(i.p)}`, `$${fM(i.sub)}`]), foot: [['','','','TOTAL',`$${tot}`]] });
             if(m === 'remito') {
                 hojaRuta.push({ id: document.getElementById(`idCli-rem`).value, nom: nom, importe: parseLocalFloat(tot), pago: 0 });
                 localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));
@@ -302,7 +316,7 @@
         function guardarCloud() {
             localStorage.setItem(K.URL_STK, document.getElementById('url-stk').value);
             localStorage.setItem(K.URL_CLI, document.getElementById('url-cli').value);
-            sincronizarTodo();
+            location.reload();
         }
     </script>
 </body>
