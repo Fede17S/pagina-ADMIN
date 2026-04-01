@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DistriMar - V29 Cloud Sync</title>
+    <title>DistriMar - V30 Search Fix</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -30,7 +30,7 @@
 
         input { 
             width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); 
-            border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; /* 16px evita zoom automático en iPhone */
+            border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 16px; 
             box-sizing: border-box;
         }
 
@@ -38,17 +38,24 @@
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
 
-        .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); }
-        .lista-resultados { max-height: 200px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; }
+        /* Mejora visual del buscador en móvil */
+        .search-area { background: var(--search-bg); padding: 12px; border-radius: 10px; margin: 10px 0; border: 1px solid var(--border); position: relative; }
+        .lista-resultados { 
+            max-height: 250px; overflow-y: auto; background: var(--input-bg); 
+            border: 1px solid var(--border); border-radius: 6px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            margin-top: 2px;
+        }
         .item-prod { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .item-prod:active { background: rgba(0,0,0,0.05); }
+        .cod-badge { background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; }
         
         .cloud-status { font-size: 10px; color: var(--green); margin-bottom: 10px; display: block; text-align: center; font-weight: bold; }
         .badge { display: inline-block; padding: 3px 8px; border-radius: 5px; background: var(--blue); color: #fff; font-size: 10px; margin-top: 5px; }
         
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid var(--border); }
-        .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; padding: 10px; }
+        .remove { color: var(--red); font-weight: bold; cursor: pointer; text-align: center; padding: 10px; width: 30px; }
     </style>
 </head>
 <body>
@@ -61,19 +68,21 @@
     </nav>
 
     <div class="container">
-        <span id="sync-msg" class="cloud-status">🔄 Sincronizando con la Nube...</span>
+        <span id="sync-msg" class="cloud-status">🔄 Sincronizando...</span>
 
         <div id="pedido" class="card active">
             <input type="text" id="idCli-ped" placeholder="ID Cliente..." oninput="vincularCli('id', 'ped')">
-            <input list="dl-cli-ped" id="nomCli-ped" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'ped')" onchange="vincularCli('nom', 'ped')">
+            <input list="dl-cli-ped" id="nomCli-ped" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'ped')">
             <datalist id="dl-cli-ped"></datalist>
             <div id="badge-ped" class="badge">Lista: Clientes</div>
 
             <div class="search-area">
-                <input type="text" id="bus-ped" placeholder="Buscar producto..." onkeyup="filtrar('ped')">
+                <input type="text" id="bus-ped" placeholder="🔍 Buscar producto..." oninput="filtrar('ped')">
                 <div id="res-ped" class="lista-resultados"></div>
-                <input type="number" id="cant-ped" value="1" style="margin-top:10px;">
-                <button class="btn btn-blue" onclick="agregar('ped')">+ AGREGAR</button>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="number" id="cant-ped" value="1" style="flex:1">
+                    <button class="btn btn-blue" onclick="agregar('ped')" style="flex:2">+ AGREGAR</button>
+                </div>
             </div>
 
             <table>
@@ -86,15 +95,17 @@
 
         <div id="remito" class="card">
             <input type="text" id="idCli-rem" placeholder="ID Cliente..." oninput="vincularCli('id', 'rem')">
-            <input list="dl-cli-rem" id="nomCli-rem" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'rem')" onchange="vincularCli('nom', 'rem')">
+            <input list="dl-cli-rem" id="nomCli-rem" placeholder="Nombre del cliente..." oninput="vincularCli('nom', 'rem')">
             <datalist id="dl-cli-rem"></datalist>
             <div id="badge-rem" class="badge">Lista: Clientes</div>
 
             <div class="search-area">
-                <input type="text" id="bus-rem" placeholder="Buscar producto..." onkeyup="filtrar('rem')">
+                <input type="text" id="bus-rem" placeholder="🔍 Buscar producto..." oninput="filtrar('rem')">
                 <div id="res-rem" class="lista-resultados"></div>
-                <input type="number" id="cant-rem" value="1" style="margin-top:10px;">
-                <button class="btn btn-blue" onclick="agregar('rem')">+ AGREGAR</button>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="number" id="cant-rem" value="1" style="flex:1">
+                    <button class="btn btn-blue" onclick="agregar('rem')" style="flex:2">+ AGREGAR</button>
+                </div>
             </div>
 
             <table>
@@ -116,7 +127,6 @@
 
         <div id="ajustes" class="card">
             <h3>⚙️ Configuración Cloud</h3>
-            <p style="font-size: 11px; color: #666;">Pega aquí tus enlaces "Publicar en la Web" de Google Sheets (formato CSV).</p>
             <label>Link Catálogo (CSV):</label>
             <input type="text" id="url-stk">
             <label>Link Clientes (CSV):</label>
@@ -126,12 +136,7 @@
     </div>
 
     <script>
-        // --- PEGA TUS LINKS AQUÍ PARA QUE FUNCIONEN EN TODOS LOS TELÉFONOS ---
-        const DEFAULT_URL_STK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRQGGGUL7sB1gqhvZLKJtqtYgIZbyfbK9EmUKPnPpwFNX-uEYrRN2VWGgpOF3WDxheXKvkIr0VW8oVF/pubhtml"; 
-        const DEFAULT_URL_CLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStWgQatDMyC-hkTph-idGBLXnjBBymRd26tz-kCY-hJaRZGzFtObAh5C0mCO25yzXZjubZ-xt3oq6s/pub?output=csv";
-        // --------------------------------------------------------------------
-
-        const K = { STK: 'DM_STK_V29', CLI: 'DM_CLI_V29', HOJ: 'DM_HOJ_V29', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
+        const K = { STK: 'DM_STK_V30', CLI: 'DM_CLI_V30', HOJ: 'DM_HOJ_V30', URL_STK: 'DM_URL_STK', URL_CLI: 'DM_URL_CLI' };
         let dbStock = JSON.parse(localStorage.getItem(K.STK)) || [];
         let dbCli = JSON.parse(localStorage.getItem(K.CLI)) || [];
         let hojaRuta = JSON.parse(localStorage.getItem(K.HOJ)) || [];
@@ -161,90 +166,76 @@
         }
 
         window.onload = () => {
-            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || DEFAULT_URL_STK;
-            document.getElementById('url-cli').value = localStorage.getItem(K.URL_CLI) || DEFAULT_URL_CLI;
+            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || "";
+            document.getElementById('url-cli').value = localStorage.getItem(K.URL_CLI) || "";
             sincronizarTodo();
         };
 
         async function sincronizarTodo() {
-            const urlS = document.getElementById('url-stk').value;
-            const urlC = document.getElementById('url-cli').value;
+            const urlS = localStorage.getItem(K.URL_STK);
+            const urlC = localStorage.getItem(K.URL_CLI);
             const msg = document.getElementById('sync-msg');
-            
-            if(!urlS || !urlC) {
-                msg.innerText = "⚠️ Falta configurar URLs en Ajustes";
-                actualizarDL();
-                return;
-            }
-
+            if(!urlS || !urlC) { msg.innerText = "⚠️ Configurá las URLs"; actualizarDL(); return; }
             try {
                 const [resS, resC] = await Promise.all([fetch(urlS), fetch(urlC)]);
                 const [textS, textC] = await Promise.all([resS.text(), resC.text()]);
-
                 const linesS = textS.split(/\r?\n/).filter(l => l.trim());
                 const sepS = linesS[0].includes(';') ? ';' : ',';
                 dbStock = linesS.slice(1).map(l => {
                     const r = splitCSV(l, sepS);
                     return { id: r[0], n: r[1], pCli: parseLocalFloat(r[2]), pPat: parseLocalFloat(r[3]) || parseLocalFloat(r[2]) };
                 }).filter(p => p.id);
-
                 const linesC = textC.split(/\r?\n/).filter(l => l.trim());
                 const sepC = linesC[0].includes(';') ? ';' : ',';
                 dbCli = linesC.slice(1).map(l => {
                     const r = splitCSV(l, sepC);
                     return { id: r[0], nombre: r[1], lista: r[2] || "Clientes" };
                 }).filter(c => c.id);
-
                 localStorage.setItem(K.STK, JSON.stringify(dbStock));
                 localStorage.setItem(K.CLI, JSON.stringify(dbCli));
-                msg.innerText = "✅ Sincronizado: " + new Date().toLocaleTimeString();
+                msg.innerText = "✅ Datos actualizados";
                 actualizarDL();
-            } catch(e) {
-                msg.innerText = "⚠️ Usando datos locales (Sin conexión)";
-                actualizarDL();
-            }
+            } catch(e) { msg.innerText = "⚠️ Modo Local"; actualizarDL(); }
         }
 
         function actualizarDL() {
-            const html = dbCli.map(c => `<option value="${c.nombre}">`).join('');
-            document.getElementById('dl-cli-ped').innerHTML = html;
-            document.getElementById('dl-cli-rem').innerHTML = html;
+            const h = dbCli.map(c => `<option value="${c.nombre}">`).join('');
+            document.getElementById('dl-cli-ped').innerHTML = h;
+            document.getElementById('dl-cli-rem').innerHTML = h;
         }
 
         function vincularCli(origen, t) {
             const idIn = document.getElementById(`idCli-${t}`);
             const nomIn = document.getElementById(`nomCli-${t}`);
-            const badge = document.getElementById(`badge-${t}`);
-            
-            let c = (origen === 'id') 
-                ? dbCli.find(x => x.id.toString() === idIn.value.trim()) 
-                : dbCli.find(x => x.nombre.trim() === nomIn.value.trim());
-
+            let c = (origen === 'id') ? dbCli.find(x => x.id.toString() === idIn.value.trim()) : dbCli.find(x => x.nombre.trim() === nomIn.value.trim());
             if (c) {
                 if (origen === 'id') nomIn.value = c.nombre; else idIn.value = c.id;
                 tipoLista[t] = c.lista.toLowerCase().includes("patagonia") ? "Patagonia" : "Clientes";
-                badge.innerText = "Lista: " + tipoLista[t];
+                document.getElementById(`badge-${t}`).innerText = "Lista: " + tipoLista[t];
             }
         }
 
+        // --- BUSCADOR CORREGIDO PARA MÓVIL ---
         function filtrar(t) {
             let bus = document.getElementById(`bus-${t}`).value.toLowerCase();
             let box = document.getElementById(`res-${t}`);
             box.innerHTML = "";
             if(bus.length < 1) return;
-            dbStock.forEach(p => {
-                if(p.id.toLowerCase().includes(bus) || p.n.toLowerCase().includes(bus)) {
-                    let precio = (tipoLista[t] === "Patagonia") ? p.pPat : p.pCli;
-                    let div = document.createElement('div');
-                    div.className = 'item-prod';
-                    div.innerHTML = `<div><span class="cod-badge">${p.id}</span> ${p.n}</div><b>$${fM(precio)}</b>`;
-                    div.onclick = () => {
-                        itemSel[t] = { ...p, pre: precio };
-                        document.getElementById(`bus-${t}`).value = p.n;
-                        box.innerHTML = "";
-                    };
-                    box.appendChild(div);
-                }
+            
+            // Filtramos los productos
+            const matches = dbStock.filter(p => p.id.toLowerCase().includes(bus) || p.n.toLowerCase().includes(bus)).slice(0, 15);
+            
+            matches.forEach(p => {
+                let precio = (tipoLista[t] === "Patagonia") ? p.pPat : p.pCli;
+                let div = document.createElement('div');
+                div.className = 'item-prod';
+                div.innerHTML = `<div><span class="cod-badge">${p.id}</span> ${p.n}</div><b>$${fM(precio)}</b>`;
+                div.onclick = () => {
+                    itemSel[t] = { ...p, pre: precio };
+                    document.getElementById(`bus-${t}`).value = p.n;
+                    box.innerHTML = "";
+                };
+                box.appendChild(div);
             });
         }
 
@@ -253,8 +244,9 @@
             if(itemSel[t] && cant > 0) {
                 ordenes[t].push({ id: itemSel[t].id, n: itemSel[t].n, p: itemSel[t].pre, c: cant, sub: itemSel[t].pre * cant });
                 renderTabla(t);
-                document.getElementById(`bus-${t}`).value = ""; itemSel[t] = null;
-                document.getElementById(`cant-${t}`).value = 1;
+                document.getElementById(`bus-${t}`).value = ""; 
+                document.getElementById(`res-${t}`).innerHTML = "";
+                itemSel[t] = null;
             }
         }
 
@@ -272,9 +264,9 @@
             let h = "";
             hojaRuta.forEach((f, i) => {
                 h += `<tr><td>${f.nom}</td><td>$${fM(f.importe)}</td>
-                <td><input type="number" style="width:80px" value="${f.pago}" onchange="hojaRuta[${i}].pago=this.value;localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()"></td>
+                <td><input type="number" style="width:70px" value="${f.pago}" onchange="hojaRuta[${i}].pago=this.value;localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()"></td>
                 <td>$${fM(f.importe - f.pago)}</td>
-                <td class="remove" onclick="if(confirm('¿Borrar?')){hojaRuta.splice(${i},1);localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()}">✕</td></tr>`;
+                <td class="remove" onclick="hojaRuta.splice(${i},1);localStorage.setItem(K.HOJ, JSON.stringify(hojaRuta));renderHoja()">✕</td></tr>`;
             });
             document.getElementById('body-hoja').innerHTML = h;
         }
@@ -318,6 +310,23 @@
             localStorage.setItem(K.URL_CLI, document.getElementById('url-cli').value);
             location.reload();
         }
+        // ... (todo el código anterior igual) ...
+
+        window.onload = () => {
+            // PEGA TUS LINKS ACÁ ABAJO:
+            const urlDefectoStock = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRQGGGUL7sB1gqhvZLKJtqtYgIZbyfbK9EmUKPnPpwFNX-uEYrRN2VWGgpOF3WDxheXKvkIr0VW8oVF/pubhtml"; 
+            const urlDefectoClientes = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStWgQatDMyC-hkTph-idGBLXnjBBymRd26tz-kCY-hJaRZGzFtObAh5C0mCO25yzXZjubZ-xt3oq6s/pub?output=csv";
+
+            document.getElementById('url-stk').value = localStorage.getItem(K.URL_STK) || urlDefectoStock;
+            document.getElementById('url-cli').value = localStorage.getItem(K.URL_CLI) || urlDefectoClientes;
+            sincronizarTodo();
+        };
+
+        async function sincronizarTodo() {
+            // Se activará solo al abrir el archivo en cualquier celular
+            const urlS = document.getElementById('url-stk').value;
+            const urlC = document.getElementById('url-cli').value;
+            // ... resto de la función ...
     </script>
 </body>
 </html>
