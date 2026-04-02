@@ -347,7 +347,9 @@ window.onload=()=>{
   const dC="https://docs.google.com/spreadsheets/d/e/2PACX-1vStWgQatDMyC-hkTph-idGBLXnjBBymRd26tz-kCY-hJaRZGzFtObAh5C0mCO25yzXZjubZ-xt3oq6s/pub?output=csv";
   document.getElementById("url-stk").value=localStorage.getItem(K.URL_STK)||dS;
   document.getElementById("url-cli").value=localStorage.getItem(K.URL_CLI)||dC;
-  document.getElementById("url-ven").value=localStorage.getItem(K.URL_VEN)||"";
+  const ventasUrl=localStorage.getItem(K.URL_VEN)||"https://script.google.com/macros/s/AKfycbxIHFr5GxIWk97ugEnmq_Pa0Q3Ce2AeJwOXX0Io9HAvcfLdWEuhYwzzJjRuSDGslIy3Ng/exec";
+  document.getElementById("url-ven").value=ventasUrl;
+  if(!localStorage.getItem(K.URL_VEN))localStorage.setItem(K.URL_VEN,ventasUrl);
   sincronizarTodo();
 };
 
