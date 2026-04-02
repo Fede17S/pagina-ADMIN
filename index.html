@@ -614,11 +614,26 @@ function renderResumen(){
     <div class="section-card">
       <div class="section-card-title">📅 Detalle de remitos</div>
       <div class="table-wrap" style="margin-bottom:0">
-        <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Total</th></tr></thead>
-        <tbody>${data.slice().reverse().map(v=>`<tr><td class="td-mono" style="white-space:nowrap">${new Date(v.fecha).toLocaleDateString()}</td><td>${v.clienteNom}</td><td class="td-mono">$${fM(v.total)}</td></tr>`).join("")}</tbody>
+        <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Total</th><th></th></tr></thead>
+        <tbody>${data.slice().reverse().map(v=>`<tr><td class="td-mono" style="white-space:nowrap">${new Date(v.fecha).toLocaleDateString()}</td><td>${v.clienteNom}</td><td class="td-mono">$${fM(v.total)}</td><td class="td-remove" onclick="borrarVenta('${v.fecha}')">✕</td></tr>`).join("")}</tbody>
         </table>
       </div>
     </div>`;
+}
+
+async function borrarVenta(fecha){
+  if(!confirm('¿Borrar este remito del resumen? No se puede deshacer.')) return;
+  // Local
+  ventas = ventas.filter(v => v.fecha !== fecha);
+  localStorage.setItem(K.VEN, JSON.stringify(ventas));
+  // Cloud
+  const url = localStorage.getItem(K.URL_VEN);
+  if(url){
+    try{
+      await fetch(url, {method:"POST", mode:"no-cors", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action:"delete", fecha})});
+    }catch(e){ console.warn("No se pudo borrar en la nube:", e); }
+  }
+  renderResumen();
 }
 
 /* ── CONFIG ── */
