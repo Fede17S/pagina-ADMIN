@@ -201,6 +201,63 @@ textarea{resize:none;font-size:14px;line-height:1.5}
 .danger-zone{margin-top:20px;padding-top:16px;border-top:1px dashed #fca5a5}
 .danger-lbl{font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 
+
+/* ════ HOJA DE RUTA ════ */
+.ruta-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ruta-list-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-family:"Inter",sans-serif;transition:background .15s;margin-bottom:8px;text-align:left}
+.ruta-list-btn:active{background:var(--bg)}
+.ruta-list-btn.open{border-color:var(--blue);background:var(--blue-lt)}
+.ruta-fecha{font-size:13px;font-weight:700;color:var(--text)}
+.ruta-resumen{font-size:11px;color:var(--muted);margin-top:2px}
+.ruta-chips{display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:10px}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.chip-ok{background:#d1fae5;color:#065f46}
+.chip-warn{background:#fef3c7;color:#92400e}
+.chip-red{background:#fee2e2;color:#991b1b}
+.chip-blue{background:#dbeafe;color:#1e40af}
+.ruta-detail{display:none;margin-bottom:8px}
+.ruta-detail.open{display:block}
+.ruta-detail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ruta-cli-row{border-bottom:1px solid var(--border)}
+.ruta-cli-row:last-child{border-bottom:none}
+.ruta-cli-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .12s}
+.ruta-cli-head:active{background:var(--bg)}
+.ruta-cli-nom{flex:1;font-size:14px;font-weight:600;color:var(--text)}
+.ruta-cli-tot{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ruta-cli-body{padding:0 14px 14px;display:none}
+.ruta-cli-body.open{display:block}
+.pago-section{background:var(--bg);border-radius:8px;padding:12px;margin-top:8px}
+.pago-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.pago-modo-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.modo-btn{flex:1;min-width:80px;padding:9px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--surface);font-family:"Inter",sans-serif;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;transition:all .15s}
+.modo-btn.sel{border-color:var(--blue);background:var(--blue-lt);color:var(--blue)}
+.pago-inputs{display:flex;gap:8px;align-items:flex-end}
+.pago-field{flex:1}
+.pago-field label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;display:block}
+.pago-field input{padding:9px 11px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.pago-saldo-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.pago-saldo-lbl{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.pago-saldo-val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.pago-saldo-val.ok{color:var(--green)}
+.pago-saldo-val.warn{color:var(--amber)}
+.pago-saldo-val.neg{color:var(--red)}
+.save-pago-btn{padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-family:"Inter",sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s;margin-top:10px;width:100%}
+.save-pago-btn:active{filter:brightness(.9)}
+.ruta-items-list{margin-top:8px}
+.ruta-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.ruta-item:last-child{border-bottom:none}
+.ruta-item-name{font-size:13px;color:var(--text);flex:1}
+.ruta-item-cant{font-size:12px;color:var(--muted);margin:0 8px;white-space:nowrap}
+.ruta-item-sub{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ruta-total-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--navy);border-radius:0 0 var(--radius) var(--radius)}
+.ruta-total-lbl{font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px}
+.ruta-total-val{font-size:16px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.ruta-summary-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.rsb-item{background:var(--surface);padding:10px;text-align:center}
+.rsb-val{font-size:16px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.rsb-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.nueva-ruta-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:11px 16px;font-family:"Inter",sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:filter .15s}
+.nueva-ruta-btn:active{filter:brightness(.9)}
 .dropdown::-webkit-scrollbar{width:3px}
 .dropdown::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
 </style>
@@ -321,14 +378,19 @@ textarea{resize:none;font-size:14px;line-height:1.5}
 
 <!-- HOJA -->
 <div id="hoja" class="section">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+  <div class="ruta-header">
     <span id="fb-hoja-status" class="fb-pill sync">☁️</span>
-    <button class="btn btn-ghost btn-sm" onclick="cargarHojaFirebase()">🔄 Actualizar</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="cargarRutasFirebase()">🔄</button>
+      <button class="nueva-ruta-btn" onclick="crearNuevaRuta()">+ Nueva Ruta</button>
+    </div>
   </div>
-  <div class="card">
-    <div id="hoja-list"><div class="empty-box"><div class="empty-icon">🗺️</div>Sin remitos en la ruta</div></div>
+  <div id="ruta-summary-bar" style="display:none" class="ruta-summary-bar">
+    <div class="rsb-item"><div class="rsb-val" id="rsb-total">$0</div><div class="rsb-lbl">Total</div></div>
+    <div class="rsb-item"><div class="rsb-val" id="rsb-cobrado">$0</div><div class="rsb-lbl">Cobrado</div></div>
+    <div class="rsb-item"><div class="rsb-val" id="rsb-saldo" style="color:var(--amber)">$0</div><div class="rsb-lbl">Saldo</div></div>
   </div>
-  <button class="btn btn-blue" onclick="descargarHojaRuta()">📥 Descargar PDF</button>
+  <div id="rutas-list"></div>
 </div>
 
 <!-- RESUMEN -->
@@ -493,7 +555,7 @@ function verTab(id, btn) {
   if (btn) btn.classList.add("active");
   document.getElementById("header-title").textContent = TITLES[id] || id;
   closeSidebar();
-  if (id === "hoja")    cargarHojaFirebase();
+  if (id === "hoja")    cargarRutasFirebase();
   if (id === "resumen") { poblarFiltros(); cargarVentasFirebase(false); }
 }
 
@@ -558,54 +620,284 @@ function actualizarDL(){
 /* ════════════════════════════════════════
    FIREBASE — HOJA DE RUTA
 ════════════════════════════════════════ */
-async function cargarHojaFirebase() {
+/* ═══════════════════════════════════════
+   RUTAS — nuevo sistema
+═══════════════════════════════════════ */
+let rutasData = {};      // { rutaKey: { fecha, nombre, clientes:{cliKey:{...}} } }
+let rutaAbierta = null;  // key de la ruta actualmente expandida
+let clienteAbierto = {}; // { rutaKey: cliKey }
+
+async function cargarRutasFirebase() {
   setStatus("fb-hoja-status","sync","☁️ Cargando…");
   try {
-    const data = await fbGet("hojaRuta");
-    hojaRuta = data
-      ? Object.entries(data).map(([fbKey,v])=>({...v,fbKey}))
-      : [];
+    const data = await fbGet("rutas");
+    rutasData = data || {};
     setStatus("fb-hoja-status","ok","✅ Actualizado");
   } catch(e) {
     setStatus("fb-hoja-status","err","❌ Sin conexión");
   }
-  renderHoja();
+  renderRutas();
 }
 
-async function actualizarPagoFirebase(fbKey, pago) {
-  try { await fbPatch(`hojaRuta/${fbKey}`, {pago}); }
-  catch(e) { console.warn("No se pudo actualizar pago:", e); }
-}
-
-async function borrarHojaItemFirebase(fbKey, idx) {
-  if (!confirm("¿Quitar este remito de la ruta?")) return;
+async function crearNuevaRuta() {
+  const nombre = prompt("Nombre para esta ruta (ej: Lunes 7 julio):");
+  if (!nombre || !nombre.trim()) return;
+  const nueva = {
+    nombre: nombre.trim(),
+    fecha: new Date().toISOString(),
+    clientes: {}
+  };
   try {
-    await fbDelete(`hojaRuta/${fbKey}`);
-    hojaRuta.splice(idx,1);
-    renderHoja();
-  } catch(e) { alert("Error al borrar. Reintentá."); }
+    const key = await fbPush("rutas", nueva);
+    rutasData[key] = { ...nueva, fbKey: key };
+    rutaAbierta = key;
+    renderRutas();
+  } catch(e) { alert("Error al crear ruta. Reintentá."); }
 }
 
-function renderHoja() {
-  const wrap = document.getElementById("hoja-list");
-  if (!hojaRuta.length) {
-    wrap.innerHTML='<div class="empty-box"><div class="empty-icon">🗺️</div>Sin remitos en la ruta</div>';
+async function borrarRuta(rutaKey) {
+  if (!confirm("¿Borrar esta hoja de ruta completa? No se puede deshacer.")) return;
+  try {
+    await fbDelete(`rutas/${rutaKey}`);
+    delete rutasData[rutaKey];
+    if (rutaAbierta === rutaKey) rutaAbierta = null;
+    renderRutas();
+  } catch(e) { alert("Error al borrar."); }
+}
+
+function calcRuta(ruta) {
+  const clientes = Object.values(ruta.clientes || {});
+  const total    = clientes.reduce((s,c) => s + (c.importe||0), 0);
+  const cobrado  = clientes.reduce((s,c) => s + (c.efectivo||0) + (c.transferencia||0), 0);
+  const saldo    = total - cobrado;
+  const pagados  = clientes.filter(c => (c.efectivo||0)+(c.transferencia||0) >= (c.importe||0)).length;
+  return { total, cobrado, saldo, clientes: clientes.length, pagados };
+}
+
+function renderRutas() {
+  const wrap = document.getElementById("rutas-list");
+  const keys = Object.keys(rutasData).sort((a,b) => {
+    const da = rutasData[a].fecha||"", db = rutasData[b].fecha||"";
+    return db.localeCompare(da);
+  });
+  if (!keys.length) {
+    document.getElementById("ruta-summary-bar").style.display = "none";
+    wrap.innerHTML = '<div class="empty-box"><div class="empty-icon">🗺️</div>Sin hojas de ruta.<br><small>Creá una nueva con el botón de arriba.</small></div>';
     return;
   }
-  wrap.innerHTML = hojaRuta.map((f,i)=>{
-    const saldo = f.importe - (f.pago||0);
-    return `<div class="hoja-row">
-      <div style="flex:1;min-width:0">
-        <div class="hoja-nom">${f.nom}</div>
-        <div class="hoja-imp">$${fM(f.importe)}</div>
-      </div>
-      <input type="number" class="pago-in" value="${f.pago||0}" placeholder="Pago"
-        onchange="hojaRuta[${i}].pago=+this.value; actualizarPagoFirebase('${f.fbKey}',+this.value); renderHoja()">
-      <span class="hoja-saldo ${saldo<=0?'ok':'pend'}">$${fM(saldo)}</span>
-      <button class="item-del" onclick="borrarHojaItemFirebase('${f.fbKey}',${i})">✕</button>
-    </div>`;
+
+  // Totales globales (todas las rutas)
+  let gTotal=0, gCobrado=0;
+  keys.forEach(k => { const c=calcRuta(rutasData[k]); gTotal+=c.total; gCobrado+=c.cobrado; });
+  document.getElementById("ruta-summary-bar").style.display = "grid";
+  document.getElementById("rsb-total").textContent   = "$"+fM(gTotal);
+  document.getElementById("rsb-cobrado").textContent = "$"+fM(gCobrado);
+  const gSaldo = gTotal - gCobrado;
+  const rsv = document.getElementById("rsb-saldo");
+  rsv.textContent = "$"+fM(gSaldo);
+  rsv.style.color = gSaldo <= 0 ? "var(--green)" : "var(--amber)";
+
+  wrap.innerHTML = keys.map(rutaKey => {
+    const ruta = rutasData[rutaKey];
+    const { total, cobrado, saldo, clientes, pagados } = calcRuta(ruta);
+    const isOpen = rutaAbierta === rutaKey;
+    const fecha = ruta.fecha ? new Date(ruta.fecha).toLocaleDateString("es-AR",{weekday:"short",day:"numeric",month:"short"}) : "—";
+
+    const cliKeys = Object.keys(ruta.clientes || {}).sort();
+    const detailHTML = cliKeys.map(cliKey => renderClienteRow(rutaKey, cliKey, ruta.clientes[cliKey])).join("");
+
+    return `
+      <div>
+        <button class="ruta-list-btn ${isOpen?"open":""}" onclick="toggleRuta('${rutaKey}')">
+          <div style="flex:1;min-width:0">
+            <div class="ruta-fecha">${ruta.nombre || fecha}</div>
+            <div class="ruta-resumen">${fecha} · ${clientes} clientes · ${pagados}/${clientes} pagados</div>
+          </div>
+          <div class="ruta-chips">
+            ${saldo<=0 ? '<span class="chip chip-ok">✓ Cobrado</span>' : '<span class="chip chip-warn">$'+fM(saldo)+' pendiente</span>'}
+            <span style="color:var(--muted2);font-size:16px">${isOpen?"▲":"▼"}</span>
+          </div>
+        </button>
+        <div class="ruta-detail ${isOpen?"open":""}" id="det-${rutaKey}">
+          <div class="ruta-detail-card">
+            ${detailHTML || '<div class="empty-box" style="padding:20px">Sin clientes en esta ruta</div>'}
+            <div class="ruta-total-bar">
+              <span class="ruta-total-lbl">Total ruta</span>
+              <div style="text-align:right">
+                <div class="ruta-total-val">$${fM(total)}</div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:2px">Cobrado $${fM(cobrado)} · Saldo $${fM(saldo)}</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-blue btn-sm" style="flex:1" onclick="descargarPDFRuta('${rutaKey}')">📥 PDF</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1;color:var(--red);border-color:#fca5a5" onclick="borrarRuta('${rutaKey}')">🗑 Borrar ruta</button>
+          </div>
+        </div>
+      </div>`;
   }).join("");
 }
+
+function renderClienteRow(rutaKey, cliKey, cli) {
+  const efectivo      = cli.efectivo || 0;
+  const transferencia = cli.transferencia || 0;
+  const total         = cli.importe || 0;
+  const pagado        = efectivo + transferencia;
+  const saldo         = total - pagado;
+  const modo          = cli.modo || "ninguno"; // efectivo | transferencia | mixto | ninguno
+  const isCOpen       = (clienteAbierto[rutaKey] === cliKey);
+
+  const saldoClass = saldo <= 0 ? "ok" : saldo < total ? "warn" : "neg";
+  const saldoColor = saldo <= 0 ? "var(--green)" : saldo < total ? "var(--amber)" : "var(--red)";
+
+  const itemsHTML = (cli.items||[]).map(it=>`
+    <div class="ruta-item">
+      <span class="ruta-item-name">${it.n}</span>
+      <span class="ruta-item-cant">${it.c}×</span>
+      <span class="ruta-item-sub">$${fM(it.sub)}</span>
+    </div>`).join("");
+
+  return `
+    <div class="ruta-cli-row">
+      <div class="ruta-cli-head" onclick="toggleCliente('${rutaKey}','${cliKey}')">
+        <div style="flex:1;min-width:0">
+          <div class="ruta-cli-nom">${cli.nom}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:1px">$${fM(total)}</div>
+        </div>
+        ${saldo<=0
+          ? '<span class="chip chip-ok">✓ Pagado</span>'
+          : pagado>0
+            ? `<span class="chip chip-warn">$${fM(saldo)} rest.</span>`
+            : `<span class="chip chip-red">Sin pago</span>`
+        }
+        <span style="color:var(--muted2);font-size:14px;margin-left:8px">${isCOpen?"▲":"▼"}</span>
+      </div>
+      <div class="ruta-cli-body ${isCOpen?"open":""}" id="cb-${rutaKey}-${cliKey}">
+        ${itemsHTML ? `<div class="ruta-items-list">${itemsHTML}</div>` : ""}
+        <div class="pago-section">
+          <div class="pago-section-title">Registrar cobro</div>
+          <div class="pago-modo-row">
+            <button class="modo-btn ${modo==="efectivo"?"sel":""}"      onclick="setModo('${rutaKey}','${cliKey}','efectivo')">💵 Efectivo</button>
+            <button class="modo-btn ${modo==="transferencia"?"sel":""}" onclick="setModo('${rutaKey}','${cliKey}','transferencia')">📲 Transfer.</button>
+            <button class="modo-btn ${modo==="mixto"?"sel":""}"         onclick="setModo('${rutaKey}','${cliKey}','mixto')">🔀 Mixto</button>
+          </div>
+          ${modo==="mixto" ? `
+            <div class="pago-inputs">
+              <div class="pago-field">
+                <label>Efectivo</label>
+                <input type="number" id="ef-${rutaKey}-${cliKey}" value="${efectivo||""}" placeholder="$0">
+              </div>
+              <div class="pago-field">
+                <label>Transferencia</label>
+                <input type="number" id="tr-${rutaKey}-${cliKey}" value="${transferencia||""}" placeholder="$0">
+              </div>
+            </div>` : modo==="efectivo" ? `
+            <div class="pago-inputs">
+              <div class="pago-field">
+                <label>Monto en efectivo</label>
+                <input type="number" id="ef-${rutaKey}-${cliKey}" value="${efectivo||""}" placeholder="$0">
+              </div>
+            </div>` : modo==="transferencia" ? `
+            <div class="pago-inputs">
+              <div class="pago-field">
+                <label>Monto transferido</label>
+                <input type="number" id="tr-${rutaKey}-${cliKey}" value="${transferencia||""}" placeholder="$0">
+              </div>
+            </div>` : `<div style="font-size:13px;color:var(--muted);text-align:center;padding:8px 0">Elegí un método de cobro</div>`
+          }
+          <div class="pago-saldo-row">
+            <span class="pago-saldo-lbl">Saldo</span>
+            <span class="pago-saldo-val ${saldoClass}">$${fM(saldo)}</span>
+          </div>
+          ${modo!=="ninguno"?`<button class="save-pago-btn" onclick="guardarPago('${rutaKey}','${cliKey}')">💾 Guardar cobro</button>`:""}
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleRuta(key) {
+  rutaAbierta = rutaAbierta === key ? null : key;
+  renderRutas();
+}
+function toggleCliente(rutaKey, cliKey) {
+  if (clienteAbierto[rutaKey] === cliKey) delete clienteAbierto[rutaKey];
+  else clienteAbierto[rutaKey] = cliKey;
+  renderRutas();
+}
+
+async function setModo(rutaKey, cliKey, modo) {
+  rutasData[rutaKey].clientes[cliKey].modo = modo;
+  // Reset montos al cambiar modo
+  if (modo === "efectivo")      { rutasData[rutaKey].clientes[cliKey].transferencia = 0; }
+  if (modo === "transferencia") { rutasData[rutaKey].clientes[cliKey].efectivo = 0; }
+  clienteAbierto[rutaKey] = cliKey;
+  renderRutas();
+}
+
+async function guardarPago(rutaKey, cliKey) {
+  const cli  = rutasData[rutaKey].clientes[cliKey];
+  const modo = cli.modo || "ninguno";
+  const efEl = document.getElementById(`ef-${rutaKey}-${cliKey}`);
+  const trEl = document.getElementById(`tr-${rutaKey}-${cliKey}`);
+  const ef   = efEl ? (+efEl.value || 0) : 0;
+  const tr   = trEl ? (+trEl.value || 0) : 0;
+
+  cli.efectivo      = ef;
+  cli.transferencia = tr;
+  clienteAbierto[rutaKey] = cliKey;
+
+  try {
+    await fbPatch(`rutas/${rutaKey}/clientes/${cliKey}`, {
+      efectivo: ef, transferencia: tr, modo
+    });
+    renderRutas();
+  } catch(e) { alert("Error al guardar. Reintentá."); }
+}
+
+// Compatibilidad: cuando se guarda un remito, se agrega el cliente a la ruta activa
+async function agregarClienteARuta(rutaKey, cliData) {
+  try {
+    const key = await fbPush(`rutas/${rutaKey}/clientes`, cliData);
+    if (!rutasData[rutaKey].clientes) rutasData[rutaKey].clientes = {};
+    rutasData[rutaKey].clientes[key] = cliData;
+  } catch(e) { console.warn("No se pudo agregar a ruta:", e); }
+}
+
+// Backward compat stubs
+async function cargarHojaFirebase() { return cargarRutasFirebase(); }
+function renderHoja() { renderRutas(); }
+function actualizarPagoFirebase(){}
+function borrarHojaItemFirebase(){}
+
+/* ── PDF de ruta ── */
+function descargarPDFRuta(rutaKey) {
+  const ruta = rutasData[rutaKey]; if(!ruta) return;
+  const{jsPDF}=window.jspdf; const doc=new jsPDF();
+  doc.addImage(LOGO_B64,"PNG",10,5,40,20);
+  doc.setFont("helvetica","bold"); doc.text(`HOJA DE RUTA — ${(ruta.nombre||"Ruta").toUpperCase()}`,105,16,{align:"center"});
+  doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  doc.text(`Fecha: ${new Date(ruta.fecha).toLocaleDateString()}  ·  Generado: ${new Date().toLocaleString()}`,14,26);
+  const rows = Object.values(ruta.clientes||{}).map(c=>[
+    c.nom,
+    `$${fM(c.importe||0)}`,
+    `$${fM(c.efectivo||0)}`,
+    `$${fM(c.transferencia||0)}`,
+    `$${fM((c.importe||0)-(c.efectivo||0)-(c.transferencia||0))}`
+  ]);
+  const{total,cobrado,saldo}=calcRuta(ruta);
+  doc.autoTable({
+    startY:32,
+    head:[["Cliente","Total","Efectivo","Transfer.","Saldo"]],
+    body:rows,
+    foot:[["","$"+fM(total),"","","$"+fM(saldo)]],
+    theme:"striped",
+    headStyles:{fillColor:[13,27,42]},
+    footStyles:{fontStyle:"bold",fillColor:[230,235,245]}
+  });
+  doc.save(`Ruta_${ruta.nombre||"ruta"}_${new Date().toLocaleDateString()}.pdf`);
+}
+
+function descargarHojaRuta() { if(rutaAbierta) descargarPDFRuta(rutaAbierta); }
 
 /* ════════════════════════════════════════
    FIREBASE — VENTAS
@@ -733,10 +1025,36 @@ async function generarPDF(m) {
       usuario: currentUser.id
     };
     try {
-      await Promise.all([
-        fbPush("hojaRuta", hojaItem),
-        fbPush("ventas", venta)
-      ]);
+      // Guardar en ventas siempre
+      await fbPush("ventas", venta);
+      // Agregar a la ruta activa si existe, sino crear automáticamente
+      let rutaKey = rutaAbierta;
+      if (!rutaKey) {
+        // Buscar ruta del día de hoy o crear una nueva
+        const hoy = new Date().toLocaleDateString("es-AR");
+        const keys = Object.keys(rutasData);
+        const rutaHoy = keys.find(k => rutasData[k].fecha && new Date(rutasData[k].fecha).toLocaleDateString("es-AR") === hoy);
+        if (rutaHoy) {
+          rutaKey = rutaHoy;
+        } else {
+          const nombre = `Ruta ${new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}`;
+          const nueva = { nombre, fecha: new Date().toISOString(), clientes: {} };
+          rutaKey = await fbPush("rutas", nueva);
+          rutasData[rutaKey] = { ...nueva, fbKey: rutaKey };
+        }
+        rutaAbierta = rutaKey;
+      }
+      const cliData = {
+        nom: hojaItem.nom,
+        id: hojaItem.id,
+        importe: hojaItem.importe,
+        efectivo: 0,
+        transferencia: 0,
+        modo: "ninguno",
+        items: ordenes[t].map(i=>({id:i.id,n:i.n,c:i.c,p:i.p,sub:i.sub})),
+        fecha: hojaItem.fecha
+      };
+      await agregarClienteARuta(rutaKey, cliData);
     } catch(e) { console.warn("Firebase save error:", e); }
   }
 
