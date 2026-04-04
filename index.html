@@ -264,6 +264,11 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           <div class="card-title">Actividad reciente por empresa</div>
           <div id="dash-activity" class="empty"><div class="empty-icon">📊</div><div class="empty-title">Cargando...</div></div>
         </div>
+        <div class="card" style="border-color:rgba(59,130,246,.3)">
+          <div class="card-title" style="color:#60a5fa">🔗 Verificar conexión Firebase</div>
+          <div id="fb-debug" style="font-size:12px;color:#64748b;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto">Cargando...</div>
+          <button class="btn btn-ghost" style="margin-top:12px;font-size:12px" onclick="debugFirebase()">🔄 Refrescar debug</button>
+        </div>
       </div>
 
       <!-- EMPRESAS -->
@@ -534,6 +539,7 @@ async function cargarTodo(){
     actualizarDashboard();
     renderEmpresas();
     poblarSelectores();
+    debugFirebase();
   }catch(e){ showNotif("Error cargando datos","err"); }
 }
 
@@ -755,15 +761,24 @@ async function guardarUsuario(){
   const pass=document.getElementById("usr-pass").value;
   const role=document.getElementById("usr-rol").value;
   if(!nombre||!id||!pass){showNotif("Completá todos los campos","err");return;}
+  if(pass.length<3){showNotif("Contraseña muy corta","err");return;}
   if(!usrEmpresaKey){showNotif("Elegí una empresa","err");return;}
+  // Guardamos con el id como key Y como campo, para que el cliente lo encuentre de ambas formas
   const usr={name:nombre,id,pass,role};
   try{
-    await fbPatch(`empresas/${usrEmpresaKey}/usuarios/${id}`,usr);
+    // Usar SET (PUT) para garantizar que el nodo se crea aunque no exista usuarios/
+    const r=await fetch(`${FB}/empresas/${usrEmpresaKey}/usuarios/${id}.json`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(usr)
+    });
+    if(!r.ok)throw new Error(await r.text());
+    if(!empresas[usrEmpresaKey])empresas[usrEmpresaKey]={};
     if(!empresas[usrEmpresaKey].usuarios)empresas[usrEmpresaKey].usuarios={};
     empresas[usrEmpresaKey].usuarios[id]=usr;
     cerrarModal("modal-usuario");renderUsuarios();
     showNotif("Usuario agregado ✅");
-  }catch{showNotif("Error al guardar","err");}
+  }catch(e){showNotif("Error: "+e.message,"err");}
 }
 async function borrarUsuario(k){
   if(!confirm("¿Borrar este usuario?"))return;
@@ -772,6 +787,37 @@ async function borrarUsuario(k){
     delete empresas[usrEmpresaKey].usuarios[k];
     renderUsuarios();showNotif("Usuario eliminado");
   }catch{showNotif("Error al borrar","err");}
+}
+
+/* ════ DEBUG ════ */
+async function debugFirebase(){
+  const el=document.getElementById("fb-debug");
+  el.textContent="Consultando Firebase...";
+  try{
+    const data=await fbGet("empresas");
+    if(!data){el.textContent="Firebase vacío — no hay empresas aún.";return;}
+    const keys=Object.keys(data);
+    let txt=`✅ Firebase OK — ${keys.length} empresa(s):
+
+`;
+    for(const k of keys){
+      const e=data[k];
+      txt+=`📦 KEY: ${k}
+`;
+      txt+=`   Nombre:  ${e.nombre||"(vacío)"}
+`;
+      txt+=`   Código:  ${e.codigo||"(vacío)"}
+`;
+      txt+=`   Estado:  ${e.estado||"(vacío)"}
+`;
+      txt+=`   Usuarios: ${Object.keys(e.usuarios||{}).join(", ")||"(ninguno)"}
+
+`;
+    }
+    el.textContent=txt;
+  }catch(err){
+    el.textContent="❌ Error: "+err.message;
+  }
 }
 
 /* ════ CLOSE MODAL ON BG ════ */
