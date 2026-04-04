@@ -1093,6 +1093,9 @@ function poblarMeses(){
   conDatos.add(now.getMonth());
   selM.innerHTML=MESES.map((m,i)=>`<option value="${i}"${i===mesAct?" selected":""}>${m}${conDatos.has(i)?" ●":""}</option>`).join("");
 }
+/* Porcentajes de comisión */
+const COMISION = { Clientes: 16.65, Patagonia: 20 };
+
 function renderResumen(){
   const mes=+document.getElementById("fil-mes").value;
   const anio=+document.getElementById("fil-anio").value||new Date().getFullYear();
@@ -1102,9 +1105,24 @@ function renderResumen(){
     body.innerHTML=`<div class="empty-res"><div style="font-size:44px">📭</div><b>Sin datos para ${MESES[mes]} ${anio}</b><p style="margin-top:6px;font-size:13px">Los remitos guardados aparecen acá automáticamente.</p></div>`;
     return;
   }
-  const total=data.reduce((s,v)=>s+v.total,0),cant=data.length,prom=total/cant;
-  const porCli={};data.forEach(v=>{porCli[v.clienteNom]=(porCli[v.clienteNom]||0)+v.total;});
+
+  const total=data.reduce((s,v)=>s+v.total,0);
+  const cant=data.length, prom=total/cant;
+
+  // Separar ventas por lista para calcular comisión
+  let totalClientes=0, totalPatagonia=0;
+  data.forEach(v=>{
+    if((v.lista||"").toLowerCase().includes("patagonia")) totalPatagonia+=v.total;
+    else totalClientes+=v.total;
+  });
+  const comClientes  = totalClientes  * COMISION.Clientes  / 100;
+  const comPatagonia = totalPatagonia * COMISION.Patagonia / 100;
+  const comTotal     = comClientes + comPatagonia;
+
+  const porCli={};
+  data.forEach(v=>{porCli[v.clienteNom]=(porCli[v.clienteNom]||0)+v.total;});
   const cliRank=Object.entries(porCli).sort((a,b)=>b[1]-a[1]);
+
   const porProd={};
   data.forEach(v=>v.items.forEach(it=>{
     if(!porProd[it.n])porProd[it.n]={n:it.n,id:it.id,cant:0,total:0};
@@ -1113,6 +1131,11 @@ function renderResumen(){
   const prodRank=Object.values(porProd).sort((a,b)=>b.total-a.total).slice(0,10);
   const maxC=cliRank[0]?cliRank[0][1]:1, maxP=prodRank[0]?prodRank[0].total:1;
 
+  // Breakdown comisión (solo mostrar las que tienen ventas)
+  const comBreakdown = [];
+  if(totalClientes>0)  comBreakdown.push({label:`Lista Clientes (${COMISION.Clientes}%)`,  venta:totalClientes,  com:comClientes});
+  if(totalPatagonia>0) comBreakdown.push({label:`Lista Patagonia (${COMISION.Patagonia}%)`, venta:totalPatagonia, com:comPatagonia});
+
   body.innerHTML=`
     <div class="kpi-grid">
       <div class="kpi full"><div class="kpi-icon">💰</div><div class="kpi-val">$${fM(total)}</div><div class="kpi-lbl">Total vendido · ${MESES[mes]} ${anio}</div></div>
@@ -1120,6 +1143,36 @@ function renderResumen(){
       <div class="kpi"><div class="kpi-icon">📈</div><div class="kpi-val">$${fM(prom)}</div><div class="kpi-lbl">Ticket prom.</div></div>
       ${cliRank[0]?`<div class="kpi full"><div class="kpi-icon">🏆</div><div class="kpi-val" style="font-size:16px">${cliRank[0][0]}</div><div class="kpi-lbl">Cliente del mes</div><div class="kpi-sub">$${fM(cliRank[0][1])}</div></div>`:""}
     </div>
+
+    <!-- COMISIÓN CARD -->
+    <div class="sec-card" style="border-color:#d1fae5">
+      <div class="sec-head" style="background:#ecfdf5;color:#065f46;border-bottom-color:#a7f3d0">
+        💵 Comisión estimada · ${MESES[mes]} ${anio}
+      </div>
+      <div style="padding:16px">
+        ${comBreakdown.map(b=>`
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${b.label}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Sobre $${fM(b.venta)} vendidos</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:16px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums">$${fM(b.com)}</div>
+            </div>
+          </div>`).join("")}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text)">Total comisión</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Suma de todas las listas</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:22px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums">$${fM(comTotal)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${(comTotal/total*100).toFixed(1)}% del total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="sec-card">
       <div class="sec-head">👥 Clientes por volumen</div>
       ${cliRank.slice(0,8).map((c,i)=>`
