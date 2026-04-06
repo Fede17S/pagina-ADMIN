@@ -193,6 +193,36 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
 .empty-icon{font-size:48px;margin-bottom:12px}
 .empty-title{font-size:16px;font-weight:700;color:var(--muted2);margin-bottom:4px}
 
+/* ── PRODUCTOS ── */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:16px}
+.prod-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;transition:box-shadow .15s}
+.prod-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.prod-card-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;padding-right:60px}
+.prod-card-code{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px}
+.prod-prices{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.prod-price-box{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px;text-align:center}
+.prod-price-box.base{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.05)}
+.prod-price-box.cli{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.prod-price-box.pat{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)}
+.prod-price-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.prod-price-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.prod-price-box.base .prod-price-val{color:var(--blue)}
+.prod-price-box.cli .prod-price-val{color:var(--green)}
+.prod-price-box.pat .prod-price-val{color:var(--amber)}
+.prod-card-actions{position:absolute;top:12px;right:12px;display:flex;gap:4px}
+.prod-action-btn{background:var(--surface2);border:1px solid var(--border);border-radius:5px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.prod-action-btn:hover{border-color:var(--blue);background:rgba(59,130,246,.1)}
+.prod-action-btn.del:hover{border-color:var(--red);background:rgba(239,68,68,.1)}
+.prod-search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.prod-search-bar input{flex:1;min-width:200px}
+.prod-search-bar select{width:auto;flex-shrink:0}
+.prod-empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.prod-counter{font-size:12px;color:var(--muted);margin-top:8px}
+.cat-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--muted);margin-top:4px}
+.pct-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.pct-badge.cli{background:rgba(16,185,129,.15);color:var(--green)}
+.pct-badge.pat{background:rgba(245,158,11,.15);color:var(--amber)}
+
 /* ── MISC ── */
 .divider{height:1px;background:var(--border);margin:20px 0}
 .flex{display:flex;align-items:center;gap:10px}
@@ -244,7 +274,8 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
       <button class="sb-link active" onclick="showPage('dashboard',this)"><span class="ico">📊</span>Dashboard</button>
       <button class="sb-link" onclick="showPage('empresas',this)"><span class="ico">🏢</span>Empresas</button>
       <div class="sb-section">Gestión</div>
-      <button class="sb-link" onclick="showPage('catalogo',this)"><span class="ico">📦</span>Catálogos</button>
+      <button class="sb-link" onclick="showPage('productos',this)"><span class="ico">🗂️</span>Productos</button>
+      <button class="sb-link" onclick="showPage('catalogo',this)"><span class="ico">📦</span>Catálogos CSV</button>
       <button class="sb-link" onclick="showPage('usuarios',this)"><span class="ico">👥</span>Usuarios</button>
     </div>
     <!-- main -->
@@ -265,9 +296,12 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           <div id="dash-activity" class="empty"><div class="empty-icon">📊</div><div class="empty-title">Cargando...</div></div>
         </div>
         <div class="card" style="border-color:rgba(59,130,246,.3)">
-          <div class="card-title" style="color:#60a5fa">🔗 Verificar conexión Firebase</div>
-          <div id="fb-debug" style="font-size:12px;color:#64748b;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto">Cargando...</div>
-          <button class="btn btn-ghost" style="margin-top:12px;font-size:12px" onclick="debugFirebase()">🔄 Refrescar debug</button>
+          <div class="card-title" style="color:#60a5fa">🔗 Datos en Firebase (en vivo)</div>
+          <div id="fb-debug" style="font-size:12px;color:#94a3b8;font-family:monospace;white-space:pre-wrap;max-height:400px;overflow-y:auto;background:#0a0f1a;padding:12px;border-radius:8px">Cargando...</div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="debugFirebase()">🔄 Refrescar</button>
+            <button class="btn btn-danger" style="font-size:12px;flex:1" onclick="limpiarVentasRaiz()">🧹 Limpiar /ventas raíz</button>
+          </div>
         </div>
       </div>
 
@@ -285,6 +319,62 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
             <div class="empty-icon">🏢</div>
             <div class="empty-title">Sin empresas aún</div>
           </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTOS -->
+      <div id="page-productos" class="page">
+        <div class="flex-between" style="margin-bottom:20px">
+          <div>
+            <div class="page-title">Base de Productos</div>
+            <div class="page-sub">Cargá precio base y los precios de cada lista se calculan automáticamente</div>
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalProducto()">+ Nuevo producto</button>
+        </div>
+
+        <!-- Selector empresa -->
+        <div class="form-row single" style="margin-bottom:16px">
+          <div class="form-group">
+            <label class="form-label">Empresa</label>
+            <select class="form-input" id="prod-empresa-sel" onchange="cargarProductos()">
+              <option value="">— Elegí una empresa —</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="prod-content" style="display:none">
+          <!-- Porcentajes configurables -->
+          <div class="card" style="padding:16px;margin-bottom:16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;flex-shrink:0">Márgenes de precio</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:13px;color:var(--text)">Lista Clientes</span>
+              <div style="display:flex;align-items:center;gap:4px">
+                <input type="number" id="pct-cli" value="20" min="0" max="200" step="0.1" style="width:70px;padding:7px 10px;font-size:14px;font-weight:700;text-align:right">
+                <span style="font-size:14px;color:var(--muted);font-weight:700">%</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:13px;color:var(--text)">Lista Patagonia</span>
+              <div style="display:flex;align-items:center;gap:4px">
+                <input type="number" id="pct-pat" value="25" min="0" max="200" step="0.1" style="width:70px;padding:7px 10px;font-size:14px;font-weight:700;text-align:right">
+                <span style="font-size:14px;color:var(--muted);font-weight:700">%</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:auto;padding:9px 16px;font-size:13px" onclick="actualizarMargenes()">Recalcular todo</button>
+          </div>
+
+          <!-- Barra búsqueda -->
+          <div class="prod-search-bar">
+            <input type="text" id="prod-buscar" placeholder="🔍 Buscar producto…" oninput="filtrarProductos()">
+            <select id="prod-orden" onchange="filtrarProductos()" style="width:160px">
+              <option value="nombre">Orden: Nombre A-Z</option>
+              <option value="codigo">Orden: Código</option>
+              <option value="precio">Orden: Precio ↑</option>
+              <option value="precio-desc">Orden: Precio ↓</option>
+            </select>
+          </div>
+          <div id="prod-counter" class="prod-counter"></div>
+          <div id="prod-grid" class="prod-grid"></div>
         </div>
       </div>
 
@@ -426,6 +516,57 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="cerrarModal('modal-empresa')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarEmpresa()">💾 Guardar empresa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL PRODUCTO ════ -->
+<div class="modal-bg" id="modal-producto">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-prod-title">Nuevo producto</div>
+      <button class="modal-close" onclick="cerrarModal('modal-producto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="prod-key">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Código</label>
+          <input class="form-input" type="text" id="prod-codigo" placeholder="Ej: 001, A-23">
+        </div>
+        <div class="form-group" style="flex:2">
+          <label class="form-label">Nombre del producto</label>
+          <input class="form-input" type="text" id="prod-nombre" placeholder="Nombre completo">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label class="form-label">Precio base (costo)</label>
+          <input class="form-input" type="number" id="prod-precio-base" placeholder="0.00" min="0" step="0.01" oninput="previewPrecios()">
+          <span class="form-hint">Los precios de lista se calculan automáticamente desde este valor</span>
+        </div>
+      </div>
+      <!-- Preview precios -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <div class="prod-price-box cli" style="padding:12px">
+          <div class="prod-price-lbl">Lista Clientes (<span id="prev-pct-cli">20</span>%)</div>
+          <div class="prod-price-val" id="prev-precio-cli">$0,00</div>
+        </div>
+        <div class="prod-price-box pat" style="padding:12px">
+          <div class="prod-price-lbl">Lista Patagonia (<span id="prev-pct-pat">25</span>%)</div>
+          <div class="prod-price-val" id="prev-precio-pat">$0,00</div>
+        </div>
+      </div>
+      <div class="form-row single" style="margin-top:14px">
+        <div class="form-group">
+          <label class="form-label">Categoría (opcional)</label>
+          <input class="form-input" type="text" id="prod-categoria" placeholder="Ej: Lácteos, Bebidas, Limpieza…">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modal-producto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProducto()">💾 Guardar producto</button>
     </div>
   </div>
 </div>
@@ -607,6 +748,7 @@ function poblarSelectores(){
   const opts='<option value="">— Elegí una empresa —</option>'+Object.keys(empresas).map(k=>`<option value="${k}">${empresas[k].nombre||k}</option>`).join("");
   document.getElementById("cat-empresa-sel").innerHTML=opts;
   document.getElementById("usr-empresa-sel").innerHTML=opts;
+  document.getElementById("prod-empresa-sel").innerHTML=opts;
 }
 
 function abrirModalEmpresa(key){
@@ -791,33 +933,262 @@ async function borrarUsuario(k){
 
 /* ════ DEBUG ════ */
 async function debugFirebase(){
-  const el=document.getElementById("fb-debug");
+  var el=document.getElementById("fb-debug");
   el.textContent="Consultando Firebase...";
   try{
-    const data=await fbGet("empresas");
-    if(!data){el.textContent="Firebase vacío — no hay empresas aún.";return;}
-    const keys=Object.keys(data);
-    let txt=`✅ Firebase OK — ${keys.length} empresa(s):
-
-`;
-    for(const k of keys){
-      const e=data[k];
-      txt+=`📦 KEY: ${k}
-`;
-      txt+=`   Nombre:  ${e.nombre||"(vacío)"}
-`;
-      txt+=`   Código:  ${e.codigo||"(vacío)"}
-`;
-      txt+=`   Estado:  ${e.estado||"(vacío)"}
-`;
-      txt+=`   Usuarios: ${Object.keys(e.usuarios||{}).join(", ")||"(ninguno)"}
-
-`;
+    var root=await fbGet("");
+    if(!root){el.textContent="Firebase completamente vacio.";return;}
+    var txt="=== ESTRUCTURA RAIZ ===\n";
+    txt+="Nodos en raiz: "+Object.keys(root).join(", ")+"\n\n";
+    var emp=root.empresas||{};
+    var empKeys=Object.keys(emp);
+    txt+="=== EMPRESAS ("+empKeys.length+") ===\n";
+    for(var i=0;i<empKeys.length;i++){
+      var k=empKeys[i]; var e=emp[k];
+      txt+="KEY: "+k+"\n";
+      txt+='  nombre:   "'+(e.nombre||"VACIO")+'"\n';
+      txt+='  codigo:   "'+(e.codigo||"VACIO")+'"\n';
+      txt+='  estado:   "'+(e.estado||"VACIO")+'"\n';
+      var users=e.usuarios||{};
+      var uKeys=Object.keys(users);
+      txt+="  usuarios: "+(uKeys.length?uKeys.join(", "):"NINGUNO")+"\n";
+      txt+="  ventas:   "+Object.keys(e.ventas||{}).length+"\n\n";
+    }
+    if(root.ventas){txt+="DATOS VIEJOS /ventas: "+Object.keys(root.ventas).length+" registros\n";}
+    if(root.rutas){txt+="DATOS VIEJOS /rutas: "+Object.keys(root.rutas).length+" registros\n";}
+    txt+="\n=== DIAGNOSTICO ===\n";
+    if(!empKeys.length){txt+="Sin empresas. Crea una en la seccion Empresas.\n";}
+    else{
+      for(var j=0;j<empKeys.length;j++){
+        var ek=empKeys[j]; var ee=emp[ek];
+        txt+=(ee.nombre||ek)+":\n";
+        txt+="  "+(ee.codigo?"OK":"FALTA")+" codigo: '"+(ee.codigo||"FALTA - ponelo en Empresas->Editar")+"'\n";
+        txt+="  "+(ee.estado==="activa"?"OK":"FALTA")+" estado: "+(ee.estado||"FALTA")+"\n";
+        var eu=Object.keys(ee.usuarios||{});
+        txt+="  "+(eu.length?"OK":"SIN USUARIOS")+" usuarios: "+(eu.length?eu.length+" cargados":"AGREGÁ uno en Usuarios")+"\n";
+      }
     }
     el.textContent=txt;
   }catch(err){
-    el.textContent="❌ Error: "+err.message;
+    el.textContent="Error: "+err.message+"\nVerifica las reglas de Firebase.";
   }
+}
+async function limpiarVentasRaiz(){
+  if(!confirm("¿Borrar los nodos /ventas y /rutas de la raíz? (Son datos del sistema viejo, no afecta el sistema nuevo)"))return;
+  try{
+    await fbDel("ventas");
+    await fbDel("rutas");
+    await fbDel("hojaRuta");
+    showNotif("Datos viejos borrados ✅");
+    debugFirebase();
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+/* ════ PRODUCTOS ════ */
+var productosEmpresa = {};
+var prodEmpKey = "";
+
+function fMprod(n){ return Number(n).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function getPct(tipo){
+  var el = document.getElementById(tipo==="cli"?"pct-cli":"pct-pat");
+  return el ? (parseFloat(el.value)||0) : (tipo==="cli"?20:25);
+}
+
+async function cargarProductos(){
+  prodEmpKey = document.getElementById("prod-empresa-sel").value;
+  document.getElementById("prod-content").style.display = prodEmpKey?"block":"none";
+  if(!prodEmpKey) return;
+  try{
+    // Load saved margins for this empresa
+    const emp = await fbGet("empresas/"+prodEmpKey);
+    if(emp && emp.margenCli) document.getElementById("pct-cli").value = emp.margenCli;
+    if(emp && emp.margenPat) document.getElementById("pct-pat").value = emp.margenPat;
+    const data = await fbGet("empresas/"+prodEmpKey+"/productos");
+    productosEmpresa = data || {};
+    renderProductos();
+    // Auto-sync CSV for client apps
+    sincronizarCSVdesdeProductos();
+  } catch(e){ showNotif("Error cargando productos","err"); }
+}
+
+function renderProductos(){
+  const grid = document.getElementById("prod-grid");
+  const counter = document.getElementById("prod-counter");
+  const buscar = document.getElementById("prod-buscar").value.toLowerCase().trim();
+  const orden = document.getElementById("prod-orden").value;
+  const pctCli = getPct("cli"), pctPat = getPct("pat");
+
+  let items = Object.entries(productosEmpresa).map(function(e){return Object.assign({fbKey:e[0]},e[1]);});
+
+  // Filter
+  if(buscar) items = items.filter(function(p){
+    return (p.nombre||"").toLowerCase().includes(buscar) || (p.codigo||"").toLowerCase().includes(buscar) || (p.categoria||"").toLowerCase().includes(buscar);
+  });
+
+  // Sort
+  items.sort(function(a,b){
+    if(orden==="codigo") return (a.codigo||"").localeCompare(b.codigo||"");
+    if(orden==="precio") return (a.precioBase||0)-(b.precioBase||0);
+    if(orden==="precio-desc") return (b.precioBase||0)-(a.precioBase||0);
+    return (a.nombre||"").localeCompare(b.nombre||"");
+  });
+
+  counter.textContent = items.length + " producto(s) encontrado(s)";
+
+  if(!items.length){
+    grid.innerHTML = '<div class="prod-empty"><div style="font-size:48px;margin-bottom:12px">📦</div><b>Sin productos</b><p style="margin-top:6px;font-size:13px">Agregá el primero con el botón + Nuevo producto</p></div>';
+    return;
+  }
+
+  grid.innerHTML="";
+  items.forEach(function(p){
+    var base=p.precioBase||0;
+    var pCli=base*(1+pctCli/100);
+    var pPat=base*(1+pctPat/100);
+    var card=document.createElement("div");
+    card.className="prod-card";
+    card.innerHTML=
+      '<div class="prod-card-actions">'+
+        '<button class="prod-action-btn" data-k="'+p.fbKey+'" onclick="editarProducto(this.dataset.k)">✏️</button>'+
+        '<button class="prod-action-btn del" data-k="'+p.fbKey+'" onclick="borrarProducto(this.dataset.k)">🗑</button>'+
+      '</div>'+
+      '<div class="prod-card-name">'+(p.nombre||"Sin nombre")+'</div>'+
+      '<div class="prod-card-code">COD: '+(p.codigo||"—")+
+        (p.categoria?' &nbsp;·&nbsp; <span class="cat-badge">'+p.categoria+'</span>':'')+
+      '</div>'+
+      '<div class="prod-prices">'+
+        '<div class="prod-price-box base"><div class="prod-price-lbl">Base</div><div class="prod-price-val">$'+fMprod(base)+'</div></div>'+
+        '<div class="prod-price-box cli"><div class="prod-price-lbl">Clientes +'+pctCli+'%</div><div class="prod-price-val">$'+fMprod(pCli)+'</div></div>'+
+        '<div class="prod-price-box pat"><div class="prod-price-lbl">Patagonia +'+pctPat+'%</div><div class="prod-price-val">$'+fMprod(pPat)+'</div></div>'+
+      '</div>';
+    grid.appendChild(card);
+  })
+}
+
+function filtrarProductos(){ renderProductos(); }
+
+function previewPrecios(){
+  var base = parseFloat(document.getElementById("prod-precio-base").value)||0;
+  var pctCli = parseFloat(document.getElementById("pct-cli").value)||20;
+  var pctPat = parseFloat(document.getElementById("pct-pat").value)||25;
+  document.getElementById("prev-precio-cli").textContent = "$"+fMprod(base*(1+pctCli/100));
+  document.getElementById("prev-precio-pat").textContent = "$"+fMprod(base*(1+pctPat/100));
+  document.getElementById("prev-pct-cli").textContent = pctCli;
+  document.getElementById("prev-pct-pat").textContent = pctPat;
+}
+
+function abrirModalProducto(key){
+  document.getElementById("modal-prod-title").textContent = key?"Editar producto":"Nuevo producto";
+  document.getElementById("prod-key").value = key||"";
+  const p = key?productosEmpresa[key]:{};
+  document.getElementById("prod-codigo").value = p.codigo||"";
+  document.getElementById("prod-nombre").value = p.nombre||"";
+  document.getElementById("prod-precio-base").value = p.precioBase||"";
+  document.getElementById("prod-categoria").value = p.categoria||"";
+  previewPrecios();
+  cerrarModal("modal-usuario"); // just in case
+  abrirModal("modal-producto");
+  setTimeout(function(){document.getElementById("prod-nombre").focus();},100);
+}
+
+function editarProducto(k){ abrirModalProducto(k); }
+
+async function guardarProducto(){
+  const codigo = document.getElementById("prod-codigo").value.trim();
+  const nombre = document.getElementById("prod-nombre").value.trim();
+  const base   = parseFloat(document.getElementById("prod-precio-base").value)||0;
+  const cat    = document.getElementById("prod-categoria").value.trim();
+  const key    = document.getElementById("prod-key").value;
+
+  if(!nombre){ showNotif("El nombre es obligatorio","err"); return; }
+  if(base<=0){ showNotif("El precio base debe ser mayor a cero","err"); return; }
+
+  const pctCli = getPct("cli"), pctPat = getPct("pat");
+  const prod = {
+    codigo: codigo||"",
+    nombre: nombre,
+    precioBase: base,
+    precioClientes: Math.round(base*(1+pctCli/100)*100)/100,
+    precioPatagonia: Math.round(base*(1+pctPat/100)*100)/100,
+    categoria: cat||"",
+    actualizado: new Date().toISOString()
+  };
+
+  try{
+    if(key){
+      await fbPatch("empresas/"+prodEmpKey+"/productos/"+key, prod);
+      productosEmpresa[key] = prod;
+    } else {
+      const nk = await fbPush("empresas/"+prodEmpKey+"/productos", prod);
+      productosEmpresa[nk] = prod;
+    }
+    cerrarModal("modal-producto");
+    renderProductos();
+    sincronizarCSVdesdeProductos();
+    showNotif("Producto guardado ✅");
+  } catch(e){ showNotif("Error: "+e.message,"err"); }
+}
+
+async function borrarProducto(k){
+  const nombre = productosEmpresa[k]?productosEmpresa[k].nombre:"este producto";
+  if(!confirm("Borrar: "+nombre+"?")) return;
+  try{
+    await fbDel("empresas/"+prodEmpKey+"/productos/"+k);
+    delete productosEmpresa[k];
+    renderProductos();
+    sincronizarCSVdesdeProductos();
+    showNotif("Producto eliminado");
+  } catch(e){ showNotif("Error al borrar","err"); }
+}
+
+async function actualizarMargenes(){
+  if(!prodEmpKey){ showNotif("Seleccioná una empresa","err"); return; }
+  const pctCli = getPct("cli"), pctPat = getPct("pat");
+
+  // Save margins to empresa
+  await fbPatch("empresas/"+prodEmpKey, {margenCli:pctCli, margenPat:pctPat}).catch(function(){});
+
+  // Recalculate all products
+  const updates = {};
+  Object.keys(productosEmpresa).forEach(function(k){
+    var base = productosEmpresa[k].precioBase||0;
+    var pCli = Math.round(base*(1+pctCli/100)*100)/100;
+    var pPat = Math.round(base*(1+pctPat/100)*100)/100;
+    productosEmpresa[k].precioClientes = pCli;
+    productosEmpresa[k].precioPatagonia = pPat;
+    updates[k+"/precioClientes"] = pCli;
+    updates[k+"/precioPatagonia"] = pPat;
+  });
+
+  try{
+    // Patch each product
+    await Promise.all(Object.keys(productosEmpresa).map(function(k){
+      return fbPatch("empresas/"+prodEmpKey+"/productos/"+k, {
+        precioClientes: productosEmpresa[k].precioClientes,
+        precioPatagonia: productosEmpresa[k].precioPatagonia
+      });
+    }));
+    renderProductos();
+    sincronizarCSVdesdeProductos();
+    showNotif("Precios recalculados ✅");
+  } catch(e){ showNotif("Error: "+e.message,"err"); }
+}
+
+// Generates and saves CSV so client apps can read products
+async function sincronizarCSVdesdeProductos(){
+  if(!prodEmpKey) return;
+  const items = Object.values(productosEmpresa);
+  if(!items.length) return;
+  const lines = ["id,nombre,precio_clientes,precio_patagonia"].concat(
+    items.map(function(p){
+      return [p.codigo||"", p.nombre||"", p.precioClientes||0, p.precioPatagonia||0].join(",");
+    })
+  );
+  const csv = lines.join("\n");
+  try{
+    await fbPatch("empresas/"+prodEmpKey, {stockCSV: csv});
+  } catch(e){ console.warn("CSV sync error:",e); }
 }
 
 /* ════ CLOSE MODAL ON BG ════ */
