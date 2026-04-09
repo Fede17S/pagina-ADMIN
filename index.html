@@ -637,6 +637,48 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           <input class="form-input" type="text" id="prod-categoria" placeholder="Ej: Lácteos, Bebidas, Limpieza…">
         </div>
       </div>
+
+      <!-- Márgenes personalizados por producto -->
+      <div style="margin-top:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+            <input type="checkbox" id="prod-custom-margin" onchange="toggleCustomMargin()" style="width:auto;margin:0;cursor:pointer;accent-color:var(--blue)">
+            <span style="font-size:13px;font-weight:600;color:var(--text)">Márgenes personalizados para este producto</span>
+          </label>
+        </div>
+        <div id="custom-margin-box" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+            Usá esto si este producto tiene un margen diferente al general. El resto de productos se siguen rigiendo por los márgenes globales.
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Margen Clientes %</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input class="form-input" type="number" id="prod-margen-cli" placeholder="Ej: 15" step="0.1" min="0" oninput="previewPreciosCustom()">
+                <span style="color:var(--muted);font-weight:700;flex-shrink:0">%</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Margen Patagonia %</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input class="form-input" type="number" id="prod-margen-pat" placeholder="Ej: 20" step="0.1" min="0" oninput="previewPreciosCustom()">
+                <span style="color:var(--muted);font-weight:700;flex-shrink:0">%</span>
+              </div>
+            </div>
+          </div>
+          <!-- Preview con margen custom -->
+          <div id="custom-preview" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div class="prod-price-box cli" style="padding:10px">
+              <div class="prod-price-lbl">Clientes (custom)</div>
+              <div class="prod-price-val" id="cprev-cli">$0,00</div>
+            </div>
+            <div class="prod-price-box pat" style="padding:10px">
+              <div class="prod-price-lbl">Patagonia (custom)</div>
+              <div class="prod-price-val" id="cprev-pat">$0,00</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="cerrarModal('modal-producto')">Cancelar</button>
@@ -1123,20 +1165,27 @@ function renderProductos(){
     var pPat=base*(1+pctPat/100);
     var card=document.createElement("div");
     card.className="prod-card";
-    card.innerHTML=
-      '<div class="prod-card-actions">'+
-        '<button class="prod-action-btn" data-k="'+p.fbKey+'" onclick="editarProducto(this.dataset.k)">✏️</button>'+
-        '<button class="prod-action-btn del" data-k="'+p.fbKey+'" onclick="borrarProducto(this.dataset.k)">🗑</button>'+
-      '</div>'+
-      '<div class="prod-card-name">'+(p.nombre||"Sin nombre")+'</div>'+
-      '<div class="prod-card-code">COD: '+(p.codigo||"—")+
-        (p.categoria?' &nbsp;·&nbsp; <span class="cat-badge">'+p.categoria+'</span>':'')+
-      '</div>'+
-      '<div class="prod-prices">'+
-        '<div class="prod-price-box base"><div class="prod-price-lbl">Base</div><div class="prod-price-val">$'+fMprod(base)+'</div></div>'+
-        '<div class="prod-price-box cli"><div class="prod-price-lbl">Clientes +'+pctCli+'%</div><div class="prod-price-val">$'+fMprod(pCli)+'</div></div>'+
-        '<div class="prod-price-box pat"><div class="prod-price-lbl">Patagonia +'+pctPat+'%</div><div class="prod-price-val">$'+fMprod(pPat)+'</div></div>'+
-      '</div>';
+    // Use per-product margins if set
+      var usedCli = p.margenCliCustom!=null ? p.margenCliCustom : pctCli;
+      var usedPat = p.margenPatCustom!=null ? p.margenPatCustom : pctPat;
+      var pCliF = base*(1+usedCli/100);
+      var pPatF = base*(1+usedPat/100);
+      var isCustom = p.margenCliCustom!=null||p.margenPatCustom!=null;
+      card.innerHTML=
+        '<div class="prod-card-actions">'+
+          '<button class="prod-action-btn" data-k="'+p.fbKey+'" onclick="editarProducto(this.dataset.k)">✏️</button>'+
+          '<button class="prod-action-btn del" data-k="'+p.fbKey+'" onclick="borrarProducto(this.dataset.k)">🗑</button>'+
+        '</div>'+
+        '<div class="prod-card-name">'+(p.nombre||"Sin nombre")+(isCustom?'<span style="margin-left:6px;font-size:9px;font-weight:700;background:rgba(139,92,246,.15);color:#a78bfa;padding:2px 6px;border-radius:4px;vertical-align:middle">% CUSTOM</span>':'')+'</div>'+
+        '<div class="prod-card-code">COD: '+(p.codigo||"—")+
+          (p.categoria?' &nbsp;·&nbsp; <span class="cat-badge">'+p.categoria+'</span>':'')+
+        '</div>'+
+        '<div class="prod-prices">'+
+          '<div class="prod-price-box base"><div class="prod-price-lbl">Base</div><div class="prod-price-val">$'+fMprod(base)+'</div></div>'+
+          '<div class="prod-price-box cli"><div class="prod-price-lbl">Clientes '+(isCustom&&p.margenCliCustom!=null?'<b>'+p.margenCliCustom+'%★</b>':'+'+pctCli+'%')+'</div><div class="prod-price-val">$'+fMprod(pCliF)+'</div></div>'+
+          '<div class="prod-price-box pat"><div class="prod-price-lbl">Patagonia '+(isCustom&&p.margenPatCustom!=null?'<b>'+p.margenPatCustom+'%★</b>':'+'+pctPat+'%')+'</div><div class="prod-price-val">$'+fMprod(pPatF)+'</div></div>'+
+        '</div>';
+      grid.appendChild(card);
     grid.appendChild(card);
   })
 }
@@ -1153,6 +1202,20 @@ function previewPrecios(){
   document.getElementById("prev-pct-pat").textContent = pctPat;
 }
 
+function toggleCustomMargin(){
+  var cb = document.getElementById("prod-custom-margin");
+  document.getElementById("custom-margin-box").style.display = cb.checked ? "block" : "none";
+  if(cb.checked) previewPreciosCustom();
+}
+
+function previewPreciosCustom(){
+  var base = parseFloat(document.getElementById("prod-precio-base").value)||0;
+  var pCli = parseFloat(document.getElementById("prod-margen-cli").value)||0;
+  var pPat = parseFloat(document.getElementById("prod-margen-pat").value)||0;
+  document.getElementById("cprev-cli").textContent = "$"+fMprod(base*(1+pCli/100));
+  document.getElementById("cprev-pat").textContent = "$"+fMprod(base*(1+pPat/100));
+}
+
 function abrirModalProducto(key){
   document.getElementById("modal-prod-title").textContent = key?"Editar producto":"Nuevo producto";
   document.getElementById("prod-key").value = key||"";
@@ -1161,8 +1224,15 @@ function abrirModalProducto(key){
   document.getElementById("prod-nombre").value = p.nombre||"";
   document.getElementById("prod-precio-base").value = p.precioBase||"";
   document.getElementById("prod-categoria").value = p.categoria||"";
+  // Custom margins
+  var hasCustom = !!(p.margenCliCustom||p.margenPatCustom);
+  document.getElementById("prod-custom-margin").checked = hasCustom;
+  document.getElementById("custom-margin-box").style.display = hasCustom?"block":"none";
+  document.getElementById("prod-margen-cli").value = p.margenCliCustom||"";
+  document.getElementById("prod-margen-pat").value = p.margenPatCustom||"";
   previewPrecios();
-  cerrarModal("modal-usuario"); // just in case
+  if(hasCustom) previewPreciosCustom();
+  cerrarModal("modal-usuario");
   abrirModal("modal-producto");
   setTimeout(function(){document.getElementById("prod-nombre").focus();},100);
 }
@@ -1179,7 +1249,14 @@ async function guardarProducto(){
   if(!nombre){ showNotif("El nombre es obligatorio","err"); return; }
   if(base<=0){ showNotif("El precio base debe ser mayor a cero","err"); return; }
 
-  const pctCli = getPct("cli"), pctPat = getPct("pat");
+  const hasCustom = document.getElementById("prod-custom-margin").checked;
+  const mCliCustom = hasCustom ? (parseFloat(document.getElementById("prod-margen-cli").value)||null) : null;
+  const mPatCustom = hasCustom ? (parseFloat(document.getElementById("prod-margen-pat").value)||null) : null;
+
+  // Use custom margin if set, otherwise global
+  const pctCli = mCliCustom !== null ? mCliCustom : getPct("cli");
+  const pctPat = mPatCustom !== null ? mPatCustom : getPct("pat");
+
   const prod = {
     codigo: codigo||"",
     nombre: nombre,
@@ -1189,6 +1266,9 @@ async function guardarProducto(){
     categoria: cat||"",
     actualizado: new Date().toISOString()
   };
+  // Save custom margins only if set
+  if(mCliCustom !== null) prod.margenCliCustom = mCliCustom;
+  if(mPatCustom !== null) prod.margenPatCustom = mPatCustom;
 
   try{
     if(key){
@@ -1238,7 +1318,13 @@ async function actualizarMargenes(){
 
   try{
     // Patch each product
-    await Promise.all(Object.keys(productosEmpresa).map(function(k){
+    // Skip products that have custom margins
+    var toUpdate = Object.keys(productosEmpresa).filter(function(k){
+      return productosEmpresa[k].margenCliCustom==null && productosEmpresa[k].margenPatCustom==null;
+    });
+    var skipped = Object.keys(productosEmpresa).length - toUpdate.length;
+    if(skipped>0) showNotif(skipped+" producto(s) con margen custom no se modificaron","ok");
+    await Promise.all(toUpdate.map(function(k){
       return fbPatch("empresas/"+prodEmpKey+"/productos/"+k, {
         precioClientes: productosEmpresa[k].precioClientes,
         precioPatagonia: productosEmpresa[k].precioPatagonia
