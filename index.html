@@ -275,6 +275,7 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
       <button class="sb-link" onclick="showPage('empresas',this)"><span class="ico">🏢</span>Empresas</button>
       <div class="sb-section">Gestión</div>
       <button class="sb-link" onclick="showPage('productos',this)"><span class="ico">🗂️</span>Productos</button>
+      <button class="sb-link" onclick="showPage('copiar',this)"><span class="ico">🔁</span>Copiar Catálogos</button>
       <button class="sb-link" onclick="showPage('catalogo',this)"><span class="ico">📦</span>Catálogos CSV</button>
       <button class="sb-link" onclick="showPage('usuarios',this)"><span class="ico">👥</span>Usuarios</button>
     </div>
@@ -375,6 +376,79 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           </div>
           <div id="prod-counter" class="prod-counter"></div>
           <div id="prod-grid" class="prod-grid"></div>
+        </div>
+      </div>
+
+      <!-- COPIAR CATALOGOS -->
+      <div id="page-copiar" class="page">
+        <div class="page-title">Copiar Catálogos entre Empresas</div>
+        <div class="page-sub">Copiá los productos de una empresa a otra con un solo clic</div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-title">Configuración de copia</div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">📤 Empresa origen (tiene los productos)</label>
+              <select class="form-input" id="cop-origen" onchange="previewCopia()">
+                <option value="">— Elegí la empresa origen —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">📥 Empresa destino (recibirá los productos)</label>
+              <select class="form-input" id="cop-destino" onchange="previewCopia()">
+                <option value="">— Elegí la empresa destino —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:14px">
+            <div class="form-group">
+              <label class="form-label">Qué copiar</label>
+              <select class="form-input" id="cop-modo">
+                <option value="todo">📦 Productos + CSV</option>
+                <option value="solo_csv">📄 Solo CSV de precios</option>
+                <option value="solo_productos">🗂️ Solo base de productos</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ajuste de precios en destino</label>
+              <select class="form-input" id="cop-precios">
+                <option value="mantener">Mantener precios originales</option>
+                <option value="recalcular">Recalcular con márgenes del destino</option>
+                <option value="personalizado">Márgenes personalizados</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="cop-margenes-custom" style="display:none" class="form-row">
+            <div class="form-group">
+              <label class="form-label">Margen Clientes %</label>
+              <input class="form-input" type="number" id="cop-pct-cli" value="20" step="0.1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Margen Patagonia %</label>
+              <input class="form-input" type="number" id="cop-pct-pat" value="25" step="0.1">
+            </div>
+          </div>
+
+          <div id="cop-preview-box" style="display:none;margin-bottom:16px">
+            <div class="form-section">Vista previa de la copia</div>
+            <div id="cop-preview-content"></div>
+          </div>
+
+          <button class="btn btn-primary" id="cop-btn" onclick="ejecutarCopia()" disabled>🔁 Copiar catálogo</button>
+        </div>
+
+        <!-- Resultado -->
+        <div id="cop-resultado" style="display:none" class="card">
+          <div class="card-title">Resultado</div>
+          <div class="prog-bar-wrap" style="margin-bottom:12px">
+            <div style="height:10px;background:#1a2436;border-radius:5px;overflow:hidden">
+              <div id="cop-prog" style="height:100%;background:var(--blue);border-radius:5px;transition:width .3s;width:0%"></div>
+            </div>
+          </div>
+          <div id="cop-log" style="background:#0a0f1a;border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:#94a3b8;max-height:250px;overflow-y:auto;line-height:1.7;white-space:pre-wrap"></div>
         </div>
       </div>
 
@@ -749,6 +823,7 @@ function poblarSelectores(){
   document.getElementById("cat-empresa-sel").innerHTML=opts;
   document.getElementById("usr-empresa-sel").innerHTML=opts;
   document.getElementById("prod-empresa-sel").innerHTML=opts;
+  poblarSelectoresCopia();
 }
 
 function abrirModalEmpresa(key){
@@ -1189,6 +1264,182 @@ async function sincronizarCSVdesdeProductos(){
   try{
     await fbPatch("empresas/"+prodEmpKey, {stockCSV: csv});
   } catch(e){ console.warn("CSV sync error:",e); }
+}
+
+/* ════ COPIAR CATÁLOGOS ════ */
+function poblarSelectoresCopia(){
+  var opts = '<option value="">— Elegí una empresa —</option>' +
+    Object.keys(empresas).map(function(k){
+      return '<option value="'+k+'">'+(empresas[k].nombre||k)+'</option>';
+    }).join("");
+  var sel1 = document.getElementById("cop-origen");
+  var sel2 = document.getElementById("cop-destino");
+  if(sel1) sel1.innerHTML = opts;
+  if(sel2) sel2.innerHTML = opts;
+}
+
+document.addEventListener("change", function(e){
+  if(e.target.id==="cop-precios"){
+    document.getElementById("cop-margenes-custom").style.display =
+      e.target.value==="personalizado" ? "grid" : "none";
+  }
+});
+
+async function previewCopia(){
+  var ori = document.getElementById("cop-origen").value;
+  var dst = document.getElementById("cop-destino").value;
+  var btn = document.getElementById("cop-btn");
+  var box = document.getElementById("cop-preview-box");
+  var content = document.getElementById("cop-preview-content");
+  btn.disabled = true;
+  box.style.display = "none";
+  if(!ori || !dst){ return; }
+  if(ori === dst){ showNotif("El origen y destino deben ser distintos","err"); return; }
+
+  try{
+    var oriData = await fbGet("empresas/"+ori);
+    var dstData = await fbGet("empresas/"+dst);
+    var prodCount = Object.keys((oriData&&oriData.productos)||{}).length;
+    var csvLines = oriData&&oriData.stockCSV ? oriData.stockCSV.split("\n").length-1 : 0;
+
+    content.innerHTML =
+      '<div class="tbl-wrap" style="margin-top:0"><table>'+
+        '<thead><tr><th>Campo</th><th>Origen: '+(oriData&&oriData.nombre||ori)+'</th><th>Destino: '+(dstData&&dstData.nombre||dst)+'</th></tr></thead>'+
+        '<tbody>'+
+          '<tr><td>Productos en BD</td><td class="text-green">'+prodCount+'</td><td class="text-amber">'+(Object.keys((dstData&&dstData.productos)||{}).length||0)+'</td></tr>'+
+          '<tr><td>Líneas en CSV</td><td class="text-green">'+csvLines+'</td><td class="text-amber">'+(dstData&&dstData.stockCSV?dstData.stockCSV.split("\n").length-1:0)+'</td></tr>'+
+          '<tr><td>Margen Clientes</td><td>'+(oriData&&oriData.margenCli||"?")+'%</td><td>'+(dstData&&dstData.margenCli||"?")+'%</td></tr>'+
+          '<tr><td>Margen Patagonia</td><td>'+(oriData&&oriData.margenPat||"?")+'%</td><td>'+(dstData&&dstData.margenPat||"?")+'%</td></tr>'+
+        '</tbody>'+
+      '</table></div>'+
+      '<div style="margin-top:10px;font-size:13px;color:var(--muted)">'+
+        'Se copiarán <b style="color:var(--text)">'+prodCount+' productos</b> de <b style="color:var(--blue)">'+(oriData&&oriData.nombre||ori)+'</b> a <b style="color:var(--blue)">'+(dstData&&dstData.nombre||dst)+'</b>.'+
+        ' Los datos actuales del destino serán <b style="color:var(--red)">reemplazados</b>.'+
+      '</div>';
+    box.style.display = "block";
+    btn.disabled = false;
+  }catch(e){
+    showNotif("Error cargando datos: "+e.message,"err");
+  }
+}
+
+function logCop(msg, type){
+  var el = document.getElementById("cop-log");
+  if(!el) return;
+  var span = document.createElement("span");
+  if(type==="ok") span.style.color="#34d399";
+  else if(type==="err") span.style.color="#f87171";
+  else if(type==="info") span.style.color="#60a5fa";
+  span.textContent = msg+"\n";
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function ejecutarCopia(){
+  var ori = document.getElementById("cop-origen").value;
+  var dst = document.getElementById("cop-destino").value;
+  var modo = document.getElementById("cop-modo").value;
+  var preciosModo = document.getElementById("cop-precios").value;
+  if(!ori||!dst){ showNotif("Elegí origen y destino","err"); return; }
+  if(ori===dst){ showNotif("El origen y destino deben ser distintos","err"); return; }
+  if(!confirm("Vas a reemplazar el catálogo de "+( empresas[dst]&&empresas[dst].nombre||dst)+". ¿Confirmar?")) return;
+
+  document.getElementById("cop-resultado").style.display="block";
+  document.getElementById("cop-log").textContent="";
+  document.getElementById("cop-prog").style.width="0%";
+  document.getElementById("cop-btn").disabled=true;
+
+  try{
+    logCop("Cargando datos de origen...","info");
+    var oriData = await fbGet("empresas/"+ori);
+    var dstData = await fbGet("empresas/"+dst)||{};
+    document.getElementById("cop-prog").style.width="20%";
+
+    var pctCli, pctPat;
+    if(preciosModo==="mantener"){
+      pctCli = oriData.margenCli||20;
+      pctPat = oriData.margenPat||25;
+    } else if(preciosModo==="recalcular"){
+      pctCli = dstData.margenCli||20;
+      pctPat = dstData.margenPat||25;
+      logCop("Usando márgenes del destino: "+pctCli+"% / "+pctPat+"%","info");
+    } else {
+      pctCli = parseFloat(document.getElementById("cop-pct-cli").value)||20;
+      pctPat = parseFloat(document.getElementById("cop-pct-pat").value)||25;
+      logCop("Usando márgenes personalizados: "+pctCli+"% / "+pctPat+"%","info");
+    }
+
+    // Copy productos (BD)
+    if(modo==="todo"||modo==="solo_productos"){
+      var productos = oriData.productos||{};
+      var prodKeys = Object.keys(productos);
+      logCop("Copiando "+prodKeys.length+" productos...","info");
+
+      // Clear destination productos first
+      await fbDel("empresas/"+dst+"/productos");
+      document.getElementById("cop-prog").style.width="35%";
+
+      var done=0;
+      for(var i=0;i<prodKeys.length;i++){
+        var p = productos[prodKeys[i]];
+        var base = p.precioBase||0;
+        var prod = Object.assign({},p,{
+          precioClientes: Math.round(base*(1+pctCli/100)*100)/100,
+          precioPatagonia: Math.round(base*(1+pctPat/100)*100)/100,
+          actualizado: new Date().toISOString()
+        });
+        await fbPush("empresas/"+dst+"/productos", prod);
+        done++;
+        if(done%20===0 || done===prodKeys.length){
+          document.getElementById("cop-prog").style.width=(35+Math.round(done/prodKeys.length*35))+"%";
+          logCop("  "+done+"/"+prodKeys.length+" productos copiados","info");
+        }
+      }
+      logCop("✅ "+prodKeys.length+" productos copiados","ok");
+    }
+
+    // Copy CSV
+    if(modo==="todo"||modo==="solo_csv"){
+      var csvOri = oriData.stockCSV||"";
+      if(csvOri){
+        // Recalculate prices in CSV if needed
+        if(preciosModo!=="mantener"){
+          var lines = csvOri.split("\n");
+          var header = lines[0];
+          var newLines = [header];
+          for(var j=1;j<lines.length;j++){
+            if(!lines[j].trim()) continue;
+            var cols = lines[j].split(",");
+            var base2 = parseFloat(cols[2])||0;
+            // Figure out original base from original CLI margin
+            var oriCli = oriData.margenCli||20;
+            var baseOriginal = base2/(1+oriCli/100);
+            cols[2] = Math.round(baseOriginal*(1+pctCli/100)*100)/100;
+            cols[3] = Math.round(baseOriginal*(1+pctPat/100)*100)/100;
+            newLines.push(cols.join(","));
+          }
+          csvOri = newLines.join("\n");
+        }
+        await fbPatch("empresas/"+dst,{
+          stockCSV: csvOri,
+          margenCli: pctCli,
+          margenPat: pctPat
+        });
+        logCop("✅ CSV de precios copiado","ok");
+      } else {
+        logCop("⚠️ La empresa origen no tiene CSV","warn");
+      }
+    }
+
+    document.getElementById("cop-prog").style.width="100%";
+    logCop("\n✅ Copia completada. La empresa "+( empresas[dst]&&empresas[dst].nombre||dst)+" ya tiene el catálogo actualizado.","ok");
+    showNotif("Catálogo copiado ✅");
+
+  }catch(e){
+    logCop("❌ Error: "+e.message,"err");
+    showNotif("Error durante la copia: "+e.message,"err");
+  }
+  document.getElementById("cop-btn").disabled=false;
 }
 
 /* ════ CLOSE MODAL ON BG ════ */
