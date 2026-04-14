@@ -542,6 +542,10 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           </div>
         </div>
 
+        <div id="usr-hint" style="text-align:center;padding:40px 20px;color:var(--muted)">
+          <div style="font-size:40px;margin-bottom:8px">👆</div>
+          Seleccioná una empresa para ver sus clientes y usuarios
+        </div>
         <div id="usr-content" style="display:none">
           <!-- Stats bar -->
           <div id="personas-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"></div>
@@ -1048,7 +1052,10 @@ function previewCatalogo(){
 let usrEmpresaKey="";
 async function cargarUsuarios(){
   usrEmpresaKey=document.getElementById("usr-empresa-sel").value;
-  document.getElementById("usr-content").style.display=usrEmpresaKey?"block":"none";
+  var hint = document.getElementById("usr-hint");
+  var content = document.getElementById("usr-content");
+  if(hint) hint.style.display = usrEmpresaKey?"none":"block";
+  if(content) content.style.display = usrEmpresaKey?"block":"none";
   if(!usrEmpresaKey)return;
   renderUsuarios();
 }
@@ -1150,6 +1157,10 @@ function renderPersonas(){
   });
 }
 function abrirModalUsuario(){
+  if(!usrEmpresaKey){
+    showNotif("Seleccioná una empresa primero","err");
+    return;
+  }
   document.getElementById("usr-nombre").value="";
   document.getElementById("usr-id").value="";
   document.getElementById("usr-pass").value="";
@@ -1157,6 +1168,9 @@ function abrirModalUsuario(){
   document.getElementById("usr-direccion").value="";
   document.getElementById("usr-telefono").value="";
   document.getElementById("usr-catalogo").checked=true;
+  // Show empresa name in modal title
+  var empNom = empresas[usrEmpresaKey]?empresas[usrEmpresaKey].nombre||usrEmpresaKey:usrEmpresaKey;
+  document.querySelector("#modal-usuario .modal-title").textContent = "Nuevo usuario — "+empNom;
   abrirModal("modal-usuario");
 }
 async function guardarUsuario(){
