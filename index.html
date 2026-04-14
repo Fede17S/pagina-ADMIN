@@ -631,11 +631,19 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           <div class="prod-price-val" id="prev-precio-pat">$0,00</div>
         </div>
       </div>
-      <div class="form-row single" style="margin-top:14px">
+      <div class="form-row" style="margin-top:14px">
         <div class="form-group">
           <label class="form-label">Categoría (opcional)</label>
           <input class="form-input" type="text" id="prod-categoria" placeholder="Ej: Lácteos, Bebidas, Limpieza…">
         </div>
+        <div class="form-group">
+          <label class="form-label">URL de foto (opcional)</label>
+          <input class="form-input" type="url" id="prod-foto" placeholder="https://..." oninput="previewFoto()">
+        </div>
+      </div>
+      <div id="foto-preview-wrap" style="display:none;margin-top:4px;text-align:center">
+        <img id="foto-preview-img" src="" style="max-height:120px;max-width:180px;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;object-fit:contain">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Vista previa de la foto</div>
       </div>
 
       <!-- Márgenes personalizados por producto -->
@@ -1176,7 +1184,8 @@ function renderProductos(){
           '<button class="prod-action-btn" data-k="'+p.fbKey+'" onclick="editarProducto(this.dataset.k)">✏️</button>'+
           '<button class="prod-action-btn del" data-k="'+p.fbKey+'" onclick="borrarProducto(this.dataset.k)">🗑</button>'+
         '</div>'+
-        '<div class="prod-card-name">'+(p.nombre||"Sin nombre")+(isCustom?'<span style="margin-left:6px;font-size:9px;font-weight:700;background:rgba(139,92,246,.15);color:#a78bfa;padding:2px 6px;border-radius:4px;vertical-align:middle">% CUSTOM</span>':'')+'</div>'+
+        (p.foto?'<div style="height:80px;background:#fff;display:flex;align-items:center;justify-content:center;border-radius:8px 8px 0 0;overflow:hidden;margin-bottom:8px"><img src="'+p.foto+'" style="max-height:76px;max-width:140px;object-fit:contain" onerror="this.parentElement.style.display=\'none\'"></div>':'')+
+      '<div class="prod-card-name">'+(p.nombre||"Sin nombre")+(isCustom?'<span style="margin-left:6px;font-size:9px;font-weight:700;background:rgba(139,92,246,.15);color:#a78bfa;padding:2px 6px;border-radius:4px;vertical-align:middle">% CUSTOM</span>':'')+'</div>'+
         '<div class="prod-card-code">COD: '+(p.codigo||"—")+
           (p.categoria?' &nbsp;·&nbsp; <span class="cat-badge">'+p.categoria+'</span>':'')+
         '</div>'+
@@ -1191,6 +1200,14 @@ function renderProductos(){
 }
 
 function filtrarProductos(){ renderProductos(); }
+
+function previewFoto(){
+  var url = document.getElementById("prod-foto").value.trim();
+  var wrap = document.getElementById("foto-preview-wrap");
+  var img  = document.getElementById("foto-preview-img");
+  if(url){ wrap.style.display="block"; img.src=url; img.onerror=function(){wrap.style.display="none";}; }
+  else wrap.style.display="none";
+}
 
 function previewPrecios(){
   var base = parseFloat(document.getElementById("prod-precio-base").value)||0;
@@ -1224,6 +1241,8 @@ function abrirModalProducto(key){
   document.getElementById("prod-nombre").value = p.nombre||"";
   document.getElementById("prod-precio-base").value = p.precioBase||"";
   document.getElementById("prod-categoria").value = p.categoria||"";
+  document.getElementById("prod-foto").value = p.foto||"";
+  previewFoto();
   // Custom margins
   var hasCustom = !!(p.margenCliCustom||p.margenPatCustom);
   document.getElementById("prod-custom-margin").checked = hasCustom;
@@ -1257,6 +1276,7 @@ async function guardarProducto(){
   const pctCli = mCliCustom !== null ? mCliCustom : getPct("cli");
   const pctPat = mPatCustom !== null ? mPatCustom : getPct("pat");
 
+  const foto = document.getElementById("prod-foto").value.trim();
   const prod = {
     codigo: codigo||"",
     nombre: nombre,
@@ -1264,6 +1284,7 @@ async function guardarProducto(){
     precioClientes: Math.round(base*(1+pctCli/100)*100)/100,
     precioPatagonia: Math.round(base*(1+pctPat/100)*100)/100,
     categoria: cat||"",
+    foto: foto||"",
     actualizado: new Date().toISOString()
   };
   // Save custom margins only if set
