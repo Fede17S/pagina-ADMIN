@@ -788,6 +788,19 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           </label>
         </div>
       </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border2)">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📍 Datos del negocio (opcional)</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Dirección del negocio</label>
+            <input class="form-input" type="text" id="usr-direccion" placeholder="Ej: Av. San Martín 1234">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono / WhatsApp</label>
+            <input class="form-input" type="tel" id="usr-telefono" placeholder="Ej: 2804123456">
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="cerrarModal('modal-usuario')">Cancelar</button>
@@ -1057,7 +1070,12 @@ async function cargarUsuarios(){
   if(hint) hint.style.display = usrEmpresaKey?"none":"block";
   if(content) content.style.display = usrEmpresaKey?"block":"none";
   if(!usrEmpresaKey)return;
-  renderUsuarios();
+  // Fetch fresh data from Firebase
+  try{
+    var empFresh = await fbGet("empresas/"+usrEmpresaKey);
+    if(empFresh) empresas[usrEmpresaKey] = Object.assign(empresas[usrEmpresaKey]||{}, empFresh);
+  } catch(e){ console.warn("No se pudo refrescar empresa"); }
+  renderPersonas();
 }
 function renderUsuarios(){ renderPersonas(); }
 
@@ -1124,7 +1142,7 @@ function renderPersonas(){
     head.innerHTML =
       '<div class="persona-avatar" style="background:'+rc[0]+'22;color:'+rc[0]+'">'+(u.name||u.id||"?")[0].toUpperCase()+'</div>'+
       '<div class="persona-info">'+
-        '<div class="persona-name">'+(u.name||"Sin nombre")+'</div>'+
+        '<div class="persona-name">'+(u.name||u.nombre||"Sin nombre")+'</div>'+
         '<div class="persona-meta">ID: '+(u.id||k)+(u.lista?' &nbsp;·&nbsp; '+u.lista:'')+(u.catalogo?' &nbsp;·&nbsp; <span style="color:#059669">✓ Catálogo</span>':'')+(u.telefono?' &nbsp;·&nbsp; <a href="https://wa.me/54'+u.telefono.replace(/\D/g,'')+'" target="_blank" style="color:#25d366">📞 WA</a>':'')+'</div>'+
       '</div>'+
       '<span class="persona-badge '+rc[1]+'">'+rc[2]+' '+(rolesLabels[role]||role)+'</span>'+
@@ -1133,7 +1151,7 @@ function renderPersonas(){
     var body = document.createElement("div");
     body.className = "persona-body";
     body.innerHTML =
-      '<div class="persona-field"><span class="persona-field-lbl">Nombre</span><span class="persona-field-val">'+(u.name||"—")+'</span></div>'+
+      '<div class="persona-field"><span class="persona-field-lbl">Nombre</span><span class="persona-field-val">'+(u.name||u.nombre||"—")+'</span></div>'+
       '<div class="persona-field"><span class="persona-field-lbl">ID / Usuario</span><span class="persona-field-val">'+(u.id||k)+'</span></div>'+
       '<div class="persona-field"><span class="persona-field-lbl">Contraseña</span><span class="persona-field-val" style="font-family:monospace">'+(u.pass||"—")+'</span></div>'+
       '<div class="persona-field"><span class="persona-field-lbl">Rol</span><span class="persona-field-val">'+rc[2]+' '+(rolesLabels[role]||role)+'</span></div>'+
@@ -1182,7 +1200,17 @@ async function guardarUsuario(){
   if(!nombre||!id||!pass){showNotif("Completá todos los campos","err");return;}
   if(pass.length<3){showNotif("Contraseña muy corta","err");return;}
   if(!usrEmpresaKey){showNotif("Elegí una empresa","err");return;}
+  const dirEl=document.getElementById("usr-direccion");
+  const telEl=document.getElementById("usr-telefono");
+  const direccion=dirEl?dirEl.value.trim():"";
+  const telefono=telEl?telEl.value.trim():"";
+  if(!usrEmpresaKey){
+    var sel2=document.getElementById("usr-empresa-sel");
+    if(sel2&&sel2.value) usrEmpresaKey=sel2.value;
+  }
   const usr={name:nombre,id,pass,role,lista,catalogo};
+  if(direccion) usr.direccion=direccion;
+  if(telefono)  usr.telefono=telefono;
   try{
     // Usar SET (PUT) para garantizar que el nodo se crea aunque no exista usuarios/
     const r=await fetch(`${FB}/empresas/${usrEmpresaKey}/usuarios/${id}.json`,{
