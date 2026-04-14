@@ -1158,19 +1158,18 @@ function renderPersonas(){
 }
 function abrirModalUsuario(){
   if(!usrEmpresaKey){
+    // Try reading from selector in case it wasn't set
+    var sel = document.getElementById("usr-empresa-sel");
+    if(sel && sel.value) usrEmpresaKey = sel.value;
+  }
+  if(!usrEmpresaKey){
     showNotif("Seleccioná una empresa primero","err");
     return;
   }
-  document.getElementById("usr-nombre").value="";
-  document.getElementById("usr-id").value="";
-  document.getElementById("usr-pass").value="";
-  document.getElementById("usr-rol").value="vendedor";
-  document.getElementById("usr-direccion").value="";
-  document.getElementById("usr-telefono").value="";
-  document.getElementById("usr-catalogo").checked=true;
-  // Show empresa name in modal title
-  var empNom = empresas[usrEmpresaKey]?empresas[usrEmpresaKey].nombre||usrEmpresaKey:usrEmpresaKey;
-  document.querySelector("#modal-usuario .modal-title").textContent = "Nuevo usuario — "+empNom;
+  var fields = ["usr-nombre","usr-id","usr-pass","usr-direccion","usr-telefono"];
+  fields.forEach(function(f){ var el=document.getElementById(f); if(el) el.value=""; });
+  var rol = document.getElementById("usr-rol"); if(rol) rol.value="vendedor";
+  var cat = document.getElementById("usr-catalogo"); if(cat) cat.checked=true;
   abrirModal("modal-usuario");
 }
 async function guardarUsuario(){
