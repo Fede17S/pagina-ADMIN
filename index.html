@@ -407,7 +407,9 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
             <div class="form-group">
               <label class="form-label">Qué copiar</label>
               <select class="form-input" id="cop-modo">
-                <option value="todo">📦 Productos + CSV</option>
+                <option value="todo">📦 Productos + CSV de precios</option>
+                <option value="todo_con_clientes">📦👥 Productos + CSV precios + Clientes</option>
+                <option value="solo_clientes">👥 Solo lista de clientes</option>
                 <option value="solo_csv">📄 Solo CSV de precios</option>
                 <option value="solo_productos">🗂️ Solo base de productos</option>
               </select>
@@ -720,11 +722,27 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
           <input class="form-input" type="text" id="usr-pass" placeholder="Mínimo 4 caracteres">
         </div>
         <div class="form-group">
-          <label class="form-label">Rol</label>
+          <label class="form-label">Rol (RutaApp)</label>
           <select class="form-input" id="usr-rol">
             <option value="admin">👑 Admin (acceso total)</option>
             <option value="vendedor">📝 Vendedor (solo pedidos)</option>
+            <option value="cliente">🛒 Cliente (solo catálogo)</option>
           </select>
+        </div>
+      </div>
+      <div class="form-row" id="usr-lista-row">
+        <div class="form-group">
+          <label class="form-label">Lista de precios (Catálogo)</label>
+          <select class="form-input" id="usr-lista">
+            <option value="Clientes">📋 Lista Clientes</option>
+            <option value="Patagonia">🌄 Lista Patagonia</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="usr-catalogo" style="width:auto;accent-color:var(--blue);cursor:pointer" checked>
+            Acceso al Catálogo DistriMax
+          </label>
         </div>
       </div>
     </div>
@@ -1028,11 +1046,12 @@ async function guardarUsuario(){
   const id=document.getElementById("usr-id").value.trim().toLowerCase();
   const pass=document.getElementById("usr-pass").value;
   const role=document.getElementById("usr-rol").value;
+  const lista=document.getElementById("usr-lista").value;
+  const catalogo=document.getElementById("usr-catalogo").checked;
   if(!nombre||!id||!pass){showNotif("Completá todos los campos","err");return;}
   if(pass.length<3){showNotif("Contraseña muy corta","err");return;}
   if(!usrEmpresaKey){showNotif("Elegí una empresa","err");return;}
-  // Guardamos con el id como key Y como campo, para que el cliente lo encuentre de ambas formas
-  const usr={name:nombre,id,pass,role};
+  const usr={name:nombre,id,pass,role,lista,catalogo};
   try{
     // Usar SET (PUT) para garantizar que el nodo se crea aunque no exista usuarios/
     const r=await fetch(`${FB}/empresas/${usrEmpresaKey}/usuarios/${id}.json`,{
@@ -1523,7 +1542,7 @@ async function ejecutarCopia(){
     }
 
     // Copy productos (BD)
-    if(modo==="todo"||modo==="solo_productos"){
+    if(modo==="todo"||modo==="todo_con_clientes"||modo==="solo_productos"){
       var productos = oriData.productos||{};
       var prodKeys = Object.keys(productos);
       logCop("Copiando "+prodKeys.length+" productos...","info");
@@ -1552,7 +1571,7 @@ async function ejecutarCopia(){
     }
 
     // Copy CSV
-    if(modo==="todo"||modo==="solo_csv"){
+    if(modo==="todo"||modo==="todo_con_clientes"||modo==="solo_csv"){
       var csvOri = oriData.stockCSV||"";
       if(csvOri){
         // Recalculate prices in CSV if needed
@@ -1581,6 +1600,18 @@ async function ejecutarCopia(){
         logCop("✅ CSV de precios copiado","ok");
       } else {
         logCop("⚠️ La empresa origen no tiene CSV","warn");
+      }
+    }
+
+    // Copy clientes CSV
+    if(modo==="todo_con_clientes"||modo==="solo_clientes"){
+      var cliCSV = oriData.clientesCSV||"";
+      if(cliCSV){
+        var cliLines = cliCSV.split("\n").filter(function(l){return l.trim();}).length-1;
+        await fbPatch("empresas/"+dst,{clientesCSV: cliCSV});
+        logCop("✅ Lista de clientes copiada ("+cliLines+" clientes)","ok");
+      } else {
+        logCop("⚠️ La empresa origen no tiene CSV de clientes","warn");
       }
     }
 
