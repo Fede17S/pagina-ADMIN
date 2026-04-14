@@ -223,6 +223,29 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
 .pct-badge.cli{background:rgba(16,185,129,.15);color:var(--green)}
 .pct-badge.pat{background:rgba(245,158,11,.15);color:var(--amber)}
 
+/* ── PERSONAS ── */
+.persona-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:box-shadow .15s}
+.persona-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.persona-head{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer}
+.persona-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+.persona-info{flex:1;min-width:0}
+.persona-name{font-size:14px;font-weight:700;color:var(--text)}
+.persona-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.persona-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.pb-admin{background:#ede9fe;color:#6d28d9}
+.pb-vendedor{background:#dbeafe;color:#1d4ed8}
+.pb-cliente{background:#d1fae5;color:#065f46}
+.persona-body{display:none;padding:0 16px 14px;border-top:1px solid var(--border);background:#fafafa}
+.persona-body.open{display:block}
+.persona-field{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.persona-field:last-child{border-bottom:none}
+.persona-field-lbl{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+.persona-field-val{font-weight:600;color:var(--text)}
+.persona-actions{display:flex;gap:6px;margin-top:12px}
+.stat-mini{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.stat-mini-val{font-size:20px;font-weight:800;color:var(--navy)}
+.stat-mini-lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
 /* ── MISC ── */
 .divider{height:1px;background:var(--border);margin:20px 0}
 .flex{display:flex;align-items:center;gap:10px}
@@ -277,7 +300,7 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
       <button class="sb-link" onclick="showPage('productos',this)"><span class="ico">🗂️</span>Productos</button>
       <button class="sb-link" onclick="showPage('copiar',this)"><span class="ico">🔁</span>Copiar Catálogos</button>
       <button class="sb-link" onclick="showPage('catalogo',this)"><span class="ico">📦</span>Catálogos CSV</button>
-      <button class="sb-link" onclick="showPage('usuarios',this)"><span class="ico">👥</span>Usuarios</button>
+      <button class="sb-link" onclick="showPage('personas',this)"><span class="ico">👥</span>Clientes & Usuarios</button>
     </div>
     <!-- main -->
     <div class="main">
@@ -501,25 +524,41 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
       </div>
 
       <!-- USUARIOS -->
-      <div id="page-usuarios" class="page">
-        <div class="page-title">Usuarios</div>
-        <div class="page-sub">Gestioná los usuarios de cada empresa</div>
-        <div class="form-row single" style="margin-bottom:20px">
+      <div id="page-personas" class="page">
+        <div class="flex-between" style="margin-bottom:20px">
+          <div>
+            <div class="page-title">Clientes & Usuarios</div>
+            <div class="page-sub">Todos los que tienen acceso a la plataforma</div>
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalUsuario()">+ Nuevo</button>
+        </div>
+
+        <div class="form-row single" style="margin-bottom:16px">
           <div class="form-group">
-            <label class="form-label">Seleccionar empresa</label>
+            <label class="form-label">Empresa</label>
             <select class="form-input" id="usr-empresa-sel" onchange="cargarUsuarios()">
               <option value="">— Elegí una empresa —</option>
             </select>
           </div>
         </div>
+
         <div id="usr-content" style="display:none">
-          <div class="card" style="padding:0">
-            <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Usuarios</span>
-              <button class="btn btn-primary btn-sm" onclick="abrirModalUsuario()">+ Agregar</button>
-            </div>
-            <div id="usr-list" style="padding:8px 20px"></div>
+          <!-- Stats bar -->
+          <div id="personas-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"></div>
+
+          <!-- Search + filter -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <input type="text" id="personas-buscar" class="form-input" placeholder="🔍 Buscar por nombre o ID..." oninput="renderPersonas()" style="flex:1;min-width:160px">
+            <select class="form-input" id="personas-filtro" onchange="renderPersonas()" style="width:auto;min-width:140px">
+              <option value="todos">Todos</option>
+              <option value="admin">👑 Admin</option>
+              <option value="vendedor">📝 Vendedor</option>
+              <option value="cliente">🛒 Cliente catálogo</option>
+            </select>
           </div>
+
+          <!-- List -->
+          <div id="personas-list"></div>
         </div>
       </div>
 
@@ -1013,32 +1052,111 @@ async function cargarUsuarios(){
   if(!usrEmpresaKey)return;
   renderUsuarios();
 }
-function renderUsuarios(){
-  const e=empresas[usrEmpresaKey]||{};
-  const users=e.usuarios||{};
-  const wrap=document.getElementById("usr-list");
-  const keys=Object.keys(users);
-  if(!keys.length){wrap.innerHTML='<div class="empty" style="padding:20px"><div class="empty-title">Sin usuarios. Agregá el primero.</div></div>';return;}
-  const colors=["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444"];
-  wrap.innerHTML=keys.map((k,i)=>{
-    const u=users[k];
-    const color=colors[i%colors.length];
-    return`<div class="user-row">
-      <div class="user-avatar" style="background:${color}22;color:${color}">${(u.name||u.id||"?")[0].toUpperCase()}</div>
-      <div class="user-info">
-        <div class="user-name">${u.name||"Sin nombre"}</div>
-        <div class="user-id">ID: ${u.id||k}</div>
-      </div>
-      <span class="badge ${u.role==="admin"?"badge-purple":"badge-blue"}">${u.role==="admin"?"👑 Admin":"📝 Vendedor"}</span>
-      <button class="btn btn-danger btn-sm" onclick="borrarUsuario('${k}')">🗑</button>
-    </div>`;
-  }).join("");
+function renderUsuarios(){ renderPersonas(); }
+
+function renderPersonas(){
+  var e = empresas[usrEmpresaKey]||{};
+  var users = e.usuarios||{};
+  var keys = Object.keys(users);
+  var buscar = (document.getElementById("personas-buscar")||{}).value||"";
+  buscar = buscar.toLowerCase().trim();
+  var filtro = (document.getElementById("personas-filtro")||{}).value||"todos";
+
+  // Stats
+  var statsEl = document.getElementById("personas-stats");
+  if(statsEl){
+    var admins = keys.filter(k=>users[k].role==="admin").length;
+    var vendedores = keys.filter(k=>users[k].role==="vendedor").length;
+    var clientes = keys.filter(k=>users[k].role==="cliente"||users[k].catalogo).length;
+    statsEl.innerHTML =
+      '<div class="stat-mini"><div class="stat-mini-val">'+keys.length+'</div><div class="stat-mini-lbl">Total</div></div>'+
+      '<div class="stat-mini"><div class="stat-mini-val" style="color:#6d28d9">'+admins+'</div><div class="stat-mini-lbl">👑 Admins</div></div>'+
+      '<div class="stat-mini"><div class="stat-mini-val" style="color:#1d4ed8">'+vendedores+'</div><div class="stat-mini-lbl">📝 Vendedores</div></div>'+
+      '<div class="stat-mini"><div class="stat-mini-val" style="color:#065f46">'+clientes+'</div><div class="stat-mini-lbl">🛒 Clientes</div></div>';
+  }
+
+  // Filter
+  var filtered = keys.filter(function(k){
+    var u = users[k];
+    if(buscar && !(u.name||"").toLowerCase().includes(buscar) && !(u.id||"").toLowerCase().includes(buscar)) return false;
+    if(filtro==="admin") return u.role==="admin";
+    if(filtro==="vendedor") return u.role==="vendedor";
+    if(filtro==="cliente") return u.role==="cliente"||u.catalogo;
+    return true;
+  });
+
+  var wrap = document.getElementById("personas-list");
+  if(!wrap) return;
+
+  if(!filtered.length){
+    wrap.innerHTML='<div class="empty" style="padding:30px;text-align:center"><div style="font-size:40px;margin-bottom:8px">👤</div><div>Sin resultados</div></div>';
+    return;
+  }
+
+  wrap.innerHTML="";
+  var rolesColors = {admin:["#6d28d9","pb-admin","👑"],vendedor:["#1d4ed8","pb-vendedor","📝"],cliente:["#065f46","pb-cliente","🛒"]};
+  var rolesLabels = {admin:"Admin",vendedor:"Vendedor",cliente:"Cliente catálogo"};
+
+  filtered.sort(function(a,b){
+    var ua=users[a], ub=users[b];
+    var ro={"admin":0,"vendedor":1,"cliente":2};
+    if((ro[ua.role]||2)!==(ro[ub.role]||2)) return (ro[ua.role]||2)-(ro[ub.role]||2);
+    return (ua.name||ua.id||"").localeCompare(ub.name||ub.id||"","es");
+  });
+
+  filtered.forEach(function(k){
+    var u = users[k];
+    var role = u.role||"vendedor";
+    var rc = rolesColors[role]||rolesColors.vendedor;
+    var card = document.createElement("div");
+    card.className = "persona-card";
+
+    var isOpen = false;
+    var head = document.createElement("div");
+    head.className = "persona-head";
+    head.innerHTML =
+      '<div class="persona-avatar" style="background:'+rc[0]+'22;color:'+rc[0]+'">'+(u.name||u.id||"?")[0].toUpperCase()+'</div>'+
+      '<div class="persona-info">'+
+        '<div class="persona-name">'+(u.name||"Sin nombre")+'</div>'+
+        '<div class="persona-meta">ID: '+(u.id||k)+(u.lista?' &nbsp;·&nbsp; '+u.lista:'')+(u.catalogo?' &nbsp;·&nbsp; <span style="color:#059669">✓ Catálogo</span>':'')+(u.telefono?' &nbsp;·&nbsp; <a href="https://wa.me/54'+u.telefono.replace(/\D/g,'')+'" target="_blank" style="color:#25d366">📞 WA</a>':'')+'</div>'+
+      '</div>'+
+      '<span class="persona-badge '+rc[1]+'">'+rc[2]+' '+(rolesLabels[role]||role)+'</span>'+
+      '<span style="color:var(--muted2);font-size:13px;margin-left:6px">▼</span>';
+
+    var body = document.createElement("div");
+    body.className = "persona-body";
+    body.innerHTML =
+      '<div class="persona-field"><span class="persona-field-lbl">Nombre</span><span class="persona-field-val">'+(u.name||"—")+'</span></div>'+
+      '<div class="persona-field"><span class="persona-field-lbl">ID / Usuario</span><span class="persona-field-val">'+(u.id||k)+'</span></div>'+
+      '<div class="persona-field"><span class="persona-field-lbl">Contraseña</span><span class="persona-field-val" style="font-family:monospace">'+(u.pass||"—")+'</span></div>'+
+      '<div class="persona-field"><span class="persona-field-lbl">Rol</span><span class="persona-field-val">'+rc[2]+' '+(rolesLabels[role]||role)+'</span></div>'+
+      (u.lista?'<div class="persona-field"><span class="persona-field-lbl">Lista de precios</span><span class="persona-field-val">'+u.lista+'</span></div>':'')+
+      (u.catalogo!==undefined?'<div class="persona-field"><span class="persona-field-lbl">Acceso catálogo</span><span class="persona-field-val">'+(u.catalogo?"✅ Sí":"❌ No")+'</span></div>':'')+
+      (u.direccion?'<div class="persona-field"><span class="persona-field-lbl">📍 Dirección</span><span class="persona-field-val">'+u.direccion+'</span></div>':'')+
+      (u.telefono?'<div class="persona-field"><span class="persona-field-lbl">📞 Teléfono</span><span class="persona-field-val"><a href="tel:'+u.telefono+'" style="color:var(--blue)">'+u.telefono+'</a></span></div>':'')+
+      '<div class="persona-actions">'+
+        '<button class="btn btn-danger btn-sm" style="flex:1" data-k="'+k+'" onclick="borrarUsuario(this.dataset.k)">🗑 Eliminar</button>'+
+      '</div>';
+
+    head.onclick = function(){
+      isOpen = !isOpen;
+      body.classList.toggle("open", isOpen);
+      head.querySelector("span:last-child").textContent = isOpen ? "▲" : "▼";
+    };
+
+    card.appendChild(head);
+    card.appendChild(body);
+    wrap.appendChild(card);
+  });
 }
 function abrirModalUsuario(){
   document.getElementById("usr-nombre").value="";
   document.getElementById("usr-id").value="";
   document.getElementById("usr-pass").value="";
   document.getElementById("usr-rol").value="vendedor";
+  document.getElementById("usr-direccion").value="";
+  document.getElementById("usr-telefono").value="";
+  document.getElementById("usr-catalogo").checked=true;
   abrirModal("modal-usuario");
 }
 async function guardarUsuario(){
