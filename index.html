@@ -362,14 +362,15 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
               </div>
             </div>
             <button class="btn btn-primary" style="width:auto;padding:9px 16px;font-size:13px" onclick="actualizarMargenes()">Recalcular todo</button>
+          <button class="btn btn-ghost" style="width:auto;padding:9px 16px;font-size:13px;color:var(--blue);border-color:var(--blue)" onclick="renumerarProductos()" title="Reasigna códigos del 1 al N en orden A-Z">🔢 Renumerar A-Z</button>
           </div>
 
           <!-- Barra búsqueda -->
           <div class="prod-search-bar">
             <input type="text" id="prod-buscar" placeholder="🔍 Buscar producto…" oninput="filtrarProductos()">
             <select id="prod-orden" onchange="filtrarProductos()" style="width:160px">
-              <option value="nombre">Orden: Nombre A-Z</option>
-              <option value="codigo">Orden: Código</option>
+              <option value="nombre" selected>Orden: Nombre A-Z</option>
+              <option value="codigo">Orden: Código ↑</option>
               <option value="precio">Orden: Precio ↑</option>
               <option value="precio-desc">Orden: Precio ↓</option>
             </select>
@@ -1153,7 +1154,12 @@ function renderProductos(){
 
   // Sort
   items.sort(function(a,b){
-    if(orden==="codigo") return (a.codigo||"").localeCompare(b.codigo||"");
+    if(orden==="codigo"){
+      // Sort numerically if both are numbers, else alphabetically
+      var na=parseInt(a.codigo||"0",10), nb=parseInt(b.codigo||"0",10);
+      if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+      return (a.codigo||"").localeCompare(b.codigo||"");
+    }
     if(orden==="precio") return (a.precioBase||0)-(b.precioBase||0);
     if(orden==="precio-desc") return (b.precioBase||0)-(a.precioBase||0);
     return (a.nombre||"").localeCompare(b.nombre||"");
@@ -1233,11 +1239,21 @@ function previewPreciosCustom(){
   document.getElementById("cprev-pat").textContent = "$"+fMprod(base*(1+pPat/100));
 }
 
+function getSiguienteCodigo(){
+  // Only auto-assign for DistriMax (margenCli/margenPat set = it's the main empresa)
+  // Get all numeric codes, find the max, return max+1
+  var codigos = Object.values(productosEmpresa)
+    .map(function(p){ return parseInt(p.codigo||"0",10); })
+    .filter(function(n){ return !isNaN(n) && n > 0; });
+  if(!codigos.length) return "1";
+  return String(Math.max.apply(null,codigos)+1);
+}
+
 function abrirModalProducto(key){
   document.getElementById("modal-prod-title").textContent = key?"Editar producto":"Nuevo producto";
   document.getElementById("prod-key").value = key||"";
   const p = key?productosEmpresa[key]:{};
-  document.getElementById("prod-codigo").value = p.codigo||"";
+  document.getElementById("prod-codigo").value = p.codigo || (key?"":getSiguienteCodigo());
   document.getElementById("prod-nombre").value = p.nombre||"";
   document.getElementById("prod-precio-base").value = p.precioBase||"";
   document.getElementById("prod-categoria").value = p.categoria||"";
@@ -1302,7 +1318,7 @@ async function guardarProducto(){
     cerrarModal("modal-producto");
     renderProductos();
     sincronizarCSVdesdeProductos();
-    showNotif("Producto guardado ✅");
+    showNotif("Producto guardado — Cód: "+(prod.codigo||"?")+" ✅");
   } catch(e){ showNotif("Error: "+e.message,"err"); }
 }
 
@@ -1316,6 +1332,36 @@ async function borrarProducto(k){
     sincronizarCSVdesdeProductos();
     showNotif("Producto eliminado");
   } catch(e){ showNotif("Error al borrar","err"); }
+}
+
+async function renumerarProductos(){
+  if(!prodEmpKey){ showNotif("Seleccioná una empresa","err"); return; }
+  var total = Object.keys(productosEmpresa).length;
+  if(!total){ showNotif("No hay productos para renumerar","err"); return; }
+  if(!confirm("Vas a reasignar los códigos del 1 al "+total+" en orden A-Z.\nEsto reemplaza los códigos actuales. ¿Confirmar?")) return;
+
+  // Sort all products by name A-Z
+  var sorted = Object.entries(productosEmpresa)
+    .map(function(e){ return {fbKey:e[0], data:e[1]}; })
+    .sort(function(a,b){ return (a.data.nombre||"").localeCompare(b.data.nombre||"","es"); });
+
+  showNotif("Renumerando "+total+" productos...");
+
+  // Update each with new code
+  var promises = sorted.map(function(item, idx){
+    var newCod = String(idx+1);
+    productosEmpresa[item.fbKey].codigo = newCod;
+    return fbPatch("empresas/"+prodEmpKey+"/productos/"+item.fbKey, {codigo: newCod});
+  });
+
+  try{
+    await Promise.all(promises);
+    renderProductos();
+    sincronizarCSVdesdeProductos();
+    showNotif("✅ Productos renumerados del 1 al "+total+" en orden A-Z");
+  }catch(e){
+    showNotif("Error al renumerar: "+e.message,"err");
+  }
 }
 
 async function actualizarMargenes(){
