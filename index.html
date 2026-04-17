@@ -272,6 +272,51 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
 .stat-mini-val{font-size:20px;font-weight:800;color:var(--navy)}
 .stat-mini-lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
 
+/* ── CUENTAS CORRIENTES ── */
+.cc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .15s}
+.cc-card:hover{border-color:var(--blue)}
+.cc-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+.cc-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0}
+.cc-info{flex:1;min-width:0}
+.cc-nom{font-size:14px;font-weight:700;color:var(--text)}
+.cc-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.cc-saldo{text-align:right;flex-shrink:0}
+.cc-saldo-val{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.cc-saldo-val.debe{color:var(--red)}
+.cc-saldo-val.cero{color:var(--green)}
+.cc-saldo-val.favor{color:var(--blue)}
+.cc-saldo-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.cc-saldo-lbl.debe{color:var(--red)}
+.cc-saldo-lbl.cero{color:var(--green)}
+.cc-body{display:none;border-top:1px solid var(--border)}
+.cc-body.open{display:block}
+.mov-row{display:flex;align-items:flex-start;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .1s}
+.mov-row:last-child{border-bottom:none}
+.mov-row:hover{background:var(--surface2)}
+.mov-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px}
+.mov-icon.pago{background:#064e3b;color:#34d399}
+.mov-icon.remito{background:#1e3a5f;color:#60a5fa}
+.mov-icon.nc{background:#2e1065;color:#a78bfa}
+.mov-info{flex:1;min-width:0}
+.mov-concepto{font-size:13px;font-weight:600;color:var(--text)}
+.mov-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.mov-amounts{text-align:right;flex-shrink:0}
+.mov-monto{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.mov-monto.credito{color:var(--green)}
+.mov-monto.debito{color:var(--red)}
+.mov-saldo{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
+.comp-thumb{width:28px;height:28px;border-radius:4px;object-fit:cover;cursor:pointer;border:1px solid var(--border);flex-shrink:0}
+.cc-actions{display:flex;gap:8px;padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border)}
+
+/* PROVEEDOR */
+.prov-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+.prov-head{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.prov-logo{width:38px;height:38px;border-radius:8px;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.prov-info{flex:1;min-width:0}
+.prov-nom{font-size:14px;font-weight:700}
+.prov-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.prov-saldo{text-align:right}
+
 /* ── MISC ── */
 .divider{height:1px;background:var(--border);margin:20px 0}
 .flex{display:flex;align-items:center;gap:10px}
@@ -335,6 +380,9 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
       <button class="sb-link" onclick="showPage('reportes',this)"><span class="ico">📈</span>Reportes</button>
       <button class="sb-link" onclick="showPage('actividad',this)"><span class="ico">🕐</span>Actividad</button>
       <button class="sb-link" onclick="showPage('deudas',this)"><span class="ico">💳</span>Deudas</button>
+      <div class="sb-section">Pagos</div>
+      <button class="sb-link" onclick="showPage('cuentas',this)"><span class="ico">📒</span>Cuentas Corrientes</button>
+      <button class="sb-link" onclick="showPage('proveedores',this)"><span class="ico">🏭</span>Proveedores</button>
     </div>
     <!-- main -->
     <div class="main">
@@ -697,6 +745,39 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
         <div id="deu-list"></div>
       </div>
 
+      <!-- CUENTAS CORRIENTES -->
+      <div id="page-cuentas" class="page">
+        <div class="flex-between" style="margin-bottom:20px">
+          <div><div class="page-title">📒 Cuentas Corrientes</div>
+          <div class="page-sub">Control de pagos por cliente</div></div>
+          <button class="btn btn-primary" onclick="abrirModalMovimiento('pago')">+ Registrar pago</button>
+        </div>
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="form-group">
+            <label class="form-label">Empresa</label>
+            <select class="form-input" id="cc-empresa-sel" onchange="cargarCuentasCorrientes()">
+              <option value="">— Elegí empresa —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Buscar cliente</label>
+            <input class="form-input" type="text" id="cc-buscar" placeholder="Nombre del cliente..." oninput="renderCuentas()">
+          </div>
+        </div>
+        <div id="cc-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
+        <div id="cc-lista"></div>
+      </div>
+
+      <!-- PROVEEDORES -->
+      <div id="page-proveedores" class="page">
+        <div class="flex-between" style="margin-bottom:20px">
+          <div><div class="page-title">🏭 Proveedores</div>
+          <div class="page-sub">Control de deudas y pagos a proveedores</div></div>
+          <button class="btn btn-primary" onclick="abrirModalProveedor()">+ Nuevo proveedor</button>
+        </div>
+        <div id="prov-lista" style="margin-bottom:16px"></div>
+      </div>
+
     </div><!-- /main -->
   </div><!-- /layout -->
 </div><!-- /app -->
@@ -936,6 +1017,180 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="cerrarModal('modal-usuario')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarUsuario()">Agregar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOVIMIENTO -->
+<div class="modal-bg" id="modal-movimiento">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-mov-title">Registrar pago</div>
+      <button class="modal-close" onclick="cerrarModal('modal-movimiento')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mov-tipo">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Empresa</label>
+          <select class="form-input" id="mov-empresa-sel" onchange="cargarClientesMov()">
+            <option value="">— Elegí empresa —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cliente</label>
+          <select class="form-input" id="mov-cliente-sel">
+            <option value="">— Elegí cliente —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Monto</label>
+          <input class="form-input" type="number" id="mov-monto" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Forma de pago</label>
+          <select class="form-input" id="mov-forma">
+            <option value="transferencia">📲 Transferencia</option>
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="cheque">📄 Cheque</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Concepto / Nota</label>
+        <input class="form-input" type="text" id="mov-concepto" placeholder="Ej: Pago parcial remito del 15/4">
+      </div>
+      <!-- COMPROBANTE -->
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">📎 Comprobante (foto/captura) — opcional</label>
+        <div id="comp-upload-area" style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative">
+          <input type="file" id="comp-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="previewComprobante(event)">
+          <div id="comp-placeholder" style="color:var(--muted);font-size:13px">📷 Tocá para subir foto del comprobante<br><small>JPG, PNG · máx 2MB</small></div>
+          <img id="comp-preview" src="" style="display:none;max-width:100%;max-height:160px;border-radius:6px;object-fit:contain">
+          <button id="comp-clear" type="button" onclick="limpiarComprobante()" style="display:none;margin-top:6px;background:var(--red-lt);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">✕ Quitar</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input class="form-input" type="date" id="mov-fecha">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modal-movimiento')">Cancelar</button>
+      <button class="btn btn-green" onclick="guardarMovimiento()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROVEEDOR -->
+<div class="modal-bg" id="modal-proveedor">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-prov-title">Nuevo proveedor</div>
+      <button class="modal-close" onclick="cerrarModal('modal-proveedor')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="prov-edit-key">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input class="form-input" type="text" id="prov-nombre" placeholder="Ej: Leonidas Distribuciones">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contacto</label>
+          <input class="form-input" type="text" id="prov-contacto" placeholder="Nombre del contacto">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-input" type="tel" id="prov-tel" placeholder="Ej: 1165667784">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CUIT / Alias</label>
+          <input class="form-input" type="text" id="prov-cuit" placeholder="Ej: 30-12345678-9">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Notas</label>
+        <textarea class="form-input" id="prov-notas" rows="2" placeholder="Condiciones de pago, días de visita, etc."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modal-proveedor')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProveedor()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOVIMIENTO PROVEEDOR -->
+<div class="modal-bg" id="modal-mov-prov">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-mp-title">Registrar compra / pago</div>
+      <button class="modal-close" onclick="cerrarModal('modal-mov-prov')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mp-prov-key">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-input" id="mp-tipo">
+            <option value="compra">🛒 Compra (deuda nueva)</option>
+            <option value="pago">💰 Pago al proveedor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monto</label>
+          <input class="form-input" type="number" id="mp-monto" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Concepto</label>
+          <input class="form-input" type="text" id="mp-concepto" placeholder="Ej: Factura #1234">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-input" type="date" id="mp-fecha">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">📎 Comprobante (opcional)</label>
+        <div style="border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;position:relative">
+          <input type="file" id="mp-comp-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="previewComprobanteP(event)">
+          <div id="mp-comp-placeholder" style="color:var(--muted);font-size:12px">📷 Subir comprobante</div>
+          <img id="mp-comp-preview" src="" style="display:none;max-width:100%;max-height:120px;border-radius:6px;object-fit:contain">
+          <button id="mp-comp-clear" type="button" onclick="limpiarComprobanteP()" style="display:none;margin-top:4px;background:var(--red-lt);color:var(--red);border:1px solid var(--red);border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif">✕ Quitar</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modal-mov-prov')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMovProv()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER CUENTA CORRIENTE -->
+<div class="modal-bg" id="modal-cuenta">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-cc-title">Cuenta corriente</div>
+      <button class="modal-close" onclick="cerrarModal('modal-cuenta')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="modal-cc-saldo" style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Saldo</span>
+        <span id="modal-cc-saldo-val" style="font-size:24px;font-weight:800"></span>
+      </div>
+      <div id="modal-cc-movs" style="max-height:60vh;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modal-cuenta')">Cerrar</button>
+      <button class="btn btn-primary" onclick="exportarCCPDF()">📥 Exportar PDF</button>
     </div>
   </div>
 </div>
@@ -1315,13 +1570,14 @@ function renderEmpresas(){
 
 function poblarSelectores(){
   const opts='<option value="">— Elegí una empresa —</option>'+Object.keys(empresas).map(k=>`<option value="${k}">${empresas[k].nombre||k}</option>`).join("");
-  ["cat-empresa-sel","usr-empresa-sel","prod-empresa-sel","rep-empresa-sel","deu-empresa-sel"].forEach(id=>{
+  ["cat-empresa-sel","usr-empresa-sel","prod-empresa-sel","rep-empresa-sel","deu-empresa-sel","cc-empresa-sel","mov-empresa-sel"].forEach(id=>{
     const el=document.getElementById(id); if(el) el.innerHTML=opts;
   });
   const actEl=document.getElementById("act-empresa-sel");
   if(actEl) actEl.innerHTML='<option value="">— Todas las empresas —</option>'+Object.keys(empresas).map(k=>`<option value="${empresas[k].nombre||k}">${empresas[k].nombre||k}</option>`).join("");
   poblarSelectoresCopia();
   initReportesSelectors();
+  cargarProveedores();
 }
 
 function abrirModalEmpresa(key){
@@ -2218,6 +2474,488 @@ async function ejecutarCopia(){
   }
   document.getElementById("cop-btn").disabled=false;
 }
+
+/* ════ CUENTAS CORRIENTES ════ */
+var _ccEmpKey = "";
+var _ccData = {};     // clienteId -> {saldo, movimientos[]}
+var _ccClienteActivo = null;
+var _comprobanteBase64 = null;
+var _comprobanteProvB64 = null;
+
+async function cargarCuentasCorrientes(){
+  _ccEmpKey = document.getElementById("cc-empresa-sel").value;
+  var lista = document.getElementById("cc-lista");
+  if(!_ccEmpKey){lista.innerHTML='<div class="empty"><div class="empty-icon">📒</div><div class="empty-title">Seleccioná una empresa</div></div>';return;}
+  lista.innerHTML='<div class="empty"><div class="empty-icon">🔄</div><div class="empty-title">Cargando...</div></div>';
+  try{
+    var data = await fbGet("empresas/"+_ccEmpKey+"/cuentas_corrientes");
+    _ccData = data||{};
+    // Also pre-populate from ventas/rutas (auto-sync)
+    await sincronizarCCdesdeRemitos();
+    renderCuentas();
+  }catch(e){lista.innerHTML='<div class="empty"><div class="empty-icon">❌</div><div class="empty-title">Error cargando</div></div>';}
+}
+
+async function sincronizarCCdesdeRemitos(){
+  // Pull ventas to create auto debito entries if not already in CC
+  try{
+    var ventas = await fbGet("empresas/"+_ccEmpKey+"/ventas");
+    if(!ventas) return;
+    var batch = {};
+    Object.entries(ventas).forEach(function(e){
+      var v = e[1], vk = e[0];
+      var cliId = v.clienteNom; // use name as ID since we don't always have clienteId
+      if(!cliId) return;
+      if(!_ccData[cliId]) _ccData[cliId]={saldo:0,movimientos:{}};
+      // Check if remito already registered
+      var movs = _ccData[cliId].movimientos||{};
+      var yaExiste = Object.values(movs).some(function(m){return m.ref===vk;});
+      if(!yaExiste && v.total > 0){
+        var movKey = "auto_"+vk;
+        _ccData[cliId].movimientos[movKey]={
+          tipo:"remito", ref:vk, fecha:v.fecha||new Date().toISOString(),
+          concepto:"Remito "+new Date(v.fecha||Date.now()).toLocaleDateString("es-AR"),
+          debito:v.total, credito:0, usuario:"sistema", auto:true
+        };
+      }
+    });
+    // Recalculate balances
+    Object.keys(_ccData).forEach(function(cliId){
+      var movs = Object.values(_ccData[cliId].movimientos||{});
+      movs.sort(function(a,b){return(a.fecha||"").localeCompare(b.fecha||"");});
+      var saldo=0;
+      movs.forEach(function(m){saldo+=(m.debito||0)-(m.credito||0);});
+      _ccData[cliId].saldo=saldo;
+    });
+  }catch(e){}
+}
+
+function renderCuentas(){
+  var lista = document.getElementById("cc-lista");
+  var q = (document.getElementById("cc-buscar")||{}).value||"";
+  q = q.toLowerCase().trim();
+  var keys = Object.keys(_ccData).filter(function(k){return !q||k.toLowerCase().includes(q);});
+  // Sort: biggest debt first
+  keys.sort(function(a,b){return (_ccData[b].saldo||0)-(_ccData[a].saldo||0);});
+
+  var totalDeuda=0, totalFavor=0, totalCero=0;
+  Object.values(_ccData).forEach(function(c){
+    var s=c.saldo||0;
+    if(s>0.01) totalDeuda+=s;
+    else if(s<-0.01) totalFavor+=Math.abs(s);
+    else totalCero++;
+  });
+  // Stats
+  var statsEl=document.getElementById("cc-stats");
+  if(statsEl) statsEl.innerHTML=
+    '<div class="stat-mini"><div class="stat-mini-val" style="color:var(--red)">$'+fM(totalDeuda)+'</div><div class="stat-mini-lbl">Total adeudado</div></div>'+
+    '<div class="stat-mini"><div class="stat-mini-val" style="color:var(--green)">$'+fM(totalFavor)+'</div><div class="stat-mini-lbl">A favor clientes</div></div>'+
+    '<div class="stat-mini"><div class="stat-mini-val">'+keys.length+'</div><div class="stat-mini-lbl">Cuentas activas</div></div>';
+
+  if(!keys.length){lista.innerHTML='<div class="empty"><div class="empty-icon">📒</div><div class="empty-title">Sin movimientos registrados</div></div>';return;}
+  lista.innerHTML="";
+  var COLORS=["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444","#06b6d4"];
+  keys.forEach(function(cliId,i){
+    var cc = _ccData[cliId];
+    var saldo = cc.saldo||0;
+    var movCount = Object.keys(cc.movimientos||{}).length;
+    var card = document.createElement("div"); card.className="cc-card";
+    var sc = saldo>0.01?"debe":saldo<-0.01?"favor":"cero";
+    var scLabel = saldo>0.01?"Debe":"Saldo cero";
+    var color = COLORS[i%COLORS.length];
+    var head = document.createElement("div"); head.className="cc-head";
+    head.innerHTML=
+      '<div class="cc-avatar" style="background:'+color+'22;color:'+color+'">'+cliId[0].toUpperCase()+'</div>'+
+      '<div class="cc-info"><div class="cc-nom">'+cliId+'</div><div class="cc-meta">'+movCount+' movimiento'+(movCount!==1?"s":"")+'</div></div>'+
+      '<div class="cc-saldo">'+
+        '<div class="cc-saldo-val '+sc+'">$'+fM(Math.abs(saldo))+'</div>'+
+        '<div class="cc-saldo-lbl '+sc+'">'+scLabel+'</div>'+
+      '</div>'+
+      '<span style="color:var(--muted2);font-size:13px;margin-left:8px">▼</span>';
+    var body = document.createElement("div"); body.className="cc-body";
+    // Render movimientos
+    renderMovimientosList(body, cliId, cc);
+    var actions = document.createElement("div"); actions.className="cc-actions";
+    var btnPago=document.createElement("button"); btnPago.className="btn btn-green btn-sm"; btnPago.style.flex="1";
+    btnPago.textContent="+ Registrar pago"; btnPago.onclick=function(){abrirModalMovimiento("pago",cliId);};
+    var btnNC=document.createElement("button"); btnNC.className="btn btn-ghost btn-sm"; btnNC.style.flex="1";
+    btnNC.textContent="✎ Nota de crédito"; btnNC.onclick=function(){abrirModalMovimiento("nota_credito",cliId);};
+    var btnVer=document.createElement("button"); btnVer.className="btn btn-primary btn-sm"; btnVer.style.flex="1";
+    btnVer.textContent="📄 Ver cuenta"; btnVer.onclick=function(){abrirCuentaCompleta(cliId,cc);};
+    actions.appendChild(btnPago); actions.appendChild(btnNC); actions.appendChild(btnVer);
+    body.appendChild(actions);
+    var isOpen=false;
+    head.onclick=function(){isOpen=!isOpen;body.classList.toggle("open",isOpen);head.querySelector("span:last-child").textContent=isOpen?"▲":"▼";};
+    card.appendChild(head); card.appendChild(body);
+    lista.appendChild(card);
+  });
+}
+
+function renderMovimientosList(container, cliId, cc){
+  var movs = Object.entries(cc.movimientos||{}).map(function(e){return Object.assign({fbKey:e[0]},e[1]);});
+  movs.sort(function(a,b){return(b.fecha||"").localeCompare(a.fecha||"");});
+  var saldo=cc.saldo||0;
+  // Show last 5
+  movs.slice(0,8).forEach(function(m){
+    var row=document.createElement("div"); row.className="mov-row";
+    var tipo=m.tipo||"pago";
+    var iconHtml='<div class="mov-icon '+tipo+'">'+{pago:"💰",remito:"🧾",nota_credito:"✏️"}[tipo]+'</div>';
+    var fecha=m.fecha?new Date(m.fecha).toLocaleDateString("es-AR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+    var formaLabel={efectivo:"💵 Efectivo",transferencia:"📲 Transfer.",cheque:"📄 Cheque"}[m.forma_pago]||"";
+    var monto=tipo==="pago"||tipo==="nota_credito"?m.credito||0:m.debito||0;
+    var esCredito=tipo==="pago"||tipo==="nota_credito";
+    var compId="comp_"+Math.random().toString(36).slice(2);
+    var comp=m.comprobante?'<img class="comp-thumb" id="'+compId+'" src="'+m.comprobante+'" onclick="verComprobante(this.src)" title="Ver comprobante">':'';
+    row.innerHTML=iconHtml+
+      '<div class="mov-info">'+
+        '<div class="mov-concepto">'+(m.concepto||tipo)+'</div>'+
+        '<div class="mov-meta">'+fecha+(formaLabel?' · '+formaLabel:'')+(m.auto?' · automático':'')+'</div>'+
+      '</div>'+comp+
+      '<div class="mov-amounts">'+
+        '<div class="mov-monto '+(esCredito?"credito":"debito")+'">'+(esCredito?"-":"+")+'$'+fM(monto)+'</div>'+
+      '</div>';
+    if(!m.auto){
+      var del=document.createElement("button");
+      del.style.cssText="background:none;border:none;color:var(--muted2);font-size:16px;cursor:pointer;padding:2px 6px;align-self:center;flex-shrink:0";
+      del.textContent="✕";
+      del.title="Eliminar movimiento";
+      del.onclick=function(){borrarMovimiento(cliId,m.fbKey);};
+      row.appendChild(del);
+    }
+    container.appendChild(row);
+  });
+  if(movs.length>8){
+    var more=document.createElement("div");
+    more.style.cssText="padding:10px 16px;font-size:12px;color:var(--muted);text-align:center;cursor:pointer";
+    more.textContent="Ver todos ("+movs.length+") →";
+    more.onclick=function(){abrirCuentaCompleta(cliId,cc);};
+    container.appendChild(more);
+  }
+}
+
+function verComprobante(src){
+  var w=window.open("","_blank","width=500,height=700");
+  w.document.write('<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+src+'" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>');
+  w.document.close();
+}
+
+function abrirCuentaCompleta(cliId, cc){
+  document.getElementById("modal-cc-title").textContent="📒 "+cliId;
+  var saldo=cc.saldo||0;
+  var sv=document.getElementById("modal-cc-saldo-val");
+  sv.textContent=(saldo>0?"Debe ":"")+"$"+fM(Math.abs(saldo));
+  sv.style.color=saldo>0.01?"var(--red)":saldo<-0.01?"var(--blue)":"var(--green)";
+  var movs=Object.entries(cc.movimientos||{}).map(function(e){return Object.assign({fbKey:e[0]},e[1]);});
+  movs.sort(function(a,b){return(a.fecha||"").localeCompare(b.fecha||"");});
+  // Calculate running balance
+  var saldoAcum=0;
+  var rows=movs.map(function(m){
+    var esCredito=m.tipo==="pago"||m.tipo==="nota_credito";
+    var monto=esCredito?(m.credito||0):(m.debito||0);
+    saldoAcum+=(esCredito?-1:1)*monto;
+    var fecha=m.fecha?new Date(m.fecha).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric"}):"—";
+    var comp=m.comprobante?'<img style="width:24px;height:24px;border-radius:3px;object-fit:cover;cursor:pointer;border:1px solid var(--border);vertical-align:middle" src="'+m.comprobante+'" onclick="verComprobante(this.src)" title="Ver comprobante">':'';
+    return'<div style="display:grid;grid-template-columns:90px 1fr auto auto;gap:8px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border);font-size:13px">'+
+      '<span style="color:var(--muted);font-size:11px">'+fecha+'</span>'+
+      '<span style="font-weight:500">'+comp+' '+(m.concepto||m.tipo||"—")+'</span>'+
+      '<span style="font-weight:700;'+(esCredito?"color:var(--green)":"color:var(--red)")+'">'+
+        (esCredito?"-":"+")+'$'+fM(monto)+'</span>'+
+      '<span style="color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums">Saldo $'+fM(saldoAcum)+'</span>'+
+    '</div>';
+  });
+  document.getElementById("modal-cc-movs").innerHTML=rows.join("")||'<div style="padding:30px;text-align:center;color:var(--muted)">Sin movimientos</div>';
+  _ccClienteActivo=cliId;
+  abrirModal("modal-cuenta");
+}
+
+async function exportarCCPDF(){
+  if(!_ccClienteActivo) return;
+  var cc=_ccData[_ccClienteActivo];
+  var movs=Object.values(cc.movimientos||{});
+  movs.sort(function(a,b){return(a.fecha||"").localeCompare(b.fecha||"");});
+  var saldoAcum=0;
+  var jsPDF=window.jspdf.jsPDF,doc=new jsPDF();
+  var emp=empresas[_ccEmpKey]||{};
+  doc.setFont("helvetica","bold");doc.setFontSize(16);
+  doc.text((emp.nombre||"EMPRESA")+" — CUENTA CORRIENTE",105,16,{align:"center"});
+  doc.setFontSize(11);doc.setFont("helvetica","normal");
+  doc.text("Cliente: "+_ccClienteActivo,14,26);
+  doc.text("Fecha: "+new Date().toLocaleDateString("es-AR"),14,32);
+  var rows=movs.map(function(m){
+    var esC=m.tipo==="pago"||m.tipo==="nota_credito";
+    var monto=esC?(m.credito||0):(m.debito||0);
+    saldoAcum+=(esC?-1:1)*monto;
+    return[new Date(m.fecha||Date.now()).toLocaleDateString("es-AR"),m.concepto||m.tipo||"—",esC?"":("$"+fM(monto)),esC?("$"+fM(monto)):"","$"+fM(saldoAcum)];
+  });
+  doc.autoTable({startY:38,head:[["Fecha","Concepto","Débito","Crédito","Saldo"]],body:rows,
+    foot:[["","","","Saldo final","$"+fM(Math.abs(cc.saldo||0))]],
+    theme:"striped",headStyles:{fillColor:[13,27,42]}});
+  doc.save("CC_"+_ccClienteActivo+"_"+new Date().toLocaleDateString().replace(/\//g,"-")+".pdf");
+}
+
+// MODAL MOVIMIENTO
+function abrirModalMovimiento(tipo, cliId){
+  document.getElementById("mov-tipo").value=tipo;
+  document.getElementById("modal-mov-title").textContent={pago:"💰 Registrar pago",nota_credito:"✏️ Nota de crédito",remito:"🧾 Registrar remito"}[tipo]||"Movimiento";
+  document.getElementById("mov-monto").value="";
+  document.getElementById("mov-concepto").value="";
+  document.getElementById("mov-fecha").value=new Date().toISOString().slice(0,10);
+  limpiarComprobante();
+  // Pre-select empresa and cliente
+  var empSel=document.getElementById("mov-empresa-sel");
+  if(_ccEmpKey&&empSel) empSel.value=_ccEmpKey;
+  cargarClientesMov(cliId);
+  abrirModal("modal-movimiento");
+}
+
+function cargarClientesMov(preSelect){
+  var empKey=document.getElementById("mov-empresa-sel").value||_ccEmpKey;
+  var sel=document.getElementById("mov-cliente-sel");
+  if(!empKey){sel.innerHTML='<option value="">— Primero elegí empresa —</option>';return;}
+  var clientes=Object.keys(_ccData);
+  // Also add from usuarios
+  var users=empresas[empKey]&&empresas[empKey].usuarios?Object.values(empresas[empKey].usuarios):[];
+  users.forEach(function(u){if(u.name&&!clientes.includes(u.name))clientes.push(u.name);});
+  clientes.sort();
+  sel.innerHTML='<option value="">— Elegí cliente —</option>'+clientes.map(function(c){return'<option value="'+c+'"'+(c===preSelect?" selected":"")+'>'+c+'</option>';}).join("");
+  if(preSelect) sel.value=preSelect;
+}
+
+function previewComprobante(e){
+  var file=e.target.files[0]; if(!file) return;
+  if(file.size>2*1024*1024){showNotif("La imagen es muy grande. Máximo 2MB","err");return;}
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement("canvas");
+      var maxW=800,maxH=1000;
+      var w=img.width,h=img.height;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      if(h>maxH){w=Math.round(w*maxH/h);h=maxH;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      _comprobanteBase64=canvas.toDataURL("image/jpeg",0.7);
+      document.getElementById("comp-preview").src=_comprobanteBase64;
+      document.getElementById("comp-preview").style.display="block";
+      document.getElementById("comp-placeholder").style.display="none";
+      document.getElementById("comp-clear").style.display="inline-block";
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function limpiarComprobante(){
+  _comprobanteBase64=null;
+  var p=document.getElementById("comp-preview"); if(p){p.src="";p.style.display="none";}
+  var ph=document.getElementById("comp-placeholder"); if(ph) ph.style.display="block";
+  var cl=document.getElementById("comp-clear"); if(cl) cl.style.display="none";
+  var f=document.getElementById("comp-file"); if(f) f.value="";
+}
+
+async function guardarMovimiento(){
+  var tipo=document.getElementById("mov-tipo").value;
+  var empKey=document.getElementById("mov-empresa-sel").value||_ccEmpKey;
+  var cliId=document.getElementById("mov-cliente-sel").value;
+  var monto=parseFloat(document.getElementById("mov-monto").value)||0;
+  var concepto=document.getElementById("mov-concepto").value.trim();
+  var forma=document.getElementById("mov-forma").value;
+  var fecha=document.getElementById("mov-fecha").value||new Date().toISOString().slice(0,10);
+  if(!cliId){showNotif("Seleccioná un cliente","err");return;}
+  if(monto<=0){showNotif("Ingresá un monto mayor a 0","err");return;}
+  var esCredito=tipo==="pago"||tipo==="nota_credito";
+  var mov={tipo:tipo,fecha:new Date(fecha+"T12:00:00").toISOString(),concepto:concepto||{pago:"Pago",nota_credito:"Nota de crédito"}[tipo]||tipo,
+    forma_pago:forma,usuario:"admin",debito:esCredito?0:monto,credito:esCredito?monto:0};
+  if(_comprobanteBase64) mov.comprobante=_comprobanteBase64;
+  try{
+    await fbPush("empresas/"+empKey+"/cuentas_corrientes/"+cliId+"/movimientos",mov);
+    if(!_ccData[cliId]) _ccData[cliId]={saldo:0,movimientos:{}};
+    var newKey="tmp_"+Date.now();
+    _ccData[cliId].movimientos[newKey]=mov;
+    _ccData[cliId].saldo=(_ccData[cliId].saldo||0)+(esCredito?-monto:monto);
+    // Update saldo in Firebase
+    await fbPatch("empresas/"+empKey+"/cuentas_corrientes/"+cliId,{saldo:_ccData[cliId].saldo});
+    cerrarModal("modal-movimiento");
+    renderCuentas();
+    showNotif("Movimiento guardado ✅");
+    logActividad(empresas[empKey]&&empresas[empKey].nombre||empKey,{pago:"Pago registrado",nota_credito:"Nota de crédito"}[tipo]||"Movimiento",cliId+" $"+fM(monto));
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+async function borrarMovimiento(cliId, movKey){
+  if(!confirm("¿Borrar este movimiento? No se puede deshacer.")) return;
+  try{
+    var mov=_ccData[cliId].movimientos[movKey];
+    var esCredito=mov.tipo==="pago"||mov.tipo==="nota_credito";
+    var monto=esCredito?(mov.credito||0):(mov.debito||0);
+    await fbDel("empresas/"+_ccEmpKey+"/cuentas_corrientes/"+cliId+"/movimientos/"+movKey);
+    delete _ccData[cliId].movimientos[movKey];
+    _ccData[cliId].saldo=(_ccData[cliId].saldo||0)-(esCredito?-monto:monto);
+    await fbPatch("empresas/"+_ccEmpKey+"/cuentas_corrientes/"+cliId,{saldo:_ccData[cliId].saldo});
+    renderCuentas();
+    showNotif("Movimiento eliminado");
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+/* ════ PROVEEDORES ════ */
+var _proveedores={};
+var _provComprobanteB64=null;
+
+async function cargarProveedores(){
+  try{
+    var data=await fbGet("proveedores");
+    _proveedores=data||{};
+    renderProveedores();
+  }catch(e){}
+}
+
+function renderProveedores(){
+  var lista=document.getElementById("prov-lista");
+  var keys=Object.keys(_proveedores);
+  if(!keys.length){lista.innerHTML='<div class="empty"><div class="empty-icon">🏭</div><div class="empty-title">Sin proveedores. Agregá el primero.</div></div>';return;}
+  lista.innerHTML="";
+  keys.forEach(function(k){
+    var p=_proveedores[k];
+    var movs=Object.values(p.movimientos||{});
+    var saldo=movs.reduce(function(s,m){return s+(m.tipo==="compra"?(m.monto||0):-(m.monto||0));},0);
+    var card=document.createElement("div");card.className="prov-card";
+    card.innerHTML=
+      '<div class="prov-head">'+
+        '<div class="prov-logo">🏭</div>'+
+        '<div class="prov-info">'+
+          '<div class="prov-nom">'+p.nombre+'</div>'+
+          '<div class="prov-sub">'+(p.contacto?p.contacto+" · ":"")+(p.tel||"")+'</div>'+
+        '</div>'+
+        '<div class="prov-saldo">'+
+          '<div style="font-size:16px;font-weight:800;color:'+(saldo>0?"var(--red)":"var(--green)")+'">$'+fM(Math.abs(saldo))+'</div>'+
+          '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">'+(saldo>0?"Les debés":"Al día")+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;padding:0 16px 14px;flex-wrap:wrap">'+
+        '<button class="btn btn-primary btn-sm" style="flex:1" data-k="'+k+'" data-t="compra" onclick="abrirMovProv(this.dataset.k,this.dataset.t)">🛒 Registrar compra</button>'+
+        '<button class="btn btn-green btn-sm" style="flex:1" data-k="'+k+'" data-t="pago" onclick="abrirMovProv(this.dataset.k,this.dataset.t)">💰 Registrar pago</button>'+
+        '<button class="btn btn-ghost btn-sm" style="flex:1" data-k="'+k+'" onclick="verCuentaProv(this.dataset.k)">📄 Ver cuenta</button>'+
+        '<button class="btn btn-ghost btn-sm btn-icon" data-k="'+k+'" onclick="editarProveedor(this.dataset.k)">✏️</button>'+
+      '</div>'+
+      (movs.length?'<div style="padding:0 16px 14px;font-size:12px;color:var(--muted)">'+movs.length+' movimientos registrados · Último: '+
+        new Date(movs.sort(function(a,b){return(b.fecha||"").localeCompare(a.fecha||"");})[0].fecha||Date.now()).toLocaleDateString("es-AR")+'</div>':'');
+    lista.appendChild(card);
+  });
+}
+
+function abrirModalProveedor(key){
+  var p=key?_proveedores[key]:{};
+  document.getElementById("modal-prov-title").textContent=key?"Editar proveedor":"Nuevo proveedor";
+  document.getElementById("prov-edit-key").value=key||"";
+  document.getElementById("prov-nombre").value=p.nombre||"";
+  document.getElementById("prov-contacto").value=p.contacto||"";
+  document.getElementById("prov-tel").value=p.tel||"";
+  document.getElementById("prov-cuit").value=p.cuit||"";
+  document.getElementById("prov-notas").value=p.notas||"";
+  abrirModal("modal-proveedor");
+}
+
+function editarProveedor(k){abrirModalProveedor(k);}
+
+async function guardarProveedor(){
+  var nombre=document.getElementById("prov-nombre").value.trim();
+  if(!nombre){showNotif("El nombre es obligatorio","err");return;}
+  var key=document.getElementById("prov-edit-key").value;
+  var data={nombre:nombre,contacto:document.getElementById("prov-contacto").value.trim(),
+    tel:document.getElementById("prov-tel").value.trim(),
+    cuit:document.getElementById("prov-cuit").value.trim(),
+    notas:document.getElementById("prov-notas").value.trim(),
+    actualizado:new Date().toISOString()};
+  try{
+    if(key){await fbPatch("proveedores/"+key,data);_proveedores[key]=Object.assign(_proveedores[key]||{},data);}
+    else{var nk=await fbPush("proveedores",data);_proveedores[nk]=data;}
+    cerrarModal("modal-proveedor");renderProveedores();showNotif("Proveedor guardado ✅");
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+function abrirMovProv(provKey,tipo){
+  document.getElementById("mp-prov-key").value=provKey;
+  document.getElementById("modal-mp-title").textContent=tipo==="compra"?"🛒 Registrar compra":"💰 Registrar pago al proveedor";
+  document.getElementById("mp-tipo").value=tipo;
+  document.getElementById("mp-monto").value="";
+  document.getElementById("mp-concepto").value="";
+  document.getElementById("mp-fecha").value=new Date().toISOString().slice(0,10);
+  limpiarComprobanteP();
+  abrirModal("modal-mov-prov");
+}
+
+function previewComprobanteP(e){
+  var file=e.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var c=document.createElement("canvas");
+      var maxW=800;var w=img.width,h=img.height;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);
+      _provComprobanteB64=c.toDataURL("image/jpeg",0.7);
+      document.getElementById("mp-comp-preview").src=_provComprobanteB64;
+      document.getElementById("mp-comp-preview").style.display="block";
+      document.getElementById("mp-comp-placeholder").style.display="none";
+      document.getElementById("mp-comp-clear").style.display="inline-block";
+    };
+    img.src=ev.target.result;
+  };reader.readAsDataURL(file);
+}
+function limpiarComprobanteP(){
+  _provComprobanteB64=null;
+  var p=document.getElementById("mp-comp-preview");if(p){p.src="";p.style.display="none";}
+  var ph=document.getElementById("mp-comp-placeholder");if(ph)ph.style.display="block";
+  var cl=document.getElementById("mp-comp-clear");if(cl)cl.style.display="none";
+  var f=document.getElementById("mp-comp-file");if(f)f.value="";
+}
+
+async function guardarMovProv(){
+  var provKey=document.getElementById("mp-prov-key").value;
+  var tipo=document.getElementById("mp-tipo").value;
+  var monto=parseFloat(document.getElementById("mp-monto").value)||0;
+  var concepto=document.getElementById("mp-concepto").value.trim();
+  var fecha=document.getElementById("mp-fecha").value;
+  if(monto<=0){showNotif("Ingresá un monto","err");return;}
+  var mov={tipo:tipo,monto:monto,concepto:concepto||{compra:"Compra",pago:"Pago"}[tipo],
+    fecha:new Date(fecha+"T12:00:00").toISOString(),usuario:"admin"};
+  if(_provComprobanteB64) mov.comprobante=_provComprobanteB64;
+  try{
+    await fbPush("proveedores/"+provKey+"/movimientos",mov);
+    if(!_proveedores[provKey].movimientos)_proveedores[provKey].movimientos={};
+    _proveedores[provKey].movimientos["tmp_"+Date.now()]=mov;
+    cerrarModal("modal-mov-prov");renderProveedores();showNotif("Movimiento guardado ✅");
+    logActividad(_proveedores[provKey].nombre,{compra:"Compra registrada",pago:"Pago a proveedor"}[tipo],concepto+" $"+fM(monto));
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+function verCuentaProv(provKey){
+  var p=_proveedores[provKey];if(!p)return;
+  var movs=Object.values(p.movimientos||{});
+  movs.sort(function(a,b){return(a.fecha||"").localeCompare(b.fecha||"");});
+  var saldoAcum=0;
+  var jsPDF=window.jspdf.jsPDF,doc=new jsPDF();
+  doc.setFont("helvetica","bold");doc.setFontSize(16);
+  doc.text("CUENTA CORRIENTE — "+p.nombre,105,16,{align:"center"});
+  doc.setFontSize(11);doc.setFont("helvetica","normal");
+  doc.text("Generado: "+new Date().toLocaleDateString("es-AR"),14,26);
+  var rows=movs.map(function(m){
+    saldoAcum+=(m.tipo==="compra"?1:-1)*(m.monto||0);
+    return[new Date(m.fecha||Date.now()).toLocaleDateString("es-AR"),
+      m.concepto||m.tipo||"—",
+      m.tipo==="compra"?"$"+fM(m.monto||0):"",
+      m.tipo==="pago"?"$"+fM(m.monto||0):"",
+      "$"+fM(saldoAcum)];
+  });
+  doc.autoTable({startY:32,head:[["Fecha","Concepto","Compra","Pago","Saldo"]],body:rows,
+    foot:[["","","Deuda","","$"+fM(Math.max(0,saldoAcum))]],
+    theme:"striped",headStyles:{fillColor:[13,27,42]}});
+  doc.save("Proveedor_"+p.nombre+".pdf");
+}
+
+/* ════ UPDATE poblarSelectores & cargarTodo ════ */
 
 /* ════ CLOSE MODAL ON BG ════ */
 document.querySelectorAll(".modal-bg").forEach(el=>{
