@@ -1195,8 +1195,53 @@ function abrirModalUsuario(){
   fields.forEach(function(f){ var el=document.getElementById(f); if(el) el.value=""; });
   var rol = document.getElementById("usr-rol"); if(rol) rol.value="vendedor";
   var cat = document.getElementById("usr-catalogo"); if(cat) cat.checked=true;
+  var btn = document.querySelector("#modal-usuario .btn-primary");
+  if(btn) btn.textContent="Agregar usuario";
+  var titleEl = document.getElementById("modal-usr-title");
+  if(titleEl) titleEl.textContent="Nuevo usuario";
+  var keyEl = document.getElementById("usr-edit-key");
+  if(keyEl) keyEl.value="";
   abrirModal("modal-usuario");
 }
+
+function editarUsuario(k){
+  if(!usrEmpresaKey){
+    var sel=document.getElementById("usr-empresa-sel");
+    if(sel&&sel.value) usrEmpresaKey=sel.value;
+  }
+  if(!usrEmpresaKey){ showNotif("Error: seleccioná una empresa","err"); return; }
+  var u = empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios
+    ? empresas[usrEmpresaKey].usuarios[k] : null;
+  if(!u){ showNotif("No se encontró el usuario en caché — recargá la página","err"); return; }
+
+  var titleEl=document.getElementById("modal-usr-title");
+  if(titleEl) titleEl.textContent="Editar — "+(u.name||u.id||k);
+
+  var keyEl=document.getElementById("usr-edit-key");
+  if(keyEl) keyEl.value=k;
+
+  var set=function(id,val){ var el=document.getElementById(id); if(el) el.value=val||""; };
+  set("usr-nombre", u.name||"");
+  set("usr-id",     u.id||k);
+  set("usr-pass",   u.pass||"");
+  set("usr-direccion", u.direccion||"");
+  set("usr-telefono",  u.telefono||"");
+
+  var rol=document.getElementById("usr-rol");
+  if(rol) rol.value=u.role||"vendedor";
+
+  var lista=document.getElementById("usr-lista");
+  if(lista) lista.value=u.lista||"Clientes";
+
+  var cat=document.getElementById("usr-catalogo");
+  if(cat) cat.checked=(u.catalogo!==false);
+
+  var btn=document.querySelector("#modal-usuario .btn-primary");
+  if(btn) btn.textContent="💾 Guardar cambios";
+
+  abrirModal("modal-usuario");
+}
+
 async function guardarUsuario(){
   const editKeyEl=document.getElementById("usr-edit-key");
   const editKey=editKeyEl?editKeyEl.value.trim():"";
