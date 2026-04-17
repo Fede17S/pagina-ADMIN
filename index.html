@@ -2497,37 +2497,74 @@ async function cargarCuentasCorrientes(){
 }
 
 async function sincronizarCCdesdeRemitos(){
-  // Pull ventas to create auto debito entries if not already in CC
   try{
+    // 1. Pull ventas → debitos automáticos por remito
     var ventas = await fbGet("empresas/"+_ccEmpKey+"/ventas");
-    if(!ventas) return;
-    var batch = {};
-    Object.entries(ventas).forEach(function(e){
-      var v = e[1], vk = e[0];
-      var cliId = v.clienteNom; // use name as ID since we don't always have clienteId
-      if(!cliId) return;
-      if(!_ccData[cliId]) _ccData[cliId]={saldo:0,movimientos:{}};
-      // Check if remito already registered
-      var movs = _ccData[cliId].movimientos||{};
-      var yaExiste = Object.values(movs).some(function(m){return m.ref===vk;});
-      if(!yaExiste && v.total > 0){
-        var movKey = "auto_"+vk;
-        _ccData[cliId].movimientos[movKey]={
-          tipo:"remito", ref:vk, fecha:v.fecha||new Date().toISOString(),
-          concepto:"Remito "+new Date(v.fecha||Date.now()).toLocaleDateString("es-AR"),
-          debito:v.total, credito:0, usuario:"sistema", auto:true
-        };
-      }
-    });
-    // Recalculate balances
+    if(ventas){
+      Object.entries(ventas).forEach(function(e){
+        var v=e[1],vk=e[0];
+        var cliId=v.clienteNom; if(!cliId) return;
+        if(!_ccData[cliId]) _ccData[cliId]={saldo:0,movimientos:{}};
+        var movs=_ccData[cliId].movimientos||{};
+        var yaExiste=Object.values(movs).some(function(m){return m.ref===vk;});
+        if(!yaExiste&&v.total>0){
+          _ccData[cliId].movimientos["auto_"+vk]={
+            tipo:"remito",ref:vk,fecha:v.fecha||new Date().toISOString(),
+            concepto:"Remito "+new Date(v.fecha||Date.now()).toLocaleDateString("es-AR"),
+            debito:v.total,credito:0,usuario:"sistema",auto:true
+          };
+        }
+      });
+    }
+    // 2. Pull rutas → pagos del día (efectivo + transferencia + adicionales)
+    var rutas = await fbGet("empresas/"+_ccEmpKey+"/rutas");
+    if(rutas){
+      Object.entries(rutas).forEach(function(re){
+        var rk=re[0],ruta=re[1];
+        Object.entries(ruta.clientes||{}).forEach(function(ce){
+          var ck=ce[0],cli=ce[1];
+          var nom=cli.nom; if(!nom) return;
+          if(!_ccData[nom]) _ccData[nom]={saldo:0,movimientos:{}};
+          var movs=_ccData[nom].movimientos||{};
+          // Base payment (ef + tr)
+          var baseTotal=(cli.efectivo||0)+(cli.transferencia||0);
+          if(baseTotal>0){
+            var baseKey="ruta_base_"+rk+"_"+ck;
+            if(!movs[baseKey]){
+              movs[baseKey]={tipo:"pago",ref_ruta:rk,ref_cli:ck,
+                fecha:ruta.fecha||cli.fecha||new Date().toISOString(),
+                concepto:"Pago "+(cli.modo||"")+" — Ruta "+( ruta.nombre||""),
+                debito:0,credito:baseTotal,usuario:"vendedor",auto:true,
+                forma_pago:cli.modo||"efectivo"};
+            } else {
+              // Update if amount changed
+              movs[baseKey].credito=baseTotal;
+            }
+          }
+          // Additional payments
+          (cli.pagosAdicionales||[]).forEach(function(p,pi){
+            var addKey="ruta_add_"+rk+"_"+ck+"_"+pi;
+            if(!movs[addKey]){
+              movs[addKey]={tipo:"pago",ref_ruta:rk,ref_cli:ck,
+                fecha:p.fecha||new Date().toISOString(),
+                concepto:"Pago adicional "+p.forma+(p.nota?" — "+p.nota:"")+" — "+nom,
+                debito:0,credito:p.monto||0,usuario:p.usuario||"vendedor",auto:true,
+                forma_pago:p.forma||"efectivo"};
+            }
+          });
+          _ccData[nom].movimientos=movs;
+        });
+      });
+    }
+    // 3. Recalculate all balances
     Object.keys(_ccData).forEach(function(cliId){
-      var movs = Object.values(_ccData[cliId].movimientos||{});
+      var movs=Object.values(_ccData[cliId].movimientos||{});
       movs.sort(function(a,b){return(a.fecha||"").localeCompare(b.fecha||"");});
       var saldo=0;
       movs.forEach(function(m){saldo+=(m.debito||0)-(m.credito||0);});
       _ccData[cliId].saldo=saldo;
     });
-  }catch(e){}
+  }catch(e){console.warn("CC sync error:",e);}
 }
 
 function renderCuentas(){
