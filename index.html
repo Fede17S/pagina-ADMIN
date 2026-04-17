@@ -1191,6 +1191,9 @@ function abrirModalUsuario(){
   abrirModal("modal-usuario");
 }
 async function guardarUsuario(){
+  const editKeyEl=document.getElementById("usr-edit-key");
+  const editKey=editKeyEl?editKeyEl.value.trim():"";
+  const isEdit=!!editKey;
   const nombre=document.getElementById("usr-nombre").value.trim();
   const id=document.getElementById("usr-id").value.trim().toLowerCase();
   const pass=document.getElementById("usr-pass").value;
@@ -1212,6 +1215,11 @@ async function guardarUsuario(){
   if(direccion) usr.direccion=direccion;
   if(telefono)  usr.telefono=telefono;
   try{
+    // If editing and ID changed, delete old entry
+    if(isEdit && editKey !== id){
+      await fbDel("empresas/"+usrEmpresaKey+"/usuarios/"+editKey);
+      if(empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios) delete empresas[usrEmpresaKey].usuarios[editKey];
+    }
     // Usar SET (PUT) para garantizar que el nodo se crea aunque no exista usuarios/
     const r=await fetch(`${FB}/empresas/${usrEmpresaKey}/usuarios/${id}.json`,{
       method:"PUT",
@@ -1222,8 +1230,8 @@ async function guardarUsuario(){
     if(!empresas[usrEmpresaKey])empresas[usrEmpresaKey]={};
     if(!empresas[usrEmpresaKey].usuarios)empresas[usrEmpresaKey].usuarios={};
     empresas[usrEmpresaKey].usuarios[id]=usr;
-    cerrarModal("modal-usuario");renderUsuarios();
-    showNotif("Usuario agregado ✅");
+    cerrarModal("modal-usuario");renderPersonas();
+    showNotif(isEdit?"Usuario actualizado ✅":"Usuario agregado ✅");
   }catch(e){showNotif("Error: "+e.message,"err");}
 }
 async function borrarUsuario(k){
