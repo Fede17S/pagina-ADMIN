@@ -1070,10 +1070,16 @@ async function cargarUsuarios(){
   if(hint) hint.style.display = usrEmpresaKey?"none":"block";
   if(content) content.style.display = usrEmpresaKey?"block":"none";
   if(!usrEmpresaKey)return;
-  // Fetch fresh data from Firebase
+  // Fetch fresh data from Firebase — deep merge usuarios
   try{
     var empFresh = await fbGet("empresas/"+usrEmpresaKey);
-    if(empFresh) empresas[usrEmpresaKey] = Object.assign(empresas[usrEmpresaKey]||{}, empFresh);
+    if(empFresh){
+      if(!empresas[usrEmpresaKey]) empresas[usrEmpresaKey]={};
+      // Deep merge: preserve all fields especially usuarios with full data
+      Object.keys(empFresh).forEach(function(k){
+        empresas[usrEmpresaKey][k] = empFresh[k];
+      });
+    }
   } catch(e){ console.warn("No se pudo refrescar empresa"); }
   renderPersonas();
 }
@@ -1160,6 +1166,7 @@ function renderPersonas(){
       (u.direccion?'<div class="persona-field"><span class="persona-field-lbl">📍 Dirección</span><span class="persona-field-val">'+u.direccion+'</span></div>':'')+
       (u.telefono?'<div class="persona-field"><span class="persona-field-lbl">📞 Teléfono</span><span class="persona-field-val"><a href="tel:'+u.telefono+'" style="color:var(--blue)">'+u.telefono+'</a></span></div>':'')+
       '<div class="persona-actions">'+
+        '<button class="btn btn-primary btn-sm" style="flex:1" data-k="'+k+'" onclick="editarUsuario(this.dataset.k)">✏️ Editar</button>'+
         '<button class="btn btn-danger btn-sm" style="flex:1" data-k="'+k+'" onclick="borrarUsuario(this.dataset.k)">🗑 Eliminar</button>'+
       '</div>';
 
