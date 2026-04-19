@@ -1623,16 +1623,14 @@ function syncColor(from){
 function actualizarLinksEmpresa(key, codigo){
   var el=document.getElementById("emp-links"); if(!el) return;
   if(!codigo){el.innerHTML='<span style="color:var(--muted)">Guardá la empresa para ver los links</span>';return;}
-  var base=location.origin+location.pathname.replace("rutaapp_admin.html","");
   el.innerHTML=
-    '<div><b>📱 App vendedor:</b> <span style="font-family:monospace;font-size:11px">'+base+'rutaapp_cliente.html?emp='+codigo+'</span></div>'+
-    '<div><b>🛍️ Catálogo:</b> <span style="font-family:monospace;font-size:11px">'+base+'distrimar_catalogo.html?emp='+codigo+'</span></div>'+
+    '<div style="margin-bottom:4px"><b>📱 App vendedor:</b> <a href="https://pagina-clientes-pedidos.vercel.app/?emp='+codigo+'" target="_blank" style="font-family:monospace;font-size:11px;color:var(--blue)">https://pagina-clientes-pedidos.vercel.app/?emp='+codigo+'</a></div>'+
+    '<div style="margin-bottom:8px"><b>🛍️ Catálogo:</b> <a href="https://pagina-clientes-nu.vercel.app/?emp='+codigo+'" target="_blank" style="font-family:monospace;font-size:11px;color:var(--blue)">https://pagina-clientes-nu.vercel.app/?emp='+codigo+'</a></div>'+
     '<button data-cod="'+codigo+'" onclick="copiarLinks(this.dataset.cod)" style="margin-top:6px;padding:5px 12px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">📋 Copiar links</button>';
 }
 function copiarLinks(codigo){
-  var base=location.origin+location.pathname.replace("rutaapp_admin.html","");
-  var txt="📱 App vendedor:\n"+base+"rutaapp_cliente.html?emp="+codigo+
-    "\n\n🛍️ Catálogo clientes:\n"+base+"distrimar_catalogo.html?emp="+codigo;
+  var txt="📱 App vendedor:\nhttps://pagina-clientes-pedidos.vercel.app/?emp="+codigo+
+    "\n\n🛍️ Catálogo clientes:\nhttps://pagina-clientes-nu.vercel.app/?emp="+codigo;
   navigator.clipboard.writeText(txt).then(function(){showNotif("Links copiados ✅");});
 }
 function editarEmpresa(k){abrirModalEmpresa(k);}
