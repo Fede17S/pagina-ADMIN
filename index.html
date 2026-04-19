@@ -736,7 +736,7 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
         <div class="form-row single" style="margin-bottom:16px">
           <div class="form-group">
             <label class="form-label">Empresa</label>
-            <select class="form-input" id="deu-empresa-sel" onchange="cargarDeudas()">
+            <select class="form-input" id="deu-empresa-sel" onchange="cargarDeudasFixed()">
               <option value="">— Elegí una empresa —</option>
             </select>
           </div>
@@ -2774,6 +2774,274 @@ async function exportarCCPDF(){
     foot:[["","","","Saldo final","$"+fM(Math.abs(cc.saldo||0))]],
     theme:"striped",headStyles:{fillColor:[13,27,42]}});
   doc.save("CC_"+_ccClienteActivo+"_"+new Date().toLocaleDateString().replace(/\//g,"-")+".pdf");
+}
+
+/* ════ CUENTAS CORRIENTES - MODAL ════ */
+function abrirModalMovimiento(tipo, cliId){
+  document.getElementById("mov-tipo").value=tipo;
+  document.getElementById("modal-mov-title").textContent={pago:"💰 Registrar pago",nota_credito:"✏️ Nota de crédito",remito:"🧾 Registrar remito"}[tipo]||"Movimiento";
+  document.getElementById("mov-monto").value="";
+  document.getElementById("mov-concepto").value="";
+  document.getElementById("mov-fecha").value=new Date().toISOString().slice(0,10);
+  limpiarComprobante();
+  var empSel=document.getElementById("mov-empresa-sel");
+  if(_ccEmpKey&&empSel) empSel.value=_ccEmpKey;
+  cargarClientesMov(cliId);
+  abrirModal("modal-movimiento");
+}
+
+function cargarClientesMov(preSelect){
+  var empKey=document.getElementById("mov-empresa-sel").value||_ccEmpKey;
+  var sel=document.getElementById("mov-cliente-sel");
+  if(!empKey){sel.innerHTML='<option value="">— Primero elegí empresa —</option>';return;}
+  var clientes=Object.keys(_ccData);
+  var users=empresas[empKey]&&empresas[empKey].usuarios?Object.values(empresas[empKey].usuarios):[];
+  users.forEach(function(u){if(u.name&&!clientes.includes(u.name))clientes.push(u.name);});
+  clientes.sort();
+  sel.innerHTML='<option value="">— Elegí cliente —</option>'+clientes.map(function(c){return'<option value="'+c+'"'+(c===preSelect?" selected":"")+'>'+c+'</option>';}).join("");
+  if(preSelect) sel.value=preSelect;
+}
+
+function previewComprobante(e){
+  var file=e.target.files[0]; if(!file) return;
+  if(file.size>2*1024*1024){showNotif("La imagen es muy grande. Máximo 2MB","err");return;}
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement("canvas");
+      var maxW=800,maxH=1000;
+      var w=img.width,h2=img.height;
+      if(w>maxW){h2=Math.round(h2*maxW/w);w=maxW;}
+      if(h2>maxH){w=Math.round(w*maxH/h2);h2=maxH;}
+      canvas.width=w;canvas.height=h2;
+      canvas.getContext("2d").drawImage(img,0,0,w,h2);
+      _comprobanteBase64=canvas.toDataURL("image/jpeg",0.7);
+      var p=document.getElementById("comp-preview"); if(p){p.src=_comprobanteBase64;p.style.display="block";}
+      var ph=document.getElementById("comp-placeholder"); if(ph) ph.style.display="none";
+      var cl=document.getElementById("comp-clear"); if(cl) cl.style.display="inline-block";
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function limpiarComprobante(){
+  _comprobanteBase64=null;
+  var p=document.getElementById("comp-preview"); if(p){p.src="";p.style.display="none";}
+  var ph=document.getElementById("comp-placeholder"); if(ph) ph.style.display="block";
+  var cl=document.getElementById("comp-clear"); if(cl) cl.style.display="none";
+  var f=document.getElementById("comp-file"); if(f) f.value="";
+}
+
+async function guardarMovimiento(){
+  var tipo=document.getElementById("mov-tipo").value;
+  var empKey=document.getElementById("mov-empresa-sel").value||_ccEmpKey;
+  var cliId=document.getElementById("mov-cliente-sel").value;
+  var monto=parseFloat(document.getElementById("mov-monto").value)||0;
+  var concepto=document.getElementById("mov-concepto").value.trim();
+  var forma=document.getElementById("mov-forma").value;
+  var fecha=document.getElementById("mov-fecha").value||new Date().toISOString().slice(0,10);
+  if(!cliId){showNotif("Seleccioná un cliente","err");return;}
+  if(monto<=0){showNotif("Ingresá un monto mayor a 0","err");return;}
+  var esCredito=tipo==="pago"||tipo==="nota_credito";
+  var mov={tipo:tipo,fecha:new Date(fecha+"T12:00:00").toISOString(),
+    concepto:concepto||{pago:"Pago",nota_credito:"Nota de crédito"}[tipo]||tipo,
+    forma_pago:forma,usuario:"admin",debito:esCredito?0:monto,credito:esCredito?monto:0};
+  if(_comprobanteBase64) mov.comprobante=_comprobanteBase64;
+  try{
+    await fbPush("empresas/"+empKey+"/cuentas_corrientes/"+cliId+"/movimientos",mov);
+    if(!_ccData[cliId]) _ccData[cliId]={saldo:0,movimientos:{}};
+    _ccData[cliId].movimientos["tmp_"+Date.now()]=mov;
+    _ccData[cliId].saldo=(_ccData[cliId].saldo||0)+(esCredito?-monto:monto);
+    await fbPatch("empresas/"+empKey+"/cuentas_corrientes/"+cliId,{saldo:_ccData[cliId].saldo});
+    cerrarModal("modal-movimiento");
+    renderCuentas();
+    showNotif("Movimiento guardado ✅");
+    logActividad(empresas[empKey]&&empresas[empKey].nombre||empKey,{pago:"Pago registrado",nota_credito:"Nota de crédito"}[tipo]||"Movimiento",cliId+" $"+fM(monto));
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+async function borrarMovimiento(cliId, movKey){
+  if(!confirm("¿Borrar este movimiento? No se puede deshacer.")) return;
+  try{
+    var mov=_ccData[cliId].movimientos[movKey];
+    var esCredito=mov.tipo==="pago"||mov.tipo==="nota_credito";
+    var monto=esCredito?(mov.credito||0):(mov.debito||0);
+    await fbDel("empresas/"+_ccEmpKey+"/cuentas_corrientes/"+cliId+"/movimientos/"+movKey);
+    delete _ccData[cliId].movimientos[movKey];
+    _ccData[cliId].saldo=(_ccData[cliId].saldo||0)-(esCredito?-monto:monto);
+    await fbPatch("empresas/"+_ccEmpKey+"/cuentas_corrientes/"+cliId,{saldo:_ccData[cliId].saldo});
+    renderCuentas();
+    showNotif("Movimiento eliminado");
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+/* ════ PROVEEDORES ════ */
+var _proveedores={};
+var _provComprobanteB64=null;
+
+async function cargarProveedores(){
+  try{
+    var data=await fbGet("proveedores");
+    _proveedores=data||{};
+    renderProveedores();
+  }catch(e){ console.warn("Error proveedores:",e); }
+}
+
+function renderProveedores(){
+  var lista=document.getElementById("prov-lista");
+  if(!lista) return;
+  var keys=Object.keys(_proveedores);
+  if(!keys.length){lista.innerHTML='<div class="empty"><div class="empty-icon">🏭</div><div class="empty-title">Sin proveedores. Agregá el primero.</div></div>';return;}
+  lista.innerHTML="";
+  keys.forEach(function(k){
+    var p=_proveedores[k];
+    var movs=Object.values(p.movimientos||{});
+    var saldo=movs.reduce(function(s,m){return s+(m.tipo==="compra"?(m.monto||0):-(m.monto||0));},0);
+    var card=document.createElement("div"); card.className="prov-card";
+    card.innerHTML=
+      '<div class="prov-head">'+
+        '<div class="prov-logo">🏭</div>'+
+        '<div class="prov-info"><div class="prov-nom">'+p.nombre+'</div>'+
+          '<div class="prov-sub">'+(p.contacto?p.contacto+" · ":"")+(p.tel||"")+'</div></div>'+
+        '<div class="prov-saldo">'+
+          '<div style="font-size:16px;font-weight:800;color:'+(saldo>0?"var(--red)":"var(--green)")+'">$'+fM(Math.abs(saldo))+'</div>'+
+          '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">'+(saldo>0?"Les debés":"Al día")+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;padding:0 16px 14px;flex-wrap:wrap">'+
+        '<button class="btn btn-primary btn-sm" style="flex:1" data-k="'+k+'" data-t="compra" onclick="abrirMovProv(this.dataset.k,this.dataset.t)">🛒 Registrar compra</button>'+
+        '<button class="btn btn-green btn-sm" style="flex:1" data-k="'+k+'" data-t="pago" onclick="abrirMovProv(this.dataset.k,this.dataset.t)">💰 Registrar pago</button>'+
+        '<button class="btn btn-ghost btn-sm" style="flex:1" data-k="'+k+'" onclick="verCuentaProv(this.dataset.k)">📄 Ver cuenta</button>'+
+        '<button class="btn btn-ghost btn-sm" data-k="'+k+'" onclick="abrirModalProveedor(this.dataset.k)">✏️</button>'+
+      '</div>'+
+      (movs.length?'<div style="padding:0 16px 14px;font-size:12px;color:var(--muted)">'+movs.length+' movimientos · Último: '+
+        new Date(movs.sort(function(a,b){return(b.fecha||"").localeCompare(a.fecha||"");})[0].fecha||Date.now()).toLocaleDateString("es-AR")+'</div>':'');
+    lista.appendChild(card);
+  });
+}
+
+function abrirModalProveedor(key){
+  var p=key?(_proveedores[key]||{}):{};
+  document.getElementById("modal-prov-title").textContent=key?"Editar proveedor":"Nuevo proveedor";
+  document.getElementById("prov-edit-key").value=key||"";
+  document.getElementById("prov-nombre").value=p.nombre||"";
+  document.getElementById("prov-contacto").value=p.contacto||"";
+  document.getElementById("prov-tel").value=p.tel||"";
+  document.getElementById("prov-cuit").value=p.cuit||"";
+  document.getElementById("prov-notas").value=p.notas||"";
+  abrirModal("modal-proveedor");
+}
+
+async function guardarProveedor(){
+  var nombre=document.getElementById("prov-nombre").value.trim();
+  if(!nombre){showNotif("El nombre es obligatorio","err");return;}
+  var key=document.getElementById("prov-edit-key").value;
+  var data={nombre:nombre,contacto:document.getElementById("prov-contacto").value.trim(),
+    tel:document.getElementById("prov-tel").value.trim(),
+    cuit:document.getElementById("prov-cuit").value.trim(),
+    notas:document.getElementById("prov-notas").value.trim(),
+    actualizado:new Date().toISOString()};
+  try{
+    if(key){ await fbPatch("proveedores/"+key,data); _proveedores[key]=Object.assign(_proveedores[key]||{},data); }
+    else{ var nk=await fbPush("proveedores",data); _proveedores[nk]=data; }
+    cerrarModal("modal-proveedor"); renderProveedores(); showNotif("Proveedor guardado ✅");
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+function abrirMovProv(provKey,tipo){
+  document.getElementById("mp-prov-key").value=provKey;
+  document.getElementById("modal-mp-title").textContent=tipo==="compra"?"🛒 Registrar compra":"💰 Registrar pago al proveedor";
+  document.getElementById("mp-tipo").value=tipo;
+  document.getElementById("mp-monto").value="";
+  document.getElementById("mp-concepto").value="";
+  document.getElementById("mp-fecha").value=new Date().toISOString().slice(0,10);
+  limpiarComprobanteP();
+  abrirModal("modal-mov-prov");
+}
+
+function previewComprobanteP(e){
+  var file=e.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var c=document.createElement("canvas");
+      var maxW=800;var w=img.width,h2=img.height;
+      if(w>maxW){h2=Math.round(h2*maxW/w);w=maxW;}
+      c.width=w;c.height=h2;c.getContext("2d").drawImage(img,0,0,w,h2);
+      _provComprobanteB64=c.toDataURL("image/jpeg",0.7);
+      var p=document.getElementById("mp-comp-preview");if(p){p.src=_provComprobanteB64;p.style.display="block";}
+      var ph=document.getElementById("mp-comp-placeholder");if(ph)ph.style.display="none";
+      var cl=document.getElementById("mp-comp-clear");if(cl)cl.style.display="inline-block";
+    };img.src=ev.target.result;
+  };reader.readAsDataURL(file);
+}
+
+function limpiarComprobanteP(){
+  _provComprobanteB64=null;
+  var p=document.getElementById("mp-comp-preview");if(p){p.src="";p.style.display="none";}
+  var ph=document.getElementById("mp-comp-placeholder");if(ph)ph.style.display="block";
+  var cl=document.getElementById("mp-comp-clear");if(cl)cl.style.display="none";
+  var f=document.getElementById("mp-comp-file");if(f)f.value="";
+}
+
+async function guardarMovProv(){
+  var provKey=document.getElementById("mp-prov-key").value;
+  var tipo=document.getElementById("mp-tipo").value;
+  var monto=parseFloat(document.getElementById("mp-monto").value)||0;
+  var concepto=document.getElementById("mp-concepto").value.trim();
+  var fecha=document.getElementById("mp-fecha").value;
+  if(monto<=0){showNotif("Ingresá un monto","err");return;}
+  var mov={tipo:tipo,monto:monto,concepto:concepto||{compra:"Compra",pago:"Pago"}[tipo],
+    fecha:new Date(fecha+"T12:00:00").toISOString(),usuario:"admin"};
+  if(_provComprobanteB64) mov.comprobante=_provComprobanteB64;
+  try{
+    await fbPush("proveedores/"+provKey+"/movimientos",mov);
+    if(!_proveedores[provKey].movimientos) _proveedores[provKey].movimientos={};
+    _proveedores[provKey].movimientos["tmp_"+Date.now()]=mov;
+    cerrarModal("modal-mov-prov"); renderProveedores(); showNotif("Movimiento guardado ✅");
+    logActividad(_proveedores[provKey].nombre,{compra:"Compra registrada",pago:"Pago a proveedor"}[tipo],concepto+" $"+fM(monto));
+  }catch(e){showNotif("Error: "+e.message,"err");}
+}
+
+function verCuentaProv(provKey){
+  var p=_proveedores[provKey];if(!p)return;
+  var movs=Object.values(p.movimientos||{});
+  movs.sort(function(a,b){return(a.fecha||"").localeCompare(b.fecha||"");});
+  var saldoAcum=0;
+  var jsPDF=window.jspdf.jsPDF,doc=new jsPDF();
+  doc.setFont("helvetica","bold");doc.setFontSize(16);
+  doc.text("CUENTA CORRIENTE — "+p.nombre,105,16,{align:"center"});
+  doc.setFontSize(11);doc.setFont("helvetica","normal");
+  doc.text("Generado: "+new Date().toLocaleDateString("es-AR"),14,26);
+  var rows=movs.map(function(m){
+    saldoAcum+=(m.tipo==="compra"?1:-1)*(m.monto||0);
+    return[new Date(m.fecha||Date.now()).toLocaleDateString("es-AR"),
+      m.concepto||m.tipo||"—",
+      m.tipo==="compra"?"$"+fM(m.monto||0):"",
+      m.tipo==="pago"?"$"+fM(m.monto||0):"",
+      "$"+fM(saldoAcum)];
+  });
+  doc.autoTable({startY:32,head:[["Fecha","Concepto","Compra","Pago","Saldo"]],body:rows,
+    foot:[["","","Deuda","","$"+fM(Math.max(0,saldoAcum))]],
+    theme:"striped",headStyles:{fillColor:[13,27,42]}});
+  doc.save("Proveedor_"+p.nombre+".pdf");
+}
+
+/* ════ FIX DEUDAS: clear cache between empresas ════ */
+var _deuEmpKeyActual = "";
+async function cargarDeudasFixed(){
+  var empKey=document.getElementById("deu-empresa-sel").value;
+  // If same empresa, re-use; otherwise clear previous data
+  if(empKey !== _deuEmpKeyActual){
+    document.getElementById("deu-stats").innerHTML="";
+    document.getElementById("deu-list").innerHTML='<div class="empty"><div class="empty-icon">🔄</div><div class="empty-title">Cargando...</div></div>';
+    _deuEmpKeyActual = empKey;
+  }
+  // Now call the real cargarDeudas
+  await cargarDeudas();
 }
 
 /* ════ CLOSE MODAL ON BG ════ */
