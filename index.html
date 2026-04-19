@@ -836,13 +836,62 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
         </div>
       </div>
 
+      <div class="form-section">Personalización de marca</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre del sistema (app)</label>
+          <input class="form-input" type="text" id="emp-appname" placeholder="Ej: DistPérez App">
+          <span class="form-hint">Nombre que verán clientes y vendedores</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">📞 WhatsApp para pedidos</label>
+          <input class="form-input" type="tel" id="emp-whatsapp" placeholder="Ej: 5491165667784">
+          <span class="form-hint">Con código de país, sin + ni espacios</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">🎨 Color primario</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+            <input type="color" id="emp-color" value="#c9933a" style="width:44px;height:36px;border:none;border-radius:6px;cursor:pointer;padding:2px;background:var(--surface)" onchange="syncColor('picker')">
+            <input class="form-input" type="text" id="emp-color-txt" placeholder="#c9933a" style="flex:1;font-family:monospace" oninput="syncColor('txt')">
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div onclick="setColor('#c9933a')" style="width:22px;height:22px;border-radius:50%;background:#c9933a;cursor:pointer;border:2px solid var(--border)"></div>
+            <div onclick="setColor('#3b82f6')" style="width:22px;height:22px;border-radius:50%;background:#3b82f6;cursor:pointer;border:2px solid var(--border)"></div>
+            <div onclick="setColor('#10b981')" style="width:22px;height:22px;border-radius:50%;background:#10b981;cursor:pointer;border:2px solid var(--border)"></div>
+            <div onclick="setColor('#8b5cf6')" style="width:22px;height:22px;border-radius:50%;background:#8b5cf6;cursor:pointer;border:2px solid var(--border)"></div>
+            <div onclick="setColor('#ef4444')" style="width:22px;height:22px;border-radius:50%;background:#ef4444;cursor:pointer;border:2px solid var(--border)"></div>
+            <div onclick="setColor('#f59e0b')" style="width:22px;height:22px;border-radius:50%;background:#f59e0b;cursor:pointer;border:2px solid var(--border)"></div>
+            <div onclick="setColor('#06b6d4')" style="width:22px;height:22px;border-radius:50%;background:#06b6d4;cursor:pointer;border:2px solid var(--border)"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">📦 Plan de suscripción</label>
+          <select class="form-input" id="emp-plan">
+            <option value="basico">🔵 Básico — Solo catálogo</option>
+            <option value="estandar">🟡 Estándar — Catálogo + App vendedor</option>
+            <option value="pro">🟢 Pro — Todo incluido</option>
+          </select>
+        </div>
+      </div>
       <div class="form-section">Estado</div>
-      <div class="form-group">
-        <label class="form-label">Estado de la cuenta</label>
-        <select class="form-input" id="emp-estado">
-          <option value="activa">✅ Activa</option>
-          <option value="inactiva">⏸ Inactiva (acceso bloqueado)</option>
-        </select>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Estado de la cuenta</label>
+          <select class="form-input" id="emp-estado">
+            <option value="activa">✅ Activa</option>
+            <option value="inactiva">⏸ Inactiva (acceso bloqueado)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vencimiento suscripción</label>
+          <input class="form-input" type="date" id="emp-vence">
+        </div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:4px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">🔗 Links para compartir</div>
+        <div id="emp-links"><span style="color:var(--muted);font-size:12px">Guardá la empresa para ver los links</span></div>
       </div>
     </div>
     <div class="modal-foot">
