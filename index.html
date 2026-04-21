@@ -1052,9 +1052,26 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border2)">
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📍 Datos del negocio (opcional)</div>
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group" style="grid-column:1/-1">
             <label class="form-label">Dirección del negocio</label>
-            <input class="form-input" type="text" id="usr-direccion" placeholder="Ej: Av. San Martín 1234">
+            <div style="display:flex;gap:6px">
+              <input class="form-input" type="text" id="usr-direccion" placeholder="Ej: Av. San Martín 1234" style="flex:1" oninput="resetCoordsValidation()">
+              <button type="button" id="btn-buscar-coords" onclick="buscarCoordsAdmin()" style="padding:0 14px;border:1.5px solid #334155;border-radius:8px;background:#1e293b;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">🔍 Verificar</button>
+            </div>
+            <div id="coords-box" style="margin-top:8px;display:none">
+              <div style="display:flex;gap:6px;margin-bottom:6px;align-items:flex-end">
+                <div style="flex:1">
+                  <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Latitud</div>
+                  <input class="form-input" type="number" id="usr-lat" placeholder="-42.7682" step="any" oninput="actualizarPreviaMapa()">
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Longitud</div>
+                  <input class="form-input" type="number" id="usr-lng" placeholder="-65.0351" step="any" oninput="actualizarPreviaMapa()">
+                </div>
+                <a id="coords-maps-link" href="#" target="_blank" style="padding:9px 12px;border:1.5px solid #334155;border-radius:8px;background:#1e293b;color:#64748b;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0">🗺️ Ver</a>
+              </div>
+              <div id="coords-status" style="display:none;font-size:12px;padding:8px 12px;border-radius:7px"></div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Teléfono / WhatsApp</label>
@@ -1949,6 +1966,16 @@ function editarUsuario(k){
   set("usr-pass",   u.pass||"");
   set("usr-direccion", u.direccion||"");
   set("usr-telefono",  u.telefono||"");
+  // Cargar coordenadas si existen
+  var latEl=document.getElementById("usr-lat");
+  var lngEl=document.getElementById("usr-lng");
+  if(latEl) latEl.value=u.lat||"";
+  if(lngEl) lngEl.value=u.lng||"";
+  // Mostrar bloque coords si ya tiene coords o dirección
+  var cbox=document.getElementById("coords-box");
+  if(cbox) cbox.style.display=(u.lat||u.lng||u.direccion)?"block":"none";
+  if(u.lat&&u.lng) _actualizarLinkMapa(u.lat,u.lng);
+  else resetCoordsValidation();
 
   var rol=document.getElementById("usr-rol");
   if(rol) rol.value=u.role||"vendedor";
@@ -1962,6 +1989,96 @@ function editarUsuario(k){
   var btn=document.querySelector("#modal-usuario .btn-primary");
   if(btn) btn.textContent="💾 Guardar cambios";
 
+  abrirModal("modal-usuario");
+}
+
+/* ════ COORDENADAS USUARIO ════ */
+var _adminGeocodeCache = {};
+
+async function buscarCoordsAdmin(){
+  var dirEl = document.getElementById("usr-direccion");
+  var statusEl = document.getElementById("coords-status");
+  var btn = document.getElementById("btn-buscar-coords");
+  var cbox = document.getElementById("coords-box");
+  var dir = dirEl ? dirEl.value.trim() : "";
+  if(!dir){ showNotif("Escribí una dirección primero","err"); return; }
+  // Show loading
+  btn.textContent="⏳"; btn.disabled=true;
+  if(statusEl){ statusEl.style.cssText="display:block;padding:8px 12px;border-radius:7px;font-size:12px;background:#1e293b;color:#94a3b8"; statusEl.textContent="🔍 Buscando…"; }
+  if(cbox) cbox.style.display="block";
+  try {
+    var cacheKey = dir.toLowerCase();
+    var coords = _adminGeocodeCache[cacheKey];
+    if(!coords){
+      var url="https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(dir+", Puerto Madryn, Argentina")+"&limit=1&addressdetails=1";
+      var r = await fetch(url, {headers:{"Accept-Language":"es","User-Agent":"DistriMax-Admin/1.0"}});
+      var data = await r.json();
+      if(data&&data[0]){
+        coords = {lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon), display:data[0].display_name};
+        _adminGeocodeCache[cacheKey]=coords;
+      }
+    }
+    if(coords){
+      document.getElementById("usr-lat").value = coords.lat.toFixed(6);
+      document.getElementById("usr-lng").value = coords.lng.toFixed(6);
+      _actualizarLinkMapa(coords.lat, coords.lng);
+      if(statusEl){
+        statusEl.style.cssText="display:block;padding:8px 12px;border-radius:7px;font-size:12px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#34d399";
+        statusEl.innerHTML='✅ <b>Encontrada</b> · <span style="font-weight:400">'+coords.display+'</span>';
+      }
+      btn.textContent="✅";
+      setTimeout(function(){ btn.textContent="🔍 Verificar"; btn.disabled=false; },2000);
+    } else {
+      if(statusEl){
+        statusEl.style.cssText="display:block;padding:8px 12px;border-radius:7px;font-size:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171";
+        statusEl.innerHTML='❌ <b>No encontrada</b> — Probá con más detalle o ingresá las coordenadas manualmente.';
+      }
+      btn.textContent="❌"; btn.disabled=false;
+    }
+  } catch(e) {
+    if(statusEl){ statusEl.style.cssText="display:block;padding:8px 12px;border-radius:7px;font-size:12px;background:rgba(239,68,68,.1);color:#f87171"; statusEl.textContent="Error de red: "+e.message; }
+    btn.textContent="🔍 Verificar"; btn.disabled=false;
+  }
+}
+
+function actualizarPreviaMapa(){
+  var lat=parseFloat(document.getElementById("usr-lat").value)||null;
+  var lng=parseFloat(document.getElementById("usr-lng").value)||null;
+  if(lat&&lng) _actualizarLinkMapa(lat,lng);
+}
+
+function _actualizarLinkMapa(lat,lng){
+  var link=document.getElementById("coords-maps-link");
+  if(!link)return;
+  link.href="https://www.google.com/maps?q="+lat+","+lng;
+  link.style.color="#3b82f6";
+  link.style.borderColor="#3b82f6";
+}
+
+function resetCoordsValidation(){
+  var statusEl=document.getElementById("coords-status");
+  var btn=document.getElementById("btn-buscar-coords");
+  var cbox=document.getElementById("coords-box");
+  if(statusEl){statusEl.style.display="none";statusEl.textContent="";}
+  if(btn){btn.textContent="🔍 Verificar";btn.disabled=false;}
+  // Mostrar coords-box si hay texto en dirección
+  var dirEl=document.getElementById("usr-direccion");
+  if(cbox) cbox.style.display=(dirEl&&dirEl.value.trim())?"block":"none";
+}
+
+
+function abrirModalNuevoUsuario(){
+  // Reset form
+  var fields=["usr-nombre","usr-id","usr-pass","usr-direccion","usr-telefono","usr-lat","usr-lng","usr-edit-key"];
+  fields.forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  var rol=document.getElementById("usr-rol"); if(rol)rol.value="vendedor";
+  var lista=document.getElementById("usr-lista"); if(lista)lista.value="Clientes";
+  var cat=document.getElementById("usr-catalogo"); if(cat)cat.checked=true;
+  var titleEl=document.getElementById("modal-usr-title"); if(titleEl)titleEl.textContent="Nuevo usuario";
+  var btn=document.querySelector("#modal-usuario .btn-primary"); if(btn)btn.textContent="Agregar usuario";
+  resetCoordsValidation();
+  var cbox=document.getElementById("coords-box"); if(cbox)cbox.style.display="none";
+  var status=document.getElementById("coords-status"); if(status){status.style.display="none";status.textContent="";}
   abrirModal("modal-usuario");
 }
 
@@ -1989,6 +2106,11 @@ async function guardarUsuario(){
   const usr={name:nombre,id,pass,role,lista,catalogo};
   if(direccion) usr.direccion=direccion;
   if(telefono)  usr.telefono=telefono;
+  const latEl2=document.getElementById("usr-lat");
+  const lngEl2=document.getElementById("usr-lng");
+  const ulat=latEl2?parseFloat(latEl2.value)||null:null;
+  const ulng=lngEl2?parseFloat(lngEl2.value)||null:null;
+  if(ulat&&ulng){ usr.lat=ulat; usr.lng=ulng; } else { delete usr.lat; delete usr.lng; }
   try{
     // If editing and ID changed, delete old entry
     if(isEdit && editKey !== id){
