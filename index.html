@@ -945,6 +945,19 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
       <div id="prev-unitario-wrap" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(201,147,58,.08);border:1px solid rgba(201,147,58,.2);border-radius:8px;font-size:13px;color:var(--gold2)">
         📦 Precio unitario (Clientes): <strong id="prev-precio-uni">$0,00</strong>
       </div>
+      <!-- ── PRECIO POR CAJA Y UNITARIO ── -->
+      <div class="form-row" style="margin-top:12px">
+        <div class="form-group">
+          <label class="form-label">Unidades por caja</label>
+          <input class="form-input" type="number" id="prod-unidades-caja" placeholder="Ej: 12, 24, 48" min="1" step="1" oninput="previewPrecios()">
+          <span class="form-hint">Vacío = se vende solo por unidad</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precio unitario</label>
+          <input class="form-input" type="number" id="prod-precio-unitario" placeholder="Se calcula automático" min="0" step="0.01">
+          <span class="form-hint">Vacío = precio caja ÷ unidades</span>
+        </div>
+      </div>
       <div class="form-row" style="margin-top:14px">
         <div class="form-group">
           <label class="form-label">Categoría (opcional)</label>
@@ -2400,11 +2413,11 @@ function previewPrecios(){
   if(el("prev-precio-cli")) el("prev-precio-cli").textContent = "$"+fM(pCli);
   if(el("prev-precio-pat")) el("prev-precio-pat").textContent = "$"+fM(pPat);
   // Preview unitario
-  const unid = parseInt(el("prod-unidades-caja")?.value)||0;
+  const _unidEl = el("prod-unidades-caja"); const unid = parseInt(_unidEl ? _unidEl.value : 0)||0;
   const uniWrap = el("prev-unitario-wrap");
   if(uniWrap){
     if(unid > 1){
-      const manualUni = parseFloat(el("prod-precio-unitario")?.value)||0;
+      const _uniEl = el("prod-precio-unitario"); const manualUni = parseFloat(_uniEl ? _uniEl.value : 0)||0;
       const uniCli = manualUni > 0 ? manualUni : Math.round(pCli/unid*100)/100;
       el("prev-precio-uni").textContent = "$"+fM(uniCli)+" c/u";
       uniWrap.style.display = "block";
