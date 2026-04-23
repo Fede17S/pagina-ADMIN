@@ -934,11 +934,16 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
         <div class="prod-price-box cli" style="padding:12px">
           <div class="prod-price-lbl">Lista Clientes (<span id="prev-pct-cli">20</span>%)</div>
           <div class="prod-price-val" id="prev-precio-cli">$0,00</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">precio por caja</div>
         </div>
         <div class="prod-price-box pat" style="padding:12px">
           <div class="prod-price-lbl">Lista Patagonia (<span id="prev-pct-pat">25</span>%)</div>
           <div class="prod-price-val" id="prev-precio-pat">$0,00</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">precio por caja</div>
         </div>
+      </div>
+      <div id="prev-unitario-wrap" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(201,147,58,.08);border:1px solid rgba(201,147,58,.2);border-radius:8px;font-size:13px;color:var(--gold2)">
+        📦 Precio unitario (Clientes): <strong id="prev-precio-uni">$0,00</strong>
       </div>
       <div class="form-row" style="margin-top:14px">
         <div class="form-group">
@@ -2374,13 +2379,39 @@ function previewFoto(){
 }
 
 function previewPrecios(){
-  var base = parseFloat(document.getElementById("prod-precio-base").value)||0;
-  var pctCli = parseFloat(document.getElementById("pct-cli").value)||20;
-  var pctPat = parseFloat(document.getElementById("pct-pat").value)||25;
-  document.getElementById("prev-precio-cli").textContent = "$"+fMprod(base*(1+pctCli/100));
-  document.getElementById("prev-precio-pat").textContent = "$"+fMprod(base*(1+pctPat/100));
-  document.getElementById("prev-pct-cli").textContent = pctCli;
-  document.getElementById("prev-pct-pat").textContent = pctPat;
+  const base = parseFloat(document.getElementById("prod-precio-base").value)||0;
+  const _gcli = document.getElementById("marg-pct-cli");
+  const _gpat = document.getElementById("marg-pct-pat");
+  const _gcust = document.getElementById("prod-custom-margin");
+  const _gmcli = document.getElementById("prod-margen-cli");
+  const _gmpat = document.getElementById("prod-margen-pat");
+  const pctCli = parseFloat(_gcli?_gcli.value:20)||20;
+  const pctPat = parseFloat(_gpat?_gpat.value:25)||25;
+  const hasCustom = _gcust?_gcust.checked:false;
+  const mCli = hasCustom ? (parseFloat(_gmcli?_gmcli.value:0)||null) : null;
+  const mPat = hasCustom ? (parseFloat(_gmpat?_gmpat.value:0)||null) : null;
+  const useCli = mCli !== null ? mCli : pctCli;
+  const usePat = mPat !== null ? mPat : pctPat;
+  const pCli = Math.round(base*(1+useCli/100)*100)/100;
+  const pPat = Math.round(base*(1+usePat/100)*100)/100;
+  const el = (id) => document.getElementById(id);
+  if(el("prev-pct-cli"))  el("prev-pct-cli").textContent  = useCli;
+  if(el("prev-pct-pat"))  el("prev-pct-pat").textContent  = usePat;
+  if(el("prev-precio-cli")) el("prev-precio-cli").textContent = "$"+fM(pCli);
+  if(el("prev-precio-pat")) el("prev-precio-pat").textContent = "$"+fM(pPat);
+  // Preview unitario
+  const unid = parseInt(el("prod-unidades-caja")?.value)||0;
+  const uniWrap = el("prev-unitario-wrap");
+  if(uniWrap){
+    if(unid > 1){
+      const manualUni = parseFloat(el("prod-precio-unitario")?.value)||0;
+      const uniCli = manualUni > 0 ? manualUni : Math.round(pCli/unid*100)/100;
+      el("prev-precio-uni").textContent = "$"+fM(uniCli)+" c/u";
+      uniWrap.style.display = "block";
+    } else {
+      uniWrap.style.display = "none";
+    }
+  }
 }
 
 function toggleCustomMargin(){
@@ -2451,16 +2482,24 @@ async function guardarProducto(){
   const pctPat = mPatCustom !== null ? mPatCustom : getPct("pat");
 
   const foto = document.getElementById("prod-foto").value.trim();
+  const unidadesCaja = parseInt(document.getElementById("prod-unidades-caja").value)||0;
+  const precioUniInput = parseFloat(document.getElementById("prod-precio-unitario").value)||0;
+  const precioCajaFinal = Math.round(base*(1+pctCli/100)*100)/100;
+  // precioUnitario: manual if set, otherwise divide caja price by units
+  const precioUni = precioUniInput > 0 ? precioUniInput : (unidadesCaja > 1 ? Math.round(precioCajaFinal/unidadesCaja*100)/100 : 0);
+
   const prod = {
     codigo: codigo||"",
     nombre: nombre,
     precioBase: base,
-    precioClientes: Math.round(base*(1+pctCli/100)*100)/100,
+    precioClientes: precioCajaFinal,
     precioPatagonia: Math.round(base*(1+pctPat/100)*100)/100,
     categoria: cat||"",
     foto: foto||"",
     actualizado: new Date().toISOString()
   };
+  if(unidadesCaja > 1) prod.unidadesPorCaja = unidadesCaja;
+  if(precioUni > 0)    prod.precioUnitario  = precioUni;
   // Save custom margins only if set
   if(mCliCustom !== null) prod.margenCliCustom = mCliCustom;
   if(mPatCustom !== null) prod.margenPatCustom = mPatCustom;
