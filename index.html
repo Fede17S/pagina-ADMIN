@@ -516,6 +516,7 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
               <option value="precio">Orden: Precio ↑</option>
               <option value="precio-desc">Orden: Precio ↓</option>
             </select>
+            <button class="btn btn-ghost" style="width:auto;padding:9px 14px;font-size:13px;flex-shrink:0" onclick="generarPDFCatalogo()" title="Exportar catálogo de productos a PDF">📄 Exportar PDF</button>
           </div>
           <div id="prod-counter" class="prod-counter"></div>
           <div id="prod-grid" class="prod-grid"></div>
@@ -2458,6 +2459,8 @@ function abrirModalProducto(key){
   document.getElementById("prod-codigo").value = p.codigo || (key?"":getSiguienteCodigo());
   document.getElementById("prod-nombre").value = p.nombre||"";
   document.getElementById("prod-precio-base").value = p.precioBase||"";
+  document.getElementById("prod-unidades-caja").value = p.unidadesPorCaja||"";
+  document.getElementById("prod-precio-unitario").value = p.precioUnitario||"";
   document.getElementById("prod-categoria").value = p.categoria||"";
   document.getElementById("prod-foto").value = p.foto||"";
   previewFoto();
@@ -2543,6 +2546,129 @@ async function borrarProducto(k){
     sincronizarCSVdesdeProductos();
     showNotif("Producto eliminado");
   } catch(e){ showNotif("Error al borrar","err"); }
+}
+
+function generarPDFCatalogo(){
+  if(!prodEmpKey){ showNotif("Seleccioná una empresa primero","err"); return; }
+  var items = Object.entries(productosEmpresa).map(function(e){ return Object.assign({fbKey:e[0]},e[1]); });
+  if(!items.length){ showNotif("No hay productos para exportar","err"); return; }
+
+  // Apply current search/order filters
+  var buscar = document.getElementById("prod-buscar").value.toLowerCase().trim();
+  var orden  = document.getElementById("prod-orden").value;
+  if(buscar) items = items.filter(function(p){
+    return (p.nombre||"").toLowerCase().includes(buscar)||(p.codigo||"").toLowerCase().includes(buscar)||(p.categoria||"").toLowerCase().includes(buscar);
+  });
+  items.sort(function(a,b){
+    if(orden==="codigo"){ var na=parseInt(a.codigo||"0",10),nb=parseInt(b.codigo||"0",10); if(!isNaN(na)&&!isNaN(nb)) return na-nb; return (a.codigo||"").localeCompare(b.codigo||""); }
+    if(orden==="precio") return (a.precioBase||0)-(b.precioBase||0);
+    if(orden==="precio-desc") return (b.precioBase||0)-(a.precioBase||0);
+    return (a.nombre||"").localeCompare(b.nombre||"");
+  });
+
+  var pctCli = getPct("cli"), pctPat = getPct("pat");
+  var empNombre = (empresas[prodEmpKey]&&empresas[prodEmpKey].nombre)||prodEmpKey;
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+  var W = doc.internal.pageSize.getWidth();
+  var H = doc.internal.pageSize.getHeight();
+
+  // ── Paleta ──
+  var COL_DARK  = [13,27,42];
+  var COL_BLUE  = [30,100,200];
+  var COL_RED   = [200,30,50];
+  var COL_GREEN = [22,140,80];
+  var COL_GOLD  = [180,130,30];
+  var COL_MUTED = [120,130,145];
+  var COL_LIGHT = [245,247,250];
+
+  // ── Header ──
+  doc.setFillColor(COL_DARK[0],COL_DARK[1],COL_DARK[2]);
+  doc.rect(0,0,W,18,"F");
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold"); doc.setFontSize(13);
+  doc.text(empNombre.toUpperCase(), 10, 11);
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  doc.text("CATÁLOGO DE PRODUCTOS", W/2, 11, {align:"center"});
+  var fecha = new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
+  doc.text("Fecha: "+fecha+"   |   "+items.length+" producto(s)", W-10, 11, {align:"right"});
+
+  // ── Columnas tabla ──
+  var cols = [
+    {header:"Cód.",     dataKey:"codigo"},
+    {header:"Producto", dataKey:"nombre"},
+    {header:"Categoría",dataKey:"cat"},
+    {header:"Base",     dataKey:"base"},
+    {header:"Lista Clientes", dataKey:"cli"},
+    {header:"Lista Patagonia",dataKey:"pat"},
+    {header:"Unitario", dataKey:"uni"}
+  ];
+
+  var rows = items.map(function(p){
+    var base = p.precioBase||0;
+    var usedCli = p.margenCliCustom!=null ? p.margenCliCustom : pctCli;
+    var usedPat = p.margenPatCustom!=null ? p.margenPatCustom : pctPat;
+    var pCli = Math.round(base*(1+usedCli/100)*100)/100;
+    var pPat = Math.round(base*(1+usedPat/100)*100)/100;
+    var uni  = p.precioUnitario > 0 ? p.precioUnitario : (p.unidadesPorCaja>1 ? Math.round(pCli/p.unidadesPorCaja*100)/100 : 0);
+    return {
+      codigo: p.codigo||"—",
+      nombre: p.nombre||"",
+      cat:    p.categoria||"",
+      base:   "$"+fMprod(base),
+      cli:    "$"+fMprod(pCli)+(p.margenCliCustom!=null?" ★":""),
+      pat:    "$"+fMprod(pPat)+(p.margenPatCustom!=null?" ★":""),
+      uni:    uni>0 ? "$"+fMprod(uni) : "—"
+    };
+  });
+
+  doc.autoTable({
+    startY: 22,
+    columns: cols,
+    body: rows,
+    theme: "striped",
+    styles: { fontSize:8, cellPadding:3, valign:"middle" },
+    headStyles: { fillColor:COL_DARK, textColor:[255,255,255], fontStyle:"bold", fontSize:8 },
+    alternateRowStyles: { fillColor:[248,250,253] },
+    columnStyles: {
+      codigo: { cellWidth:14, halign:"center", fontStyle:"bold" },
+      nombre: { cellWidth:"auto" },
+      cat:    { cellWidth:28, textColor:COL_MUTED },
+      base:   { cellWidth:26, halign:"right", textColor:COL_MUTED },
+      cli:    { cellWidth:32, halign:"right", fontStyle:"bold", textColor:COL_GREEN },
+      pat:    { cellWidth:32, halign:"right", fontStyle:"bold", textColor:COL_GOLD },
+      uni:    { cellWidth:26, halign:"right", textColor:COL_BLUE }
+    },
+    didParseCell: function(data){
+      if(data.section==="body" && data.column.dataKey==="cli" && (data.cell.text[0]||"").includes("★")){
+        data.cell.styles.fontStyle = "bolditalic";
+      }
+    },
+    foot: [[
+      {content:"Total: "+rows.length+" productos", colSpan:7, styles:{halign:"right", fontSize:8, fontStyle:"italic", textColor:COL_MUTED, fillColor:COL_LIGHT}}
+    ]],
+    footStyles: { fillColor:COL_LIGHT },
+    margin: { left:8, right:8 }
+  });
+
+  // ── Leyenda ──
+  var finalY = doc.lastAutoTable.finalY + 5;
+  if(finalY > H-12) { doc.addPage(); finalY = 10; }
+  doc.setFontSize(7); doc.setTextColor(COL_MUTED[0],COL_MUTED[1],COL_MUTED[2]);
+  doc.setFont("helvetica","italic");
+  doc.text("★ Margen personalizado por producto   |   Lista Clientes +"+pctCli+"%   |   Lista Patagonia +"+pctPat+"%", 8, finalY);
+
+  // ── Numeración de páginas ──
+  var total = doc.internal.getNumberOfPages();
+  for(var i=1;i<=total;i++){
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setFont("helvetica","normal");
+    doc.setTextColor(COL_MUTED[0],COL_MUTED[1],COL_MUTED[2]);
+    doc.text("Pág. "+i+" / "+total, W-8, H-4, {align:"right"});
+  }
+
+  doc.save("Catalogo_"+empNombre.replace(/\s+/g,"_")+"_"+fecha.replace(/\//g,"-")+".pdf");
+  showNotif("📄 PDF generado — "+rows.length+" productos");
 }
 
 async function renumerarProductos(){
