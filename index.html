@@ -488,23 +488,11 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
         <div id="prod-content" style="display:none">
           <!-- Porcentajes configurables -->
           <div class="card" style="padding:16px;margin-bottom:16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;flex-shrink:0">Márgenes de precio</div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:13px;color:var(--text)">Lista Clientes</span>
-              <div style="display:flex;align-items:center;gap:4px">
-                <input type="number" id="pct-cli" value="20" min="0" max="200" step="0.1" style="width:70px;padding:7px 10px;font-size:14px;font-weight:700;text-align:right">
-                <span style="font-size:14px;color:var(--muted);font-weight:700">%</span>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:13px;color:var(--text)">Lista Patagonia</span>
-              <div style="display:flex;align-items:center;gap:4px">
-                <input type="number" id="pct-pat" value="25" min="0" max="200" step="0.1" style="width:70px;padding:7px 10px;font-size:14px;font-weight:700;text-align:right">
-                <span style="font-size:14px;color:var(--muted);font-weight:700">%</span>
-              </div>
-            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;flex-shrink:0">Listas de precio</div>
+            <div id="listas-config" style="display:flex;flex-direction:column;gap:6px;min-width:260px"></div>
+            <button class="btn btn-ghost" style="width:auto;padding:7px 12px;font-size:12px" onclick="agregarLista()">+ Nueva lista</button>
             <button class="btn btn-primary" style="width:auto;padding:9px 16px;font-size:13px" onclick="actualizarMargenes()">Recalcular todo</button>
-          <button class="btn btn-ghost" style="width:auto;padding:9px 16px;font-size:13px;color:var(--blue);border-color:var(--blue)" onclick="renumerarProductos()" title="Reasigna códigos del 1 al N en orden A-Z">🔢 Renumerar A-Z</button>
+            <button class="btn btn-ghost" style="width:auto;padding:9px 16px;font-size:13px;color:var(--blue);border-color:var(--blue)" onclick="renumerarProductos()" title="Reasigna códigos del 1 al N en orden A-Z">🔢 Renumerar A-Z</button>
           </div>
 
           <!-- Barra búsqueda -->
@@ -516,7 +504,6 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
               <option value="precio">Orden: Precio ↑</option>
               <option value="precio-desc">Orden: Precio ↓</option>
             </select>
-            <button class="btn btn-ghost" style="width:auto;padding:9px 14px;font-size:13px;flex-shrink:0" onclick="generarPDFCatalogo()" title="Exportar catálogo de productos a PDF">📄 Exportar PDF</button>
           </div>
           <div id="prod-counter" class="prod-counter"></div>
           <div id="prod-grid" class="prod-grid"></div>
@@ -1062,6 +1049,7 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
             <option value="Clientes">📋 Lista Clientes</option>
             <option value="Patagonia">🌄 Lista Patagonia</option>
           </select>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">Las listas se cargan al seleccionar empresa</div>
         </div>
         <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
@@ -2105,7 +2093,7 @@ async function buscarCoordsAdmin(){
     var cacheKey=dir.toLowerCase();
     var coords=_adminGeocodeCache[cacheKey];
     if(!coords){
-      var url="https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(dir+", Puerto Madryn, Argentina")+"&limit=1&addressdetails=1";
+      var url="https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(dir+", Argentina")+"&limit=5&addressdetails=1";
       var r=await fetch(url,{headers:{"Accept-Language":"es","User-Agent":"DistriMax-Admin/1.0"}});
       var data=await r.json();
       if(data&&data[0]){
@@ -2290,10 +2278,23 @@ async function limpiarVentasRaiz(){
 /* ════ PRODUCTOS ════ */
 var productosEmpresa = {};
 var prodEmpKey = "";
+var listasEmpresa = [
+  {key:"Clientes",  nombre:"Clientes",  pct:20},
+  {key:"Patagonia", nombre:"Patagonia", pct:25}
+];
 
 function fMprod(n){ return Number(n).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 function getPct(tipo){
+  // Support both old keys (cli/pat) and new lista names
+  if(typeof listasEmpresa !== "undefined" && listasEmpresa.length){
+    var found;
+    if(tipo==="cli") found = listasEmpresa.find(function(l){return l.key==="Clientes"||l.nombre==="Clientes";});
+    else if(tipo==="pat") found = listasEmpresa.find(function(l){return l.key==="Patagonia"||l.nombre==="Patagonia";});
+    else found = listasEmpresa.find(function(l){return l.key===tipo||l.nombre===tipo;});
+    if(found) return found.pct;
+  }
+  // Fallback: DOM inputs
   var el = document.getElementById(tipo==="cli"?"pct-cli":"pct-pat");
   return el ? (parseFloat(el.value)||0) : (tipo==="cli"?20:25);
 }
@@ -2305,8 +2306,20 @@ async function cargarProductos(){
   try{
     // Load saved margins for this empresa
     const emp = await fbGet("empresas/"+prodEmpKey);
-    if(emp && emp.margenCli) document.getElementById("pct-cli").value = emp.margenCli;
-    if(emp && emp.margenPat) document.getElementById("pct-pat").value = emp.margenPat;
+    // Load listas de precios
+    if(emp && emp.listas && emp.listas.length){
+      listasEmpresa = emp.listas.map(function(l){
+        return {key:l.key||l.nombre, nombre:l.nombre, pct:l.pct||0};
+      });
+    } else {
+      // Fallback: use legacy margenCli/margenPat
+      listasEmpresa = [
+        {key:"Clientes",  nombre:"Clientes",  pct: emp&&emp.margenCli ? emp.margenCli : 20},
+        {key:"Patagonia", nombre:"Patagonia", pct: emp&&emp.margenPat ? emp.margenPat : 25}
+      ];
+    }
+    renderListasConfig();
+    actualizarSelectListasUsuario();
     const data = await fbGet("empresas/"+prodEmpKey+"/productos");
     productosEmpresa = data || {};
     renderProductos();
@@ -2459,8 +2472,6 @@ function abrirModalProducto(key){
   document.getElementById("prod-codigo").value = p.codigo || (key?"":getSiguienteCodigo());
   document.getElementById("prod-nombre").value = p.nombre||"";
   document.getElementById("prod-precio-base").value = p.precioBase||"";
-  document.getElementById("prod-unidades-caja").value = p.unidadesPorCaja||"";
-  document.getElementById("prod-precio-unitario").value = p.precioUnitario||"";
   document.getElementById("prod-categoria").value = p.categoria||"";
   document.getElementById("prod-foto").value = p.foto||"";
   previewFoto();
@@ -2514,6 +2525,13 @@ async function guardarProducto(){
     foto: foto||"",
     actualizado: new Date().toISOString()
   };
+  // Add all lista prices
+  listasEmpresa.forEach(function(l){
+    var precio = Math.round(base*(1+l.pct/100)*100)/100;
+    prod["precio_"+l.key] = precio;
+    if(l.nombre==="Clientes"||l.key==="Clientes") prod.precioClientes = precio;
+    if(l.nombre==="Patagonia"||l.key==="Patagonia") prod.precioPatagonia = precio;
+  });
   if(unidadesCaja > 1) prod.unidadesPorCaja = unidadesCaja;
   if(precioUni > 0)    prod.precioUnitario  = precioUni;
   // Save custom margins only if set
@@ -2548,129 +2566,6 @@ async function borrarProducto(k){
   } catch(e){ showNotif("Error al borrar","err"); }
 }
 
-function generarPDFCatalogo(){
-  if(!prodEmpKey){ showNotif("Seleccioná una empresa primero","err"); return; }
-  var items = Object.entries(productosEmpresa).map(function(e){ return Object.assign({fbKey:e[0]},e[1]); });
-  if(!items.length){ showNotif("No hay productos para exportar","err"); return; }
-
-  // Apply current search/order filters
-  var buscar = document.getElementById("prod-buscar").value.toLowerCase().trim();
-  var orden  = document.getElementById("prod-orden").value;
-  if(buscar) items = items.filter(function(p){
-    return (p.nombre||"").toLowerCase().includes(buscar)||(p.codigo||"").toLowerCase().includes(buscar)||(p.categoria||"").toLowerCase().includes(buscar);
-  });
-  items.sort(function(a,b){
-    if(orden==="codigo"){ var na=parseInt(a.codigo||"0",10),nb=parseInt(b.codigo||"0",10); if(!isNaN(na)&&!isNaN(nb)) return na-nb; return (a.codigo||"").localeCompare(b.codigo||""); }
-    if(orden==="precio") return (a.precioBase||0)-(b.precioBase||0);
-    if(orden==="precio-desc") return (b.precioBase||0)-(a.precioBase||0);
-    return (a.nombre||"").localeCompare(b.nombre||"");
-  });
-
-  var pctCli = getPct("cli"), pctPat = getPct("pat");
-  var empNombre = (empresas[prodEmpKey]&&empresas[prodEmpKey].nombre)||prodEmpKey;
-  var jsPDF = window.jspdf.jsPDF;
-  var doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
-  var W = doc.internal.pageSize.getWidth();
-  var H = doc.internal.pageSize.getHeight();
-
-  // ── Paleta ──
-  var COL_DARK  = [13,27,42];
-  var COL_BLUE  = [30,100,200];
-  var COL_RED   = [200,30,50];
-  var COL_GREEN = [22,140,80];
-  var COL_GOLD  = [180,130,30];
-  var COL_MUTED = [120,130,145];
-  var COL_LIGHT = [245,247,250];
-
-  // ── Header ──
-  doc.setFillColor(COL_DARK[0],COL_DARK[1],COL_DARK[2]);
-  doc.rect(0,0,W,18,"F");
-  doc.setTextColor(255,255,255);
-  doc.setFont("helvetica","bold"); doc.setFontSize(13);
-  doc.text(empNombre.toUpperCase(), 10, 11);
-  doc.setFont("helvetica","normal"); doc.setFontSize(9);
-  doc.text("CATÁLOGO DE PRODUCTOS", W/2, 11, {align:"center"});
-  var fecha = new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
-  doc.text("Fecha: "+fecha+"   |   "+items.length+" producto(s)", W-10, 11, {align:"right"});
-
-  // ── Columnas tabla ──
-  var cols = [
-    {header:"Cód.",     dataKey:"codigo"},
-    {header:"Producto", dataKey:"nombre"},
-    {header:"Categoría",dataKey:"cat"},
-    {header:"Base",     dataKey:"base"},
-    {header:"Lista Clientes", dataKey:"cli"},
-    {header:"Lista Patagonia",dataKey:"pat"},
-    {header:"Unitario", dataKey:"uni"}
-  ];
-
-  var rows = items.map(function(p){
-    var base = p.precioBase||0;
-    var usedCli = p.margenCliCustom!=null ? p.margenCliCustom : pctCli;
-    var usedPat = p.margenPatCustom!=null ? p.margenPatCustom : pctPat;
-    var pCli = Math.round(base*(1+usedCli/100)*100)/100;
-    var pPat = Math.round(base*(1+usedPat/100)*100)/100;
-    var uni  = p.precioUnitario > 0 ? p.precioUnitario : (p.unidadesPorCaja>1 ? Math.round(pCli/p.unidadesPorCaja*100)/100 : 0);
-    return {
-      codigo: p.codigo||"—",
-      nombre: p.nombre||"",
-      cat:    p.categoria||"",
-      base:   "$"+fMprod(base),
-      cli:    "$"+fMprod(pCli)+(p.margenCliCustom!=null?" ★":""),
-      pat:    "$"+fMprod(pPat)+(p.margenPatCustom!=null?" ★":""),
-      uni:    uni>0 ? "$"+fMprod(uni) : "—"
-    };
-  });
-
-  doc.autoTable({
-    startY: 22,
-    columns: cols,
-    body: rows,
-    theme: "striped",
-    styles: { fontSize:8, cellPadding:3, valign:"middle" },
-    headStyles: { fillColor:COL_DARK, textColor:[255,255,255], fontStyle:"bold", fontSize:8 },
-    alternateRowStyles: { fillColor:[248,250,253] },
-    columnStyles: {
-      codigo: { cellWidth:14, halign:"center", fontStyle:"bold" },
-      nombre: { cellWidth:"auto" },
-      cat:    { cellWidth:28, textColor:COL_MUTED },
-      base:   { cellWidth:26, halign:"right", textColor:COL_MUTED },
-      cli:    { cellWidth:32, halign:"right", fontStyle:"bold", textColor:COL_GREEN },
-      pat:    { cellWidth:32, halign:"right", fontStyle:"bold", textColor:COL_GOLD },
-      uni:    { cellWidth:26, halign:"right", textColor:COL_BLUE }
-    },
-    didParseCell: function(data){
-      if(data.section==="body" && data.column.dataKey==="cli" && (data.cell.text[0]||"").includes("★")){
-        data.cell.styles.fontStyle = "bolditalic";
-      }
-    },
-    foot: [[
-      {content:"Total: "+rows.length+" productos", colSpan:7, styles:{halign:"right", fontSize:8, fontStyle:"italic", textColor:COL_MUTED, fillColor:COL_LIGHT}}
-    ]],
-    footStyles: { fillColor:COL_LIGHT },
-    margin: { left:8, right:8 }
-  });
-
-  // ── Leyenda ──
-  var finalY = doc.lastAutoTable.finalY + 5;
-  if(finalY > H-12) { doc.addPage(); finalY = 10; }
-  doc.setFontSize(7); doc.setTextColor(COL_MUTED[0],COL_MUTED[1],COL_MUTED[2]);
-  doc.setFont("helvetica","italic");
-  doc.text("★ Margen personalizado por producto   |   Lista Clientes +"+pctCli+"%   |   Lista Patagonia +"+pctPat+"%", 8, finalY);
-
-  // ── Numeración de páginas ──
-  var total = doc.internal.getNumberOfPages();
-  for(var i=1;i<=total;i++){
-    doc.setPage(i);
-    doc.setFontSize(7); doc.setFont("helvetica","normal");
-    doc.setTextColor(COL_MUTED[0],COL_MUTED[1],COL_MUTED[2]);
-    doc.text("Pág. "+i+" / "+total, W-8, H-4, {align:"right"});
-  }
-
-  doc.save("Catalogo_"+empNombre.replace(/\s+/g,"_")+"_"+fecha.replace(/\//g,"-")+".pdf");
-  showNotif("📄 PDF generado — "+rows.length+" productos");
-}
-
 async function renumerarProductos(){
   if(!prodEmpKey){ showNotif("Seleccioná una empresa","err"); return; }
   var total = Object.keys(productosEmpresa).length;
@@ -2701,45 +2596,94 @@ async function renumerarProductos(){
   }
 }
 
+/* ════ LISTAS DE PRECIO ════ */
+
+function renderListasConfig(){
+  var wrap = document.getElementById("listas-config");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  listasEmpresa.forEach(function(lista, i){
+    var row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:2px";
+    var isLocked = (lista.key==="Clientes"||lista.key==="Patagonia");
+    row.innerHTML =
+      '<input type="text" value="'+lista.nombre+'" placeholder="Nombre" '+
+        (isLocked?'readonly style="flex:1;padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--muted);font-size:13px;font-family:inherit"'
+                 :'style="flex:1;padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--s3);color:#fff;font-size:13px;font-family:inherit"')+
+        ' oninput="if(!'+isLocked+'){listasEmpresa['+i+'].nombre=this.value;listasEmpresa['+i+'].key=this.value;}">'+
+      '<input type="number" value="'+lista.pct+'" min="0" max="999" step="0.1" '+
+        'style="width:64px;padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--s3);color:var(--gold2);font-size:14px;font-weight:700;text-align:right;font-family:inherit" '+
+        'oninput="listasEmpresa['+i+'].pct=parseFloat(this.value)||0">'+
+      '<span style="font-size:13px;color:var(--muted);font-weight:700;flex-shrink:0">%</span>'+
+      (!isLocked
+        ? '<button onclick="eliminarLista('+i+')" title="Eliminar" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;padding:2px 5px;border-radius:5px">✕</button>'
+        : '<span style="width:26px"></span>')+
+      '';
+    wrap.appendChild(row);
+  });
+}
+
+function agregarLista(){
+  listasEmpresa.push({key:"Lista"+(listasEmpresa.length+1), nombre:"Nueva lista", pct:30});
+  renderListasConfig();
+  actualizarSelectListasUsuario();
+}
+
+function eliminarLista(i){
+  if(listasEmpresa.length<=1){ showNotif("Necesitás al menos una lista","err"); return; }
+  if(!confirm("¿Eliminar '"+listasEmpresa[i].nombre+"'?")) return;
+  listasEmpresa.splice(i,1);
+  renderListasConfig();
+  actualizarSelectListasUsuario();
+}
+
+function actualizarSelectListasUsuario(){
+  var sel = document.getElementById("usr-lista");
+  if(!sel) return;
+  var current = sel.value;
+  sel.innerHTML = "";
+  listasEmpresa.forEach(function(l){
+    var opt = document.createElement("option");
+    opt.value = l.nombre; opt.textContent = "📋 "+l.nombre;
+    sel.appendChild(opt);
+  });
+  var found = false;
+  for(var j=0;j<sel.options.length;j++){ if(sel.options[j].value===current){found=true;break;} }
+  if(found) sel.value = current;
+}
+
+
 async function actualizarMargenes(){
   if(!prodEmpKey){ showNotif("Seleccioná una empresa","err"); return; }
-  const pctCli = getPct("cli"), pctPat = getPct("pat");
-
-  // Save margins to empresa
-  await fbPatch("empresas/"+prodEmpKey, {margenCli:pctCli, margenPat:pctPat}).catch(function(){});
-
-  // Recalculate all products
-  const updates = {};
-  Object.keys(productosEmpresa).forEach(function(k){
-    var base = productosEmpresa[k].precioBase||0;
-    var pCli = Math.round(base*(1+pctCli/100)*100)/100;
-    var pPat = Math.round(base*(1+pctPat/100)*100)/100;
-    productosEmpresa[k].precioClientes = pCli;
-    productosEmpresa[k].precioPatagonia = pPat;
-    updates[k+"/precioClientes"] = pCli;
-    updates[k+"/precioPatagonia"] = pPat;
+  var listasToSave = listasEmpresa.map(function(l){return {key:l.key,nombre:l.nombre,pct:l.pct};});
+  await fbPatch("empresas/"+prodEmpKey, {
+    listas: listasToSave,
+    margenCli: getPct("cli"),
+    margenPat: getPct("pat")
+  }).catch(function(){});
+  var toUpdate = Object.keys(productosEmpresa).filter(function(k){
+    return productosEmpresa[k].margenCliCustom==null && productosEmpresa[k].margenPatCustom==null;
   });
-
+  var skipped = Object.keys(productosEmpresa).length - toUpdate.length;
+  if(skipped>0) showNotif(skipped+" producto(s) con margen custom no modificados");
   try{
-    // Patch each product
-    // Skip products that have custom margins
-    var toUpdate = Object.keys(productosEmpresa).filter(function(k){
-      return productosEmpresa[k].margenCliCustom==null && productosEmpresa[k].margenPatCustom==null;
-    });
-    var skipped = Object.keys(productosEmpresa).length - toUpdate.length;
-    if(skipped>0) showNotif(skipped+" producto(s) con margen custom no se modificaron","ok");
     await Promise.all(toUpdate.map(function(k){
-      return fbPatch("empresas/"+prodEmpKey+"/productos/"+k, {
-        precioClientes: productosEmpresa[k].precioClientes,
-        precioPatagonia: productosEmpresa[k].precioPatagonia
+      var base = productosEmpresa[k].precioBase||0;
+      var patch = {};
+      listasEmpresa.forEach(function(l){
+        var precio = Math.round(base*(1+l.pct/100)*100)/100;
+        patch["precio_"+l.key] = precio;
+        productosEmpresa[k]["precio_"+l.key] = precio;
+        if(l.nombre==="Clientes"||l.key==="Clientes"){ patch.precioClientes=precio; productosEmpresa[k].precioClientes=precio; }
+        if(l.nombre==="Patagonia"||l.key==="Patagonia"){ patch.precioPatagonia=precio; productosEmpresa[k].precioPatagonia=precio; }
       });
+      return fbPatch("empresas/"+prodEmpKey+"/productos/"+k, patch);
     }));
     renderProductos();
     sincronizarCSVdesdeProductos();
-    showNotif("Precios recalculados ✅");
+    showNotif("Precios recalculados ✅ ("+listasEmpresa.length+" listas)");
   } catch(e){ showNotif("Error: "+e.message,"err"); }
 }
-
 // Generates and saves CSV so client apps can read products
 async function sincronizarCSVdesdeProductos(){
   if(!prodEmpKey) return;
