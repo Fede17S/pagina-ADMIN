@@ -331,6 +331,8 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -2078,54 +2080,78 @@ function actualizarPreviaMapa(){
 }
 
 async function buscarCoordsAdmin(){
-  var dirEl=document.getElementById("usr-direccion");
-  var statusEl=document.getElementById("coords-status");
-  var btn=document.getElementById("btn-buscar-coords");
-  var cbox=document.getElementById("coords-box");
-  var dir=dirEl?dirEl.value.trim():"";
-  if(!dir){showNotif("Escribí una dirección primero","err");return;}
+  var dirEl    = document.getElementById("usr-direccion");
+  var statusEl = document.getElementById("coords-status");
+  var btn      = document.getElementById("btn-buscar-coords");
+  var cbox     = document.getElementById("coords-box");
+  var dir      = dirEl ? dirEl.value.trim() : "";
+  if(!dir){ showNotif("Escribi una direccion primero","err"); return; }
 
-  btn.textContent="⏳"; btn.disabled=true;
-  if(cbox){cbox.style.display="block"; setTimeout(function(){ _initAdminMapa(); },50);}
-  if(statusEl){statusEl.style.cssText="display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:#1e293b;color:#94a3b8";statusEl.textContent="🔍 Buscando…";}
-
+  btn.textContent = "Buscando..."; btn.disabled = true;
+  if(cbox){ cbox.style.display = "block"; setTimeout(function(){ _initAdminMapa(); }, 50); }
+  if(statusEl){
+    statusEl.style.cssText = "display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:#1e293b;color:#94a3b8";
+    statusEl.textContent = "Buscando en Argentina...";
+  }
   try{
-    var cacheKey=dir.toLowerCase();
-    var coords=_adminGeocodeCache[cacheKey];
-    if(!coords){
-      var url="https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(dir+", Argentina")+"&limit=5&addressdetails=1";
-      var r=await fetch(url,{headers:{"Accept-Language":"es","User-Agent":"DistriMax-Admin/1.0"}});
-      var data=await r.json();
-      if(data&&data[0]){
-        coords={lat:parseFloat(data[0].lat),lng:parseFloat(data[0].lon),display:data[0].display_name};
-        _adminGeocodeCache[cacheKey]=coords;
-      }
-    }
-    if(coords){
-      setTimeout(function(){
-        _initAdminMapa();
-        _colocarPin(coords.lat,coords.lng);
-        _adminMapa.setView([coords.lat,coords.lng],16);
-        if(statusEl){
-          statusEl.style.cssText="display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#34d399";
-          statusEl.innerHTML="✅ <b>Encontrada</b> · <span style='font-weight:400;color:#94a3b8'>"+coords.display.split(",").slice(0,3).join(",")+"</span><br><span style='font-size:11px;color:#64748b'>Si el pin no es exacto, arrastralo o hacé click en la ubicación correcta.</span>";
-        }
-      },100);
-      btn.textContent="✅";
-      setTimeout(function(){btn.textContent="🔍 Verificar";btn.disabled=false;},2000);
-    } else {
-      setTimeout(function(){ _initAdminMapa(); },100);
+    var url = "https://nominatim.openstreetmap.org/search?format=json"
+      + "&q=" + encodeURIComponent(dir)
+      + "&countrycodes=ar"
+      + "&limit=5"
+      + "&addressdetails=1";
+    var r = await fetch(url, { headers: { "Accept-Language": "es", "User-Agent": "DistriMax-Admin/1.0" }});
+    var data = await r.json();
+    btn.textContent = "Verificar"; btn.disabled = false;
+    if(!data || !data.length){
       if(statusEl){
-        statusEl.style.cssText="display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171";
-        statusEl.innerHTML="❌ No encontrada — Hacé click en el mapa para colocar el pin manualmente.";
+        statusEl.style.cssText = "display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171";
+        statusEl.innerHTML = "Sin resultados. Proba: calle numero ciudad (ej: San Martin 1234 Cordoba). O hace clic en el mapa.";
       }
-      btn.textContent="🔍 Verificar"; btn.disabled=false;
+      setTimeout(function(){ _initAdminMapa(); }, 100);
+      return;
     }
+    var html = "<div style='font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px'>Selecciona la ubicacion correcta:</div>";
+    data.forEach(function(item, i){
+      var lat = parseFloat(item.lat), lng = parseFloat(item.lon);
+      var addr = item.address || {};
+      var parts = [];
+      if(addr.road)  parts.push(addr.road + (addr.house_number ? " " + addr.house_number : ""));
+      if(addr.city || addr.town || addr.village) parts.push(addr.city || addr.town || addr.village);
+      if(addr.state) parts.push(addr.state);
+      var label = parts.length ? parts.join(", ") : item.display_name.split(",").slice(0,4).join(",");
+      html += "<div class='geo-opt' onclick='_elegirGeoResult(" + lat + "," + lng + ",this)' " +
+        "style='padding:7px 10px;border-radius:7px;cursor:pointer;margin-bottom:3px;" +
+        "background:var(--s3);border:1.5px solid transparent;transition:all .12s;font-size:12px;color:#fff'>" +
+        "<span style='font-size:10px;color:var(--muted);font-weight:700'>Opcion " + (i+1) + ":</span> " + label + "</div>";
+    });
+    html += "<div style='font-size:10px;color:#475569;margin-top:6px'>Si ninguna es exacta, hace clic en el mapa o arrastra el pin.</div>";
+    if(statusEl){
+      statusEl.style.cssText = "display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:#1e293b;color:#94a3b8";
+      statusEl.innerHTML = html;
+    }
+    setTimeout(function(){
+      _initAdminMapa();
+      _colocarPin(parseFloat(data[0].lat), parseFloat(data[0].lon));
+      _adminMapa.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 15);
+    }, 100);
   } catch(e){
-    if(statusEl){statusEl.style.cssText="display:block;padding:7px 11px;border-radius:7px;font-size:12px;color:#f87171";statusEl.textContent="Error: "+e.message;}
-    btn.textContent="🔍 Verificar"; btn.disabled=false;
+    if(statusEl){
+      statusEl.style.cssText = "display:block;padding:7px 11px;border-radius:7px;font-size:12px;color:#f87171";
+      statusEl.textContent = "Error: " + e.message;
+    }
+    btn.textContent = "Verificar"; btn.disabled = false;
   }
 }
+
+function _elegirGeoResult(lat, lng, el){
+  var opts = el.parentElement ? el.parentElement.querySelectorAll(".geo-opt") : [];
+  for(var i=0;i<opts.length;i++){ opts[i].style.borderColor="transparent"; opts[i].style.background="var(--s3)"; }
+  el.style.borderColor = "var(--gold)";
+  el.style.background  = "rgba(201,147,58,.1)";
+  _colocarPin(lat, lng);
+  _adminMapa.setView([lat, lng], 16);
+}
+
 
 function _actualizarLinkMapa(lat,lng){
   var link=document.getElementById("coords-maps-link");
@@ -3407,6 +3433,7 @@ async function cargarDeudasFixed(){
   }
   await cargarDeudas();
 }
+
 
 </script>
 </body>
