@@ -1065,30 +1065,46 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
         <div class="form-row">
           <div class="form-group" style="grid-column:1/-1">
             <label class="form-label">Dirección del negocio</label>
-            <div style="display:flex;gap:6px">
-              <input class="form-input" type="text" id="usr-direccion" placeholder="Ej: Av. San Martín 1234" style="flex:1" oninput="resetCoordsValidation()">
-              <button type="button" id="btn-buscar-coords" onclick="buscarCoordsAdmin()" style="padding:0 14px;border:1.5px solid #334155;border-radius:8px;background:#1e293b;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">🔍 Verificar</button>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <input class="form-input" type="text" id="usr-direccion"
+                placeholder="Ej: San Martín 1234, Esquel, Chubut"
+                style="flex:1" oninput="resetCoordsValidation()">
+              <button type="button" onclick="abrirGoogleMapsDir()"
+                style="padding:0 13px;border:1.5px solid #334155;border-radius:8px;background:#1e293b;color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0"
+                title="Buscar en Google Maps">🗺️ Ver en Maps</button>
             </div>
-            <div id="coords-box" style="margin-top:8px;display:none">
-              <!-- Mapa interactivo -->
-              <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">
-                📍 Hacé click en el mapa para colocar el pin en la ubicación exacta
-              </div>
-              <div id="admin-mapa" style="height:260px;border-radius:10px;border:1.5px solid #334155;overflow:hidden;margin-bottom:8px"></div>
-              <!-- Coords display -->
-              <div style="display:flex;gap:6px;align-items:flex-end">
+            <div style="padding:9px 12px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:8px;font-size:11px;color:#93c5fd;line-height:1.7;margin-bottom:8px">
+              <b style="font-size:12px">Coordenadas exactas desde Google Maps:</b><br>
+              1. Clic en <b>🗺️ Ver en Maps</b> → se abre con la dirección<br>
+              2. <b>Clic derecho</b> en el punto exacto del negocio<br>
+              3. Clic en las coordenadas que aparecen (ej: <i>-42.908, -65.023</i>) → se copian<br>
+              4. Pegá abajo ↓
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+              <input class="form-input" type="text" id="coords-paste-input"
+                placeholder="Pegá acá: -42.908, -65.023"
+                style="flex:1;font-size:13px"
+                oninput="parsearCoordsPegadas(this.value)">
+              <button type="button" onclick="limpiarCoordsAdmin()"
+                style="padding:9px 11px;border:1.5px solid #334155;border-radius:8px;background:#1e293b;color:#64748b;font-size:13px;cursor:pointer;flex-shrink:0;font-family:inherit">✕</button>
+            </div>
+            <div id="coords-result" style="display:none">
+              <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:8px">
                 <div style="flex:1">
                   <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Latitud</div>
-                  <input class="form-input" type="number" id="usr-lat" placeholder="-42.7682" step="any" oninput="moverPinManual()">
+                  <input class="form-input" type="number" id="usr-lat" step="any" oninput="moverPinManual()" style="font-weight:700;color:#34d399">
                 </div>
                 <div style="flex:1">
                   <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Longitud</div>
-                  <input class="form-input" type="number" id="usr-lng" placeholder="-65.0351" step="any" oninput="moverPinManual()">
+                  <input class="form-input" type="number" id="usr-lng" step="any" oninput="moverPinManual()" style="font-weight:700;color:#34d399">
                 </div>
-                <a id="coords-maps-link" href="#" target="_blank" style="padding:9px 13px;border:1.5px solid #334155;border-radius:8px;background:#1e293b;color:#64748b;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;display:flex;align-items:center">🗺️</a>
+                <a id="coords-maps-link" href="#" target="_blank"
+                  style="padding:9px 12px;border:1.5px solid #3b82f6;border-radius:8px;background:#1e293b;color:#3b82f6;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;display:flex;align-items:center"
+                  title="Confirmar en Google Maps">🗺️</a>
               </div>
-              <div id="coords-status" style="display:none;font-size:12px;padding:8px 12px;border-radius:7px;margin-top:6px"></div>
+              <div id="admin-mapa" style="height:200px;border-radius:10px;border:1.5px solid #334155;overflow:hidden"></div>
             </div>
+            <div id="coords-status" style="display:none;font-size:12px;padding:7px 11px;border-radius:7px;margin-top:6px"></div>
           </div>
           <div class="form-group">
             <label class="form-label">Teléfono / WhatsApp</label>
@@ -1984,20 +2000,21 @@ function editarUsuario(k){
   var lngEl=document.getElementById("usr-lng");
   if(latEl) latEl.value=u.lat||"";
   if(lngEl) lngEl.value=u.lng||"";
-  // Mostrar mapa con pin si tiene coords/dirección
-  var cbox=document.getElementById("coords-box");
-  var hasInfo=!!(u.lat||u.lng||u.direccion);
-  if(cbox) cbox.style.display=hasInfo?"block":"none";
-  if(hasInfo){
+  // Fill coords-paste-input if coords exist
+  var pasteEl = document.getElementById("coords-paste-input");
+  var resultEl = document.getElementById("coords-result");
+  if(u.lat && u.lng){
+    if(pasteEl) pasteEl.value = u.lat.toFixed(6) + ", " + u.lng.toFixed(6);
+    if(resultEl) resultEl.style.display = "block";
+    _actualizarLinkMapa(u.lat, u.lng);
     setTimeout(function(){
       _initAdminMapa();
-      if(u.lat&&u.lng){
-        _colocarPin(u.lat, u.lng);
-        _adminMapa.setView([u.lat,u.lng],16);
-      }
+      _colocarPin(u.lat, u.lng);
+      _adminMapa.setView([u.lat, u.lng], 16);
     }, 150);
   } else {
-    resetCoordsValidation();
+    if(pasteEl) pasteEl.value = "";
+    if(resultEl) resultEl.style.display = "none";
   }
 
   var rol=document.getElementById("usr-rol");
@@ -2079,6 +2096,13 @@ function actualizarPreviaMapa(){
   moverPinManual();
 }
 
+function abrirGoogleMapsDir(){
+  var dir = document.getElementById("usr-direccion").value.trim();
+  if(!dir){ showNotif("Escribi la direccion primero","err"); return; }
+  var url = "https://www.google.com/maps/search/" + encodeURIComponent(dir) + "/";
+  window.open(url, "_blank");
+}
+
 async function buscarCoordsAdmin(){
   var dirEl    = document.getElementById("usr-direccion");
   var statusEl = document.getElementById("coords-status");
@@ -2143,6 +2167,52 @@ async function buscarCoordsAdmin(){
   }
 }
 
+function parsearCoordsPegadas(val){
+  // Accept formats: "-42.908, -65.023" or "-42.908 -65.023" or "-42.908,-65.023"
+  val = val.trim();
+  var match = val.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+  if(!match){
+    document.getElementById("coords-result").style.display = "none";
+    return;
+  }
+  var lat = parseFloat(match[1]);
+  var lng = parseFloat(match[2]);
+  // Validate Argentina-ish range
+  if(lat < -55 || lat > -21 || lng < -73 || lng > -53){
+    var statusEl = document.getElementById("coords-status");
+    if(statusEl){
+      statusEl.style.cssText = "display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171";
+      statusEl.textContent = "Las coordenadas estan fuera de Argentina. Verificalas.";
+    }
+    return;
+  }
+  // Show result
+  document.getElementById("coords-result").style.display = "block";
+  document.getElementById("usr-lat").value = lat.toFixed(6);
+  document.getElementById("usr-lng").value = lng.toFixed(6);
+  _actualizarLinkMapa(lat, lng);
+  // Update/create map
+  setTimeout(function(){
+    _initAdminMapa();
+    _colocarPin(lat, lng);
+    _adminMapa.setView([lat, lng], 16);
+  }, 100);
+  // Status verde
+  var statusEl = document.getElementById("coords-status");
+  if(statusEl){
+    statusEl.style.cssText = "display:block;padding:7px 11px;border-radius:7px;font-size:12px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#34d399";
+    statusEl.innerHTML = "✅ Coordenadas cargadas: " + lat.toFixed(6) + ", " + lng.toFixed(6);
+  }
+}
+
+function limpiarCoordsAdmin(){
+  var fields = ["coords-paste-input","usr-lat","usr-lng"];
+  fields.forEach(function(id){ var el=document.getElementById(id); if(el)el.value=""; });
+  document.getElementById("coords-result").style.display = "none";
+  document.getElementById("coords-status").style.display = "none";
+  if(_adminPin && _adminMapa){ _adminMapa.removeLayer(_adminPin); _adminPin=null; }
+}
+
 function _elegirGeoResult(lat, lng, el){
   var opts = el.parentElement ? el.parentElement.querySelectorAll(".geo-opt") : [];
   for(var i=0;i<opts.length;i++){ opts[i].style.borderColor="transparent"; opts[i].style.background="var(--s3)"; }
@@ -2183,9 +2253,9 @@ function abrirModalNuevoUsuario(){
   var titleEl=document.getElementById("modal-usr-title"); if(titleEl)titleEl.textContent="Nuevo usuario";
   var btn=document.querySelector("#modal-usuario .btn-primary"); if(btn)btn.textContent="Agregar usuario";
   if(_adminPin&&_adminMapa){ _adminMapa.removeLayer(_adminPin); _adminPin=null; }
-  var cbox=document.getElementById("coords-box"); if(cbox)cbox.style.display="none";
+  var pasteEl=document.getElementById("coords-paste-input"); if(pasteEl) pasteEl.value="";
+  var resultEl=document.getElementById("coords-result"); if(resultEl) resultEl.style.display="none";
   var st=document.getElementById("coords-status"); if(st){st.style.display="none";st.textContent="";}
-  var btnb=document.getElementById("btn-buscar-coords"); if(btnb){btnb.textContent="🔍 Verificar";btnb.disabled=false;}
   abrirModal("modal-usuario");
 }
 
