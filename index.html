@@ -1033,14 +1033,20 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
         </div>
         <div id="variantes-box" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
           <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
-            Agregá cada variante (ej: Lavanda, Sport, Fresh). El cliente podrá elegir una o varias al pedir.
+            Agregá cada variante con su nombre e imagen individual.
           </div>
-          <div style="display:flex;gap:8px;margin-bottom:10px">
-            <input class="form-input" type="text" id="variante-nueva-input" placeholder="Ej: Lavanda, Sport, Fresh…"
-              style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarVariante();}">
-            <button class="btn btn-primary" onclick="agregarVariante()" style="white-space:nowrap;padding:0 14px;height:38px">+ Agregar</button>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+            <div style="display:flex;gap:8px">
+              <input class="form-input" type="text" id="variante-nueva-input" placeholder="Nombre (ej: Lavanda)"
+                style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('variante-nueva-img').focus();}">
+            </div>
+            <div style="display:flex;gap:8px">
+              <input class="form-input" type="url" id="variante-nueva-img" placeholder="URL imagen (opcional)"
+                style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarVariante();}">
+              <button class="btn btn-primary" onclick="agregarVariante()" style="white-space:nowrap;padding:0 14px;height:38px">+ Agregar</button>
+            </div>
           </div>
-          <div id="variantes-lista" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          <div id="variantes-lista" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
       </div>
     </div>
@@ -2516,7 +2522,7 @@ function renderProductos(){
           '<button class="prod-action-btn del" data-k="'+p.fbKey+'" onclick="borrarProducto(this.dataset.k)">🗑</button>'+
         '</div>'+
         (p.foto?'<div style="height:80px;background:#fff;display:flex;align-items:center;justify-content:center;border-radius:8px 8px 0 0;overflow:hidden;margin-bottom:8px"><img src="'+p.foto+'" style="max-height:76px;max-width:140px;object-fit:contain" onerror="this.parentElement.style.display=\'none\'"></div>':'')+
-      '<div class="prod-card-name">'+(p.nombre||"Sin nombre")+(isCustom?'<span style="margin-left:6px;font-size:9px;font-weight:700;background:rgba(139,92,246,.15);color:#a78bfa;padding:2px 6px;border-radius:4px;vertical-align:middle">% CUSTOM</span>':'')+(p.variantes&&p.variantes.length?'<span class="variantes-badge">'+p.variantes.length+' variantes</span>':'')+'</div>'+
+      '<div class="prod-card-name">'+(p.nombre||"Sin nombre")+(isCustom?'<span style="margin-left:6px;font-size:9px;font-weight:700;background:rgba(139,92,246,.15);color:#a78bfa;padding:2px 6px;border-radius:4px;vertical-align:middle">% CUSTOM</span>':'')+(p.variantes&&p.variantes.length?'<span class="variantes-badge">'+p.variantes.length+' var.</span>':'')+'</div>'+
         '<div class="prod-card-code">COD: '+(p.codigo||"—")+
           (p.categoria?' &nbsp;·&nbsp; <span class="cat-badge">'+p.categoria+'</span>':'')+
         '</div>'+
@@ -2542,16 +2548,14 @@ function toggleVariantes(){
 }
 
 function agregarVariante(){
-  var inp = document.getElementById("variante-nueva-input");
-  var val = inp.value.trim();
-  if(!val) return;
-  // Allow comma-separated: "Lavanda, Sport, Fresh"
-  var parts = val.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
-  parts.forEach(function(v){
-    if(!window._variantesTemp.includes(v)) window._variantesTemp.push(v);
-  });
-  inp.value = "";
-  inp.focus();
+  var nombre = document.getElementById("variante-nueva-input").value.trim();
+  var img    = document.getElementById("variante-nueva-img").value.trim();
+  if(!nombre) return;
+  var existe = window._variantesTemp.some(function(v){ return v.nombre === nombre; });
+  if(!existe) window._variantesTemp.push({ nombre: nombre, imagen: img });
+  document.getElementById("variante-nueva-input").value = "";
+  document.getElementById("variante-nueva-img").value = "";
+  document.getElementById("variante-nueva-input").focus();
   renderVariantesAdmin();
 }
 
@@ -2563,13 +2567,19 @@ function eliminarVariante(idx){
 function renderVariantesAdmin(){
   var lista = document.getElementById("variantes-lista");
   if(!window._variantesTemp.length){
-    lista.innerHTML = '<span style="font-size:12px;color:var(--muted)">Aún no hay variantes. Escribí arriba y hacé clic en + Agregar.</span>';
+    lista.innerHTML = '<span style="font-size:12px;color:var(--muted)">Aún no hay variantes. Escribí el nombre e imagen arriba.</span>';
     return;
   }
   lista.innerHTML = window._variantesTemp.map(function(v, i){
-    return '<span class="variante-chip">'+v+
-      '<button onclick="eliminarVariante('+i+')" title="Quitar">×</button>'+
-      '</span>';
+    var thumb = v.imagen
+      ? '<img src="'+v.imagen+'" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:#fff;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display=\'none\'">'
+      : '<div style="width:36px;height:36px;border-radius:6px;background:var(--surface);border:1px dashed var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px">🖼️</div>';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px">'+
+      thumb+
+      '<span style="flex:1;font-size:13px;font-weight:600;color:var(--text)">'+v.nombre+'</span>'+
+      (v.imagen ? '<span style="font-size:10px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+v.imagen+'">'+v.imagen.split('/').pop()+'</span>' : '')+
+      '<button onclick="eliminarVariante('+i+')" style="color:var(--red);font-size:16px;padding:0 4px;background:none;border:none;cursor:pointer;flex-shrink:0" title="Quitar">×</button>'+
+    '</div>';
   }).join('');
 }
 
@@ -2663,6 +2673,8 @@ function abrirModalProducto(key){
   if(hasCustom) previewPreciosCustom();
   // Variantes
   var variantes = p.variantes || [];
+  // Support both old format (strings) and new format (objects)
+  variantes = variantes.map(function(v){ return typeof v === 'string' ? {nombre:v, imagen:''} : v; });
   document.getElementById("prod-tiene-variantes").checked = variantes.length > 0;
   document.getElementById("variantes-box").style.display = variantes.length > 0 ? "block" : "none";
   window._variantesTemp = variantes.slice();
