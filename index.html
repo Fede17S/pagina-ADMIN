@@ -1423,15 +1423,43 @@ function showPage(id,btn){
 /* ════ DATOS GLOBALES ════ */
 let empresas={};
 
+/* Mapa de Firebase key → Supabase UUID para empresas */
+var _sbEmpMap = {};  // { firebaseKey: supabaseUUID }
+var _sbEmpMapRev = {};  // { supabaseUUID: firebaseKey }
+
 async function cargarTodo(){
   try{
+    // 1. Cargar datos desde Firebase (estructura existente)
     const data=await fbGet("empresas");
     empresas=data||{};
+
+    // 2. Cargar empresas desde Supabase para obtener el mapeo de UUIDs
+    try {
+      const sbEmpresas = await sbGet("empresas","select=id,codigo");
+      (sbEmpresas||[]).forEach(function(e){
+        // Mapear por código (que coincide con empresa.codigo en Firebase)
+        Object.keys(empresas).forEach(function(fbKey){
+          var emp = empresas[fbKey];
+          var cod = (emp.codigo||emp.nombre||fbKey||"").toString().toLowerCase().trim();
+          if(e.codigo && e.codigo.toLowerCase() === cod){
+            _sbEmpMap[fbKey] = e.id;
+            _sbEmpMapRev[e.id] = fbKey;
+          }
+        });
+        // También mapear si el id de Supabase coincide con el key de Firebase
+        if(empresas[e.id]){ _sbEmpMap[e.id] = e.id; }
+      });
+    } catch(esb){ console.warn("No se pudo cargar mapa Supabase empresas:", esb); }
+
     actualizarDashboard();
     renderEmpresas();
     poblarSelectores();
     debugFirebase();
   }catch(e){ showNotif("Error cargando datos","err"); }
+}
+
+function _getSbEmpId(fbKey){
+  return _sbEmpMap[fbKey] || fbKey;
 }
 
 /* ════ DASHBOARD ════ */
@@ -1868,14 +1896,30 @@ async function cargarCatalogo(){
   document.getElementById("cat-preview").style.display="none";
 }
 async function guardarCatalogo(){
-  const k=document.getElementById("cat-empresa-sel").value;if(!k)return;
+  const k=document.getElementById("cat-empresa-sel").value; if(!k)return;
   const stock=document.getElementById("csv-stock").value.trim();
   const clientes=document.getElementById("csv-clientes").value.trim();
   try{
-    await fbPatch(`empresas/${k}`,{stockCSV:stock,clientesCSV:clientes});
-    empresas[k].stockCSV=stock;empresas[k].clientesCSV=clientes;
+    // Guardar en Firebase (compatibilidad)
+    await fbPatch(`empresas/${k}`,{stockCSV:stock,clientesCSV:clientes}).catch(function(){});
+    empresas[k].stockCSV=stock; empresas[k].clientesCSV=clientes;
+    // Guardar en Supabase empresas_config (para que pagina_clientes_pedidos lo lea)
+    var sbId = _getSbEmpId(k);
+    if(sbId){
+      // Parse CSV clientes → guardar como JSON en empresas_config
+      var cliLines = clientes.split("\n").filter(function(l){return l.trim();});
+      var cliJson = {};
+      if(cliLines.length > 1){
+        var sep = cliLines[0].includes(";") ? ";" : ",";
+        cliLines.slice(1).forEach(function(line){
+          var parts = line.split(sep).map(function(p){return p.trim();});
+          if(parts[0]) cliJson[parts[0]] = {id:parts[0], nombre:parts[1]||parts[0], lista:parts[2]||"Clientes"};
+        });
+      }
+      await sbUpsert("empresas_config",{empresa_id:sbId, clientes_csv:clientes, clientes_json:cliJson});
+    }
     showNotif("Catálogo guardado ✅");
-  }catch{showNotif("Error al guardar","err");}
+  }catch(e){console.error(e); showNotif("Error al guardar: "+e.message,"err");}
 }
 function previewCatalogo(){
   const isStock=catTab_actual==="stock";
@@ -1904,8 +1948,8 @@ async function cargarUsuarios(){
   if(content) content.style.display = usrEmpresaKey?"block":"none";
   if(!usrEmpresaKey)return;
   try{
-    // Cargar usuarios desde Supabase (fuente de verdad)
-    var rows = await sbGet("usuarios","select=*&empresa_id=eq."+usrEmpresaKey+"&order=name.asc");
+    var sbId = _getSbEmpId(usrEmpresaKey);
+    var rows = await sbGet("usuarios","select=*&empresa_id=eq."+sbId+"&order=name.asc");
     if(!empresas[usrEmpresaKey]) empresas[usrEmpresaKey]={};
     var uMap = {};
     (rows||[]).forEach(function(u){
@@ -1914,11 +1958,11 @@ async function cargarUsuarios(){
         role:u.role||"vendedor", lista:u.lista||"Clientes",
         catalogo:u.catalogo!==false, direccion:u.direccion||"",
         telefono:u.telefono||"", zona:u.zona||"", rec:u.recepciona||"",
-        nota:u.nota||"", lat:u.lat||null, lng:u.lng||null
+        nota:u.nota||""
       };
     });
     empresas[usrEmpresaKey].usuarios = uMap;
-  } catch(e){ console.warn("Error cargando usuarios desde Supabase:", e); }
+  } catch(e){ console.warn("Error cargando usuarios:", e); }
   renderPersonas();
 }
 function renderUsuarios(){ renderPersonas(); }
@@ -2367,7 +2411,8 @@ async function guardarUsuario(){
         catalogo:catalogo, direccion:direccion||"", telefono:telefono||""
       };
 
-      await sbPatch("usuarios", "id=eq."+editKey+"&empresa_id=eq."+usrEmpresaKey, body);
+      var sbEmpId = _getSbEmpId(usrEmpresaKey);
+      await sbPatch("usuarios", "id=eq."+editKey+"&empresa_id=eq."+sbEmpId, body);
 
       // Actualizar caché local
       if(empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios){
