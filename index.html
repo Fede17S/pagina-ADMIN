@@ -2361,47 +2361,28 @@ async function guardarUsuario(){
 
   try{
     if(isEdit){
-      // EDITAR: usar PATCH en Supabase con el Supabase UUID (editKey)
-      // editKey puede ser el uuid de Supabase o el uid antiguo — buscamos por uid
+      // editKey ES el Supabase UUID (lo seteamos en editarUsuario con u._sbId || k)
       const body = {
         uid:id, pass:pass, name:nombre, role:role, lista:lista,
         catalogo:catalogo, direccion:direccion||"", telefono:telefono||""
       };
-      if(ulat&&ulng){ body.lat=ulat; body.lng=ulng; }
 
-      // Buscar el registro en Supabase por su uuid (editKey) o por uid
-      let rows = await sbGet("usuarios","id=eq."+editKey+"&empresa_id=eq."+usrEmpresaKey);
-      if(!rows||!rows.length){
-        // Fallback: buscar por uid
-        rows = await sbGet("usuarios","uid=eq."+encodeURIComponent(editKey)+"&empresa_id=eq."+usrEmpresaKey);
+      await sbPatch("usuarios", "id=eq."+editKey+"&empresa_id=eq."+usrEmpresaKey, body);
+
+      // Actualizar caché local
+      if(empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios){
+        empresas[usrEmpresaKey].usuarios[editKey] = Object.assign({}, body, {id:id, _sbId:editKey});
       }
-      if(rows&&rows.length){
-        await sbPatch("usuarios","id=eq."+rows[0].id, body);
-        // Actualizar caché local
-        const uKey = rows[0].id;
-        if(empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios){
-          // Eliminar entrada vieja si el uid cambió
-          Object.keys(empresas[usrEmpresaKey].usuarios).forEach(function(k){
-            if(empresas[usrEmpresaKey].usuarios[k]._sbId === uKey ||
-               empresas[usrEmpresaKey].usuarios[k].id === editKey){
-              delete empresas[usrEmpresaKey].usuarios[k];
-            }
-          });
-          empresas[usrEmpresaKey].usuarios[uKey] = Object.assign({}, body, {id:id, _sbId:uKey});
-        }
-        showNotif("Usuario actualizado ✅");
-      } else {
-        showNotif("No se encontró el usuario en Supabase","err"); return;
-      }
+      showNotif("Usuario actualizado ✅");
+
     } else {
-      // CREAR: insertar en Supabase
+      // CREAR nuevo usuario
       const body = {
         empresa_id: usrEmpresaKey,
         uid: id, pass: pass, name: nombre, role: role,
         lista: lista, catalogo: catalogo,
         direccion: direccion||"", telefono: telefono||""
       };
-      if(ulat&&ulng){ body.lat=ulat; body.lng=ulng; }
       const result = await sbPost("usuarios", body);
       if(result&&result[0]){
         const newRow = result[0];
@@ -2413,7 +2394,10 @@ async function guardarUsuario(){
     }
     cerrarModal("modal-usuario");
     renderPersonas();
-  }catch(e){showNotif("Error: "+e.message,"err");console.error(e);}
+  }catch(e){
+    console.error("guardarUsuario error:", e);
+    showNotif("Error al guardar: "+e.message,"err");
+  }
 }
 async function borrarUsuario(k){
   if(!confirm("¿Borrar este usuario?"))return;
