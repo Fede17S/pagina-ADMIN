@@ -1335,7 +1335,33 @@ tbody td{padding:12px 14px;color:var(--text);font-size:13px}
 const FB    = "https://distrimar-5e1a3-default-rtdb.firebaseio.com";
 const ADMIN = { id:"federico17s", pass:"221004", name:"Federico" };
 
-/* ════ FIREBASE ════ */
+/* ════ SUPABASE ════ */
+const SB_URL = "https://vhoswhyixqtomgqudigj.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZob3N3aHlpeHF0b21ncXVkaWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTI4ODIsImV4cCI6MjA5NTM4ODg4Mn0.gjUaVJ1RvF3KrjfXVyh8wYIso4QW6RtIfFRbkd0PyA8";
+const SB_HDR = { "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json", "Prefer":"return=representation" };
+
+function sbFetch(method, path, body){
+  return fetch(SB_URL+path, {method, headers:SB_HDR, body: body ? JSON.stringify(body) : undefined})
+    .then(r => {
+      if(!r.ok) return r.text().then(t => { throw new Error(t||r.status); });
+      if(r.status===204) return null;
+      const ct = r.headers.get("content-type")||"";
+      return ct.includes("json") ? r.json() : null;
+    });
+}
+function sbGet(table, params)        { return sbFetch("GET",    `/rest/v1/${table}?${params||""}`, null); }
+function sbPost(table, data)         { return sbFetch("POST",   `/rest/v1/${table}`, data); }
+function sbPatch(table, match, data) { return sbFetch("PATCH",  `/rest/v1/${table}?${match}`, data); }
+function sbDel(table, match)         { return sbFetch("DELETE", `/rest/v1/${table}?${match}`, null); }
+function sbUpsert(table, data){
+  return fetch(SB_URL+`/rest/v1/${table}?on_conflict=id`, {
+    method:"POST",
+    headers:{...SB_HDR,"Prefer":"resolution=merge-duplicates,return=representation"},
+    body:JSON.stringify(data)
+  }).then(r => r.ok||r.status===204 ? (r.status===204?null:r.json()) : r.text().then(t=>{throw new Error(t);}));
+}
+
+/* ════ FIREBASE (solo lectura para datos existentes) ════ */
 async function fbGet(p)    { const r=await fetch(`${FB}/${p}.json`);if(!r.ok)throw new Error(r.status);return r.json(); }
 async function fbSet(p,d)  { const r=await fetch(`${FB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok)throw new Error(r.status);return r.json(); }
 async function fbPush(p,d) { const r=await fetch(`${FB}/${p}.json`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok)throw new Error(r.status);return (await r.json()).name; }
@@ -1877,17 +1903,22 @@ async function cargarUsuarios(){
   if(hint) hint.style.display = usrEmpresaKey?"none":"block";
   if(content) content.style.display = usrEmpresaKey?"block":"none";
   if(!usrEmpresaKey)return;
-  // Fetch fresh data from Firebase — deep merge usuarios
   try{
-    var empFresh = await fbGet("empresas/"+usrEmpresaKey);
-    if(empFresh){
-      if(!empresas[usrEmpresaKey]) empresas[usrEmpresaKey]={};
-      // Deep merge: preserve all fields especially usuarios with full data
-      Object.keys(empFresh).forEach(function(k){
-        empresas[usrEmpresaKey][k] = empFresh[k];
-      });
-    }
-  } catch(e){ console.warn("No se pudo refrescar empresa"); }
+    // Cargar usuarios desde Supabase (fuente de verdad)
+    var rows = await sbGet("usuarios","select=*&empresa_id=eq."+usrEmpresaKey+"&order=name.asc");
+    if(!empresas[usrEmpresaKey]) empresas[usrEmpresaKey]={};
+    var uMap = {};
+    (rows||[]).forEach(function(u){
+      uMap[u.id] = {
+        id:u.uid, _sbId:u.id, pass:u.pass, name:u.name,
+        role:u.role||"vendedor", lista:u.lista||"Clientes",
+        catalogo:u.catalogo!==false, direccion:u.direccion||"",
+        telefono:u.telefono||"", zona:u.zona||"", rec:u.recepciona||"",
+        nota:u.nota||"", lat:u.lat||null, lng:u.lng||null
+      };
+    });
+    empresas[usrEmpresaKey].usuarios = uMap;
+  } catch(e){ console.warn("Error cargando usuarios desde Supabase:", e); }
   renderPersonas();
 }
 function renderUsuarios(){ renderPersonas(); }
@@ -2032,7 +2063,8 @@ function editarUsuario(k){
   if(titleEl) titleEl.textContent="Editar — "+(u.name||u.id||k);
 
   var keyEl=document.getElementById("usr-edit-key");
-  if(keyEl) keyEl.value=k;
+  // Guardar el UUID de Supabase como clave de edición (no el uid del usuario)
+  if(keyEl) keyEl.value = u._sbId || k;
 
   var set=function(id,val){ var el=document.getElementById(id); if(el) el.value=val||""; };
   set("usr-nombre", u.name||"");
@@ -2310,7 +2342,7 @@ async function guardarUsuario(){
   const editKey=editKeyEl?editKeyEl.value.trim():"";
   const isEdit=!!editKey;
   const nombre=document.getElementById("usr-nombre").value.trim();
-  const id=document.getElementById("usr-id").value.trim().toLowerCase();
+  const id=document.getElementById("usr-id").value.trim();
   const pass=document.getElementById("usr-pass").value;
   const role=document.getElementById("usr-rol").value;
   const lista=document.getElementById("usr-lista").value;
@@ -2322,45 +2354,84 @@ async function guardarUsuario(){
   const telEl=document.getElementById("usr-telefono");
   const direccion=dirEl?dirEl.value.trim():"";
   const telefono=telEl?telEl.value.trim():"";
-  if(!usrEmpresaKey){
-    var sel2=document.getElementById("usr-empresa-sel");
-    if(sel2&&sel2.value) usrEmpresaKey=sel2.value;
-  }
-  const usr={name:nombre,id,pass,role,lista,catalogo};
-  if(direccion) usr.direccion=direccion;
-  if(telefono)  usr.telefono=telefono;
   const latEl2=document.getElementById("usr-lat");
   const lngEl2=document.getElementById("usr-lng");
   const ulat=latEl2?parseFloat(latEl2.value)||null:null;
   const ulng=lngEl2?parseFloat(lngEl2.value)||null:null;
-  if(ulat&&ulng){ usr.lat=ulat; usr.lng=ulng; } else { delete usr.lat; delete usr.lng; }
+
   try{
-    // If editing and ID changed, delete old entry
-    if(isEdit && editKey !== id){
-      await fbDel("empresas/"+usrEmpresaKey+"/usuarios/"+editKey);
-      if(empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios) delete empresas[usrEmpresaKey].usuarios[editKey];
+    if(isEdit){
+      // EDITAR: usar PATCH en Supabase con el Supabase UUID (editKey)
+      // editKey puede ser el uuid de Supabase o el uid antiguo — buscamos por uid
+      const body = {
+        uid:id, pass:pass, name:nombre, role:role, lista:lista,
+        catalogo:catalogo, direccion:direccion||"", telefono:telefono||""
+      };
+      if(ulat&&ulng){ body.lat=ulat; body.lng=ulng; }
+
+      // Buscar el registro en Supabase por su uuid (editKey) o por uid
+      let rows = await sbGet("usuarios","id=eq."+editKey+"&empresa_id=eq."+usrEmpresaKey);
+      if(!rows||!rows.length){
+        // Fallback: buscar por uid
+        rows = await sbGet("usuarios","uid=eq."+encodeURIComponent(editKey)+"&empresa_id=eq."+usrEmpresaKey);
+      }
+      if(rows&&rows.length){
+        await sbPatch("usuarios","id=eq."+rows[0].id, body);
+        // Actualizar caché local
+        const uKey = rows[0].id;
+        if(empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios){
+          // Eliminar entrada vieja si el uid cambió
+          Object.keys(empresas[usrEmpresaKey].usuarios).forEach(function(k){
+            if(empresas[usrEmpresaKey].usuarios[k]._sbId === uKey ||
+               empresas[usrEmpresaKey].usuarios[k].id === editKey){
+              delete empresas[usrEmpresaKey].usuarios[k];
+            }
+          });
+          empresas[usrEmpresaKey].usuarios[uKey] = Object.assign({}, body, {id:id, _sbId:uKey});
+        }
+        showNotif("Usuario actualizado ✅");
+      } else {
+        showNotif("No se encontró el usuario en Supabase","err"); return;
+      }
+    } else {
+      // CREAR: insertar en Supabase
+      const body = {
+        empresa_id: usrEmpresaKey,
+        uid: id, pass: pass, name: nombre, role: role,
+        lista: lista, catalogo: catalogo,
+        direccion: direccion||"", telefono: telefono||""
+      };
+      if(ulat&&ulng){ body.lat=ulat; body.lng=ulng; }
+      const result = await sbPost("usuarios", body);
+      if(result&&result[0]){
+        const newRow = result[0];
+        if(!empresas[usrEmpresaKey]) empresas[usrEmpresaKey]={};
+        if(!empresas[usrEmpresaKey].usuarios) empresas[usrEmpresaKey].usuarios={};
+        empresas[usrEmpresaKey].usuarios[newRow.id] = Object.assign({}, body, {id:id, _sbId:newRow.id});
+      }
+      showNotif("Usuario agregado ✅");
     }
-    // Usar SET (PUT) para garantizar que el nodo se crea aunque no exista usuarios/
-    const r=await fetch(`${FB}/empresas/${usrEmpresaKey}/usuarios/${id}.json`,{
-      method:"PUT",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(usr)
-    });
-    if(!r.ok)throw new Error(await r.text());
-    if(!empresas[usrEmpresaKey])empresas[usrEmpresaKey]={};
-    if(!empresas[usrEmpresaKey].usuarios)empresas[usrEmpresaKey].usuarios={};
-    empresas[usrEmpresaKey].usuarios[id]=usr;
-    cerrarModal("modal-usuario");renderPersonas();
-    showNotif(isEdit?"Usuario actualizado ✅":"Usuario agregado ✅");
-  }catch(e){showNotif("Error: "+e.message,"err");}
+    cerrarModal("modal-usuario");
+    renderPersonas();
+  }catch(e){showNotif("Error: "+e.message,"err");console.error(e);}
 }
 async function borrarUsuario(k){
   if(!confirm("¿Borrar este usuario?"))return;
   try{
-    await fbDel(`empresas/${usrEmpresaKey}/usuarios/${k}`);
-    delete empresas[usrEmpresaKey].usuarios[k];
-    renderUsuarios();showNotif("Usuario eliminado");
-  }catch{showNotif("Error al borrar","err");}
+    // k puede ser el Supabase UUID o el uid
+    let rows = await sbGet("usuarios","id=eq."+k+"&empresa_id=eq."+usrEmpresaKey);
+    if(!rows||!rows.length){
+      rows = await sbGet("usuarios","uid=eq."+encodeURIComponent(k)+"&empresa_id=eq."+usrEmpresaKey);
+    }
+    if(rows&&rows.length){
+      await sbDel("usuarios","id=eq."+rows[0].id);
+    }
+    if(empresas[usrEmpresaKey]&&empresas[usrEmpresaKey].usuarios){
+      delete empresas[usrEmpresaKey].usuarios[k];
+    }
+    renderUsuarios();
+    showNotif("Usuario eliminado");
+  }catch(e){showNotif("Error al borrar: "+e.message,"err");}
 }
 
 /* ════ DEBUG ════ */
