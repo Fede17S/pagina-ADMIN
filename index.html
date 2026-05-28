@@ -2421,9 +2421,10 @@ async function guardarUsuario(){
       showNotif("Usuario actualizado ✅");
 
     } else {
-      // CREAR nuevo usuario
+      // CREAR nuevo usuario — usar Supabase UUID como empresa_id
+      var sbEmpIdCreate = _getSbEmpId(usrEmpresaKey);
       const body = {
-        empresa_id: usrEmpresaKey,
+        empresa_id: sbEmpIdCreate,
         uid: id, pass: pass, name: nombre, role: role,
         lista: lista, catalogo: catalogo,
         direccion: direccion||"", telefono: telefono||""
